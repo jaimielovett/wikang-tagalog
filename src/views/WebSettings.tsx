@@ -10,7 +10,7 @@ import { readSnapshot,writeSnapshot } from '../lib/web/idb';
 import type { Snapshot } from '../lib/web/storage';
 import { useAccount } from '../lib/web/cloud';
 export function WebSettings() {
- const {settings,setSetting,go}=useApp();const [tab,setTab]=useState('general');const [error,setError]=useState('');const account=useAccount();
+ const {settings,setSetting,go}=useApp();const [tab,setTab]=useState(() => ({ai:'voice & AI',voice:'voice & AI',reading:'reading',profile:'profile',backup:'backup',about:'about'} as Record<string,string>)[useApp.getState().settingsTab] || 'general');const [error,setError]=useState('');const account=useAccount();
  const restore=async(file:File)=>{try{const data=JSON.parse(await file.text());if(data.format!=='wikang-tagalog-backup-v1'||!Array.isArray(data.data?.lessons)||!data.data?.terms||typeof data.data?.settings!=='object')throw new Error('Choose a Wikang Tagalog backup.');if(!await confirmAsk('Replace this device’s current learning data with this backup? Export your current data first.'))return;const current=await readSnapshot<Snapshot>(storageKey());await writeSnapshot(storageKey(),{data:data.data,revision:current?.revision ?? 0,dirty:true});location.reload();}catch(e){setError(errorText(e));}};
  return <div className="view-scroll"><div className="view-pad web-settings"><header className="page-head"><div><h1>Settings</h1><p>A space that feels like yours.</p></div></header><div className="public-filters">{['general','reading','profile','voice & AI','backup','about'].map(t=><button key={t} className={`btn ${tab===t?'soft':'outline'}`} onClick={()=>setTab(t)}>{t[0].toUpperCase()+t.slice(1)}</button>)}</div>{error&&<p role="alert">{error}</p>}
  {tab==='reading'&&<ReadingPane/>}{tab==='profile'&&<ProfileSection/>}

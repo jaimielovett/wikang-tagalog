@@ -254,7 +254,7 @@ async function createTauriApi(): Promise<Api> {
     podcastCreate: (lang, request, onEvent) => invoke("podcast_create", { lang, request, onEvent: ch<ImportEvent>(onEvent) }),
     levelEstimate: (lang) => invoke("level_estimate", { lang }),
     textStats: (lang, text) => invoke("text_stats", { lang, text }),
-    mediaUrl: (path) => convertFileSrc(path),
+    mediaUrl: (path) => /^(https?:|blob:|data:)/.test(path) ? path : convertFileSrc(path),
   };
 }
 
