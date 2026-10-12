@@ -24,7 +24,7 @@ import { Account } from "./views/Account";
 import { WebSettings } from "./views/WebSettings";
 import { WebImport } from "./views/WebImport";
 import { Library } from "./views/Library";
-import { TagalogOnboarding as Onboarding } from "./views/TagalogOnboarding";
+import { Onboarding } from "./views/Onboarding";
 import { Playlists } from "./views/Playlists";
 import { Progress } from "./views/Progress";
 import { Settings } from "./views/Settings";

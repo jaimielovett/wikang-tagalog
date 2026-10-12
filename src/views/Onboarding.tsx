@@ -3,16 +3,17 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Avatar, AvatarArt } from "../components/Avatar";
 import { Icon } from "../components/Icon";
 import { Orb, Switch } from "../components/ui";
-import { api, errorText } from "../lib/api";
+import { api, errorText, isTauri } from "../lib/api";
 import { formatWhen, isCloud, pickBackupFolder, placeDir, reloadProgress, restoreStage, useBackup } from "../lib/backup";
-import { count, t, type UiLang } from "../lib/i18n";
-import { LANGS, STARTERS, featuredLangs, langLower, starterCollection, type LangInfo } from "../lib/langs";
+import { count, t } from "../lib/i18n";
+import { STARTERS, langLower, starterCollection } from "../lib/langs";
 import { inFolder } from "../lib/platform";
 import { PROFILES } from "../lib/profiles";
 import { formatBytes, formatNumber, useApp } from "../lib/store";
 import type { BackupInfo, BackupRestored, LangCode } from "../lib/types";
 import { HUES, NAME_MAX, avatarString, avatarStyles, choosePhoto, newSeed, userFrom, type AvatarStyle } from "../lib/user";
 import { useDraft } from "./ProfileSection";
+import { Account } from "./Account";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 // marge au-dessus de la scène pour que les rayons de l'astre ne soient pas coupés
@@ -32,34 +33,6 @@ function glow(e: React.MouseEvent<HTMLElement>) {
   el.style.setProperty("--my", `${e.clientY - r.top}px`);
 }
 
-/** Choix de la langue de l'interface, en haut à droite de l'accueil. */
-function UiLangSwitch() {
-  const ui = (useApp((s) => s.settings.ui_lang) || "fr") as UiLang;
-  const setSetting = useApp((s) => s.setSetting);
-  return (
-    <motion.div
-      className="ob-uilang"
-      role="radiogroup"
-      aria-label="Langue · Language"
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.2, duration: 0.8, ease: EASE }}
-    >
-      {(
-        [
-          ["fr", "Français"],
-          ["en", "English"],
-        ] as const
-      ).map(([code, label]) => (
-        <button key={code} role="radio" aria-checked={ui === code} className={ui === code ? "on" : ""} onClick={() => void setSetting("ui_lang", code)}>
-          {ui === code && <motion.i layoutId="ob-uilang-pill" className="pill" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
-          <span lang={code}>{label}</span>
-        </button>
-      ))}
-    </motion.div>
-  );
-}
-
 export function Onboarding() {
   const setSetting = useApp((s) => s.setSetting);
   // la langue de l'interface peut changer à tout moment de l'accueil
@@ -72,7 +45,9 @@ export function Onboarding() {
   const setReplay = useApp((s) => s.setReplay);
   const [n, setN] = useState(0);
   // en relecture, les langues déjà choisies restent cochées
-  const [langs, setLangs] = useState<LangCode[]>(() => (replay ? useApp.getState().langs() : []));
+  const langs: LangCode[] = ["tl"];
+  const [goal, setGoal] = useState(() => Number(useApp.getState().settings.daily_goal) || 10);
+  const [finishError, setFinishError] = useState("");
   const [profile, setProfile] = useState("balanced");
   // « Qu'est-ce qu'un modèle ? » déplié à l'étape de l'IA
   const [what, setWhat] = useState(false);
@@ -108,8 +83,10 @@ export function Onboarding() {
   const hereName = backup?.dir ? cloudName : "";
 
   useEffect(() => {
-    void useBackup.getState().refresh();
-    void useBackup.getState().loadPlaces();
+    if (isTauri) {
+      void useBackup.getState().refresh();
+      void useBackup.getState().loadPlaces();
+    }
   }, []);
 
   // parallaxe douce : le ciel suit légèrement le pointeur
@@ -147,41 +124,6 @@ export function Onboarding() {
   const horizonY = H * 0.32 + 92;
   const showHorizon = n === 0 || n === 4;
 
-  const toggle = (c: LangCode) => setLangs((l) => (l.includes(c) ? l.filter((x) => x !== c) : [...l, c]));
-  const others = LANGS.filter((l) => !featuredLangs().includes(l.code));
-
-  const langCard = (l: LangInfo, delay: number) => {
-    const on = langs.includes(l.code);
-    return (
-      <motion.button
-        key={l.code}
-        className={`ob-card ${on ? "on" : ""}`}
-        onClick={() => toggle(l.code)}
-        onMouseMove={glow}
-        aria-pressed={on}
-        title={`${l.name} · ${l.native}`}
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay, duration: 0.6, ease: EASE }}
-      >
-        <span className="hello" lang={l.code} dir={l.rtl ? "rtl" : undefined}>
-          {l.hello}
-        </span>
-        <span className="meta">
-          <span className="dot-lang" style={{ background: l.color }} />
-          {featuredLangs().includes(l.code) && l.name !== l.native ? `${l.name} · ${l.native}` : l.name}
-        </span>
-        <AnimatePresence>
-          {on && (
-            <motion.span className="tick" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 500, damping: 22 }}>
-              <Icon name="check" size={14} stroke={2.6} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
-    );
-  };
-
   const startDownload = () => {
     const p = PROFILES.find((x) => x.id === profile)!;
     void setSetting("llm_model", p.llm);
@@ -213,7 +155,7 @@ export function Onboarding() {
   const openRestore = () => {
     useBackup.setState({ restoreError: "" });
     setN(5);
-    void search();
+    if (isTauri) void search();
   };
 
   const chooseFolder = async () => {
@@ -254,36 +196,41 @@ export function Onboarding() {
   };
 
   const finish = async () => {
-    startBloom();
-    const started = performance.now();
-    await setSetting("langs", langs.join(","));
-    await setSetting("lang", langs[0]);
-    let first = 0;
-    for (const l of langs) {
-      const s = STARTERS[l];
-      // pas de doublon si la leçon d'accueil existe déjà (relecture de l'accueil)
-      const existing = (await api().lessonsList(l)).find((x) => x.title === s.title);
-      const id = existing ? existing.id : await api().lessonCreate({ lang: l, title: s.title, text: s.text, collection: starterCollection(), kind: "text" });
-      if (!first) first = id;
-    }
-    await refreshKnown();
-    const wait = 950 - (performance.now() - started);
-    if (wait > 0) await new Promise((res) => setTimeout(res, wait));
-    if (offerBackup && saveCloud && fallback) {
-      const dir = await placeDir(fallback);
-      if (dir !== null) await setSetting("backup_dir", dir);
-    }
-    if (offerBackup) await setSetting("backup_on", saveCloud ? "1" : "0");
-    // les nouveautés de cette version ne concernent pas qui découvre Wikang Tagalog
-    const version = useApp.getState().info?.version.match(/\d+\.\d+\.\d+/)?.[0];
-    if (version) await setSetting("seen_version", version);
-    await setSetting("onboarded", "1");
-    setReplay(false);
-    openLesson(first);
-    // puis la visite guidée, dans cette première leçon
-    void useApp.getState().startTour();
-    // macOS demande l'accès au nuage maintenant, juste après le choix
-    if (offerBackup && saveCloud) void useBackup.getState().save();
+    setFinishError("");
+    try {
+      await setSetting("user_name", meName.trim());
+      await setSetting("daily_goal", String(goal));
+      startBloom();
+      const started = performance.now();
+      await setSetting("langs", langs.join(","));
+      await setSetting("lang", langs[0]);
+      let first = 0;
+      for (const l of langs) {
+        const s = STARTERS[l];
+        // pas de doublon si la leçon d'accueil existe déjà (relecture de l'accueil)
+        const existing = (await api().lessonsList(l)).find((x) => x.title === s.title);
+        const id = existing ? existing.id : await api().lessonCreate({ lang: l, title: s.title, text: s.text, collection: starterCollection(), kind: "text" });
+        if (!first) first = id;
+      }
+      await refreshKnown();
+      const wait = 950 - (performance.now() - started);
+      if (wait > 0) await new Promise((res) => setTimeout(res, wait));
+      if (isTauri && offerBackup && saveCloud && fallback) {
+        const dir = await placeDir(fallback);
+        if (dir !== null) await setSetting("backup_dir", dir);
+      }
+      if (isTauri && offerBackup) await setSetting("backup_on", saveCloud ? "1" : "0");
+      // les nouveautés de cette version ne concernent pas qui découvre Wikang Tagalog
+      const version = useApp.getState().info?.version.match(/\d+\.\d+\.\d+/)?.[0];
+      if (version) await setSetting("seen_version", version);
+      await setSetting("onboarded", "1");
+      setReplay(false);
+      openLesson(first);
+      // puis la visite guidée, dans cette première leçon
+      void useApp.getState().startTour();
+      // macOS demande l'accès au nuage maintenant, juste après le choix
+      if (isTauri && offerBackup && saveCloud) void useBackup.getState().save();
+    } catch (error) { setBloom(null); setFinishError(errorText(error)); }
   };
 
   useEffect(() => {
@@ -317,7 +264,7 @@ export function Onboarding() {
       </div>
 
       <div className="ob-top drag" data-tauri-drag-region />
-      <UiLangSwitch />
+
 
       <div className="ob-stage" ref={stageRef}>
         {/* l'astre se lève derrière l'horizon : on le découpe à la ligne d'horizon */}
@@ -375,7 +322,7 @@ export function Onboarding() {
                 <motion.span key={ui} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
                   {t(
                     "Apprenez une langue comme vous avez appris la vôtre : en lisant et en écoutant ce qui vous passionne. Un mot à la fois, jusqu'à ce que tout s'éclaire.",
-                    "Learn a language the way you learned your own: by reading and listening to what you love. One word at a time, until everything lights up.",
+                    "Learn Tagalog the way you learned your own language: by reading and listening to what you love. One word at a time, until everything lights up.",
                   )}
                 </motion.span>
               </motion.p>
@@ -398,7 +345,7 @@ export function Onboarding() {
               <p className="ob-sub">
                 {t(
                   "Comment Wikang Tagalog peut-il vous appeler ? Votre profil reste sur ce Mac et dans votre sauvegarde : personne d'autre ne le voit.",
-                  "What should Wikang Tagalog call you? Your profile stays on this Mac and in your backup: no one else sees it.",
+                  "What should Wikang Tagalog call you? Choose a name and avatar, or continue without them.",
                 )}
               </p>
               <div className="ob-me">
@@ -448,41 +395,31 @@ export function Onboarding() {
 
           {n === 2 && (
             <motion.div key="2" className="ob-step form" {...stepAnim}>
-              <h2>
-                {firstName
-                  ? t(`${firstName}, quelles langues voulez-vous apprendre ?`, `${firstName}, which languages do you want to learn?`)
-                  : t("Quelles langues voulez-vous apprendre ?", "Which languages do you want to learn?")}
-              </h2>
-              <p className="ob-sub">
-                {t(
-                  "Chacune a son dictionnaire hors ligne, sa bibliothèque et son vocabulaire. Vous pourrez en ajouter ou en retirer plus tard.",
-                  "Each one has its own offline dictionary, library and vocabulary. You can add or remove languages later.",
-                )}
-              </p>
-              <div className="ob-langs-scroll">
-                <div className="ob-group">{t("Les plus étudiées", "Most studied")}</div>
-                <div className="ob-grid langs">{LANGS.filter((l) => featuredLangs().includes(l.code)).map((l, i) => langCard(l, 0.15 + i * 0.06))}</div>
-                <div className="ob-group">{t(`Et ${others.length} autres langues`, `And ${others.length} more languages`)}</div>
-                <div className="ob-grid langs compact">{others.map((l, i) => langCard(l, 0.5 + i * 0.025))}</div>
+              <h2>A little Tagalog, every day</h2>
+              <p className="ob-sub">Choose a daily reading and listening goal. You can change it later in Settings.</p>
+              <div className="ob-grid profiles" role="group" aria-label="Daily learning goal">
+                {[5, 10, 20].map(minutes => <button key={minutes} className={`ob-card ${goal === minutes ? "on" : ""}`} aria-pressed={goal === minutes} onClick={() => setGoal(minutes)}><strong className="pname">{minutes} minutes</strong><span className="pdesc">{minutes === 5 ? "A small daily habit" : minutes === 10 ? "Time for a short story" : "Room to read and listen"}</span></button>)}
               </div>
-              <div className="ob-actions">
-                <button className="ob-link" onClick={() => setN(1)}>
-                  {t("Retour", "Back")}
-                </button>
-                <button className="ob-cta" disabled={!langs.length} onClick={() => setN(3)}>
-                  {t("Continuer", "Continue")} <Icon name="forward" size={16} stroke={2} />
-                </button>
-              </div>
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(1)}>Back</button><button className="ob-cta" onClick={() => setN(3)}>Continue <Icon name="forward" size={16}/></button></div>
             </motion.div>
           )}
 
-          {n === 3 && (
+          {n === 3 && !isTauri && (
+            <motion.div key="3web" className="ob-step form" {...stepAnim}>
+              <h2>Your reading, with a little help</h2>
+              <p className="ob-sub">The Tagalog–English dictionary works on this device after it loads. Context translations, chat, Simplify and natural voice use online services when configured by the site owner.</p>
+              <div className="ob-explain ob-web-explain"><p><Icon name="sparkle" size={18}/> Online AI requires sign-in and an Internet connection. Your selected text, questions and attached lesson text are sent to the provider. There are no browser models to install.</p><p><Icon name="wave" size={18}/> Find prepared video and audio lessons in Discover. Admins download and transcribe media in the desktop app, then publish it for everyone to view here.</p></div>
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(2)}>Back</button><button className="ob-cta" onClick={() => setN(4)}>Continue <Icon name="forward" size={16}/></button></div>
+            </motion.div>
+          )}
+
+          {n === 3 && isTauri && (
             <motion.div key="3" className="ob-step form" {...stepAnim}>
-              <h2>{t("Une IA qui vit sur votre Mac", "An AI that lives on your Mac")}</h2>
+              <h2>{t("Une IA qui vit sur votre Mac", "Choose your on-device AI")}</h2>
               <p className="ob-sub">
                 {t(
                   "Elle traduit chaque mot dans son contexte, sans jamais rien envoyer en ligne. Le modèle se télécharge pendant que vous commencez à lire.",
-                  "It translates every word in its context, without ever sending anything online. The model downloads while you start reading.",
+                  "It translates every word in its context, on this device. The model downloads while you start reading. You can also choose an online provider later in Settings.",
                 )}
               </p>
               <button className="ob-what" onClick={() => setWhat((w) => !w)} aria-expanded={what}>
@@ -569,14 +506,14 @@ export function Onboarding() {
 
           {n === 4 && !restored && (
             <motion.div key="4" className="ob-step ready" {...stepAnim}>
-              <h2>{firstName ? t(`Tout est prêt, ${firstName}`, `Everything is ready, ${firstName}`) : t("Tout est prêt", "Everything is ready")}</h2>
+              <h2>{firstName ? `${firstName}, your first story is ready` : "Your first story is ready"}</h2>
               <p className="ob-sub">
                 {t(
                   "Une courte histoire vous attend dans chaque langue choisie. Touchez les mots inconnus, écoutez la page, puis terminez-la : les mots compris rejoignent votre vocabulaire.",
-                  "A short story is waiting for you in each language you chose. Tap the unknown words, listen to the page, then finish it: the words you understood join your vocabulary.",
+                  "A short Tagalog story is waiting for you. Tap the unknown words, listen to the page, then finish it: the words you understood join your vocabulary.",
                 )}
               </p>
-              {offerBackup && (
+              {isTauri && offerBackup && (
                 <motion.label className="ob-backup" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.6, ease: EASE }}>
                   <Icon name="cloud" size={20} />
                   <span>
@@ -590,18 +527,23 @@ export function Onboarding() {
                   <Switch on={saveCloud} onChange={setSaveCloud} label={t("Sauvegarder ma progression", "Back up my progress")} />
                 </motion.label>
               )}
-              <button className="ob-cta" onClick={finish} disabled={!!bloom || !langs.length}>
+              {!isTauri && <p className="ob-sub">Start without an account and save your learning in this browser. Sign in to sync your private learning data through Supabase. The guided tour will show you how to read, listen and track new words.</p>}
+              {finishError && <p className="ob-error" role="alert">{finishError}</p>}
+              <button className="ob-cta" onClick={() => void finish()} disabled={!!bloom || !langs.length}>
                 {t("Ouvrir ma première lecture", "Open my first reading")} <Icon name="book" size={16} />
               </button>
-              {!langs.length && (
-                <button className="ob-link" onClick={() => setN(2)}>
-                  {t("Choisir une langue d'abord", "Choose a language first")}
-                </button>
-              )}
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(3)}>Back</button>{!isTauri && <button className="ob-link" onClick={() => setN(5)}>Sign in first</button>}</div>
             </motion.div>
           )}
 
-          {n === 5 && (
+          {n === 5 && !isTauri && (
+            <motion.div key="5web" className="ob-step form ob-account" {...stepAnim}>
+              <Account/>
+              <button className="ob-link" onClick={() => setN(0)}>Back to the welcome</button>
+            </motion.div>
+          )}
+
+          {n === 5 && isTauri && (
             <motion.div key="5" className="ob-step form" {...stepAnim}>
               <h2>{t("Retrouver ma progression", "Get my progress back")}</h2>
               <p className="ob-sub">{t("Vos mots, vos expressions, vos leçons et vos réglages reviennent tels que vous les aviez laissés.", "Your words, phrases, lessons and settings come back just as you left them.")}</p>
@@ -693,7 +635,7 @@ export function Onboarding() {
         </AnimatePresence>
       </div>
 
-      <div className="ob-dots" aria-hidden="true">
+      <div className="ob-dots" role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${n + 1} of 5`}>
         {/* la restauration (étape 5) n'a pas de point : elle remplace les étapes 1 à 4 */}
         {[0, 1, 2, 3, 4].map((i) => (
           <i key={i} className={i === n ? "on" : ""} />

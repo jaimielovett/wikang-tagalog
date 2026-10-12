@@ -951,3 +951,31 @@
 .ob-device .avatar {
   flex-shrink: 0;
 }
+
+/* Keep the original welcome scenes usable at browser and phone sizes. */
+.ob { overflow-y: auto; overflow-x: hidden; }
+.ob-stage { min-height: 680px; }
+.ob-step { position: relative; top: auto !important; padding-bottom: 36px; width: 100%; align-self: flex-start; }
+.ob-step.welcome { margin-top: clamp(300px, 48vh, 460px); }
+.ob-step.form { margin-top: 124px; }
+.ob-step.ready { margin-top: clamp(260px, 43vh, 400px); }
+.ob-word { font-size: clamp(40px, 7vw, 96px); }
+.ob-web-explain { height: auto; max-width: 620px; margin-top: 20px; }
+.ob-web-explain p { display: flex; align-items: flex-start; gap: 12px; }
+.ob-web-explain svg { flex-shrink: 0; margin-top: 3px; }
+.ob-account { text-align: left; }
+.ob-account .view-scroll { overflow: visible; width: min(720px, 100%); }
+.ob-account .account-page { padding: 0; }
+.ob-account .ob-link { margin-top: 24px; }
+@media (max-width: 600px) {
+  .ob-stage { min-height: 620px; }
+  .ob-step { padding-left: 20px; padding-right: 20px; }
+  .ob-step.form { margin-top: 110px; }
+  .ob h2 { font-size: 34px; }
+  .ob-lead, .ob-sub { font-size: 15px; }
+  .ob-grid.profiles { grid-template-columns: 1fr; gap: 12px; max-width: 100%; }
+  .ob-grid.profiles .ob-card { padding: 16px 20px; }
+  .ob-grid.profiles .pdesc { min-height: 0; }
+  .ob-actions { flex-wrap: wrap; }
+  .ob-me-styles, .ob-me-hues { flex-wrap: wrap; justify-content: center; }
+}

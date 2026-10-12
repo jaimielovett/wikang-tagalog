@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {completeWelcome} from './welcome';
 const id='44444444-4444-4444-4444-444444444444';
 test('public prepared video opens without transcription and private learning stays independent',async({page})=>{
  let invokedTranscription=false;
@@ -10,7 +11,7 @@ test('public prepared video opens without transcription and private learning sta
   if(url.pathname.includes('/object/sign/lesson-media/'))return route.fulfill({path:'tests/fixtures/prepared-video.mp4',contentType:'video/mp4'});
   invokedTranscription=true;return route.fulfill({json:[],status:200});
  });
- await page.goto('/');await page.getByRole('button',{name:'Start learning',exact:true}).click();await expect(page.locator('.reader')).toBeVisible();
+ await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
  await page.getByRole('button',{name:'Discover',exact:true}).click();await expect(page.getByRole('heading',{name:'Magandang araw',exact:true})).toBeVisible();
  await page.getByRole('button',{name:/Test stories.*Magandang araw/i}).click();await expect(page.locator('.reader')).toBeVisible();await expect(page.locator('video').first()).toBeVisible();
  const result=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const opened=await api().lessonOpen(useApp.getState().lessonId);await api().termsMarkKnown('tl',['araw'],0);return {opened,terms:await api().termsList({lang:'tl',filter:'known',limit:20,offset:0})};});
