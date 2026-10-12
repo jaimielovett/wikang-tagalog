@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { isTauri } from "../lib/api";
 import { count, isEn, t } from "../lib/i18n";
 import { LANGS } from "../lib/langs";
 import { useSearch } from "../lib/search";
@@ -67,7 +68,7 @@ function show(view: View) {
   app.go(view);
 }
 
-const chapters = () => [t("La page", "The page"), t("L'IA locale", "Local AI"), t("Apprendre", "Learning"), t("Ensuite", "What's next")];
+const chapters = () => [t("La page", "The page"), isTauri ? t("L'IA locale", "Local AI") : "Online AI", t("Apprendre", "Learning"), t("Ensuite", "What's next")];
 
 interface Box {
   x: number;
@@ -414,6 +415,19 @@ function StepText({ step, found }: { step: Step; found: boolean }) {
   const download = useApp((s) => s.download);
   const minutes = count(Number(useApp((s) => s.settings.daily_goal)) || 10, "minute", "minutes", "minute", "minutes");
   const name = m?.name ?? "Qwen3.5";
+  const webCopy: Partial<Record<Step["id"], { title: string; body: string }>> = {
+    panel: { title: "Its meaning, in this sentence", body: "Dictionary meanings are looked up on this device. Sign in to request a translation in context from the online AI service, when configured. Your selected text and sentence are sent to the provider." },
+    model: { title: "AI on the web", body: "The website uses an online AI service for context translations, Simplify and chat. It requires sign-in and an Internet connection. No AI model is downloaded or run in your browser." },
+    why: { title: "Choosing the right meaning", body: "A word often has several meanings. The dictionary lists them; the online AI uses the sentence to choose a meaning. The site owner configures the provider. See Settings › Voice & AI for details." },
+    chat: { title: "Ask about your Tagalog", body: "When online AI is configured, sign in to ask about grammar, examples and your lesson. Your questions, recent conversation and attached lesson text are sent to the provider. Shortcut: the C key." },
+    player: { title: "Listen, the lantern follows", body: "Play prepared lesson audio or use a Filipino voice available on your device. Creating audio uses the configured online voice service and requires sign-in. Browser-created audio uses estimated word timings; published desktop transcriptions have prepared timings." },
+    discover: { title: "Tagalog lessons to explore", body: "Discover contains lessons reviewed and published by admins. Filter by level or format, then add a lesson to your own library. Your vocabulary and progress belong to your account." },
+    search: { title: "Find your next lesson", body: "Search the titles and descriptions in the published catalogue. Video downloads and transcription happen in the desktop app; admins publish prepared lessons for web learners." },
+    import: { title: "Read what you love", body: "Import a book, PDF, subtitles or pasted Tagalog text. Article links and custom podcasts use online services and require sign-in. Audio and video transcription are available in the desktop app." },
+    end: { title: "Your turn to read", body: "Tap unknown words, listen and finish the page. Open the short guide from the word panel whenever you need a reminder. Your learning stays in this browser until you sign in to sync it privately through Supabase." },
+  };
+  const web = !isTauri && webCopy[step.id];
+  if (web) return <div className="tour-text"><h3 className="display">{web.title}</h3><p>{web.body}</p></div>;
 
   const modelState: ReactNode = ready ? (
     <span className="tour-state ok">
@@ -680,14 +694,14 @@ function SceneModel({ still }: { still: boolean }) {
           <span className="tm-halo" />
           <span className={`tm-core ${ready ? "ready" : ""}`} />
           <span className="tm-offline">
-            <i /> {t("hors ligne", "offline")}
+            <i /> {isTauri ? t("hors ligne", "offline") : "online"}
           </span>
         </div>
         <div className="tm-base" />
       </div>
       <span className="tm-name">
-        {m?.name ?? "Qwen3.5"}
-        {m ? ` · ${formatBytes(m.size)}` : ""}
+        {isTauri ? m?.name ?? "Qwen3.5" : "Online AI service"}
+        {isTauri && m ? ` · ${formatBytes(m.size)}` : ""}
       </span>
     </div>
   );

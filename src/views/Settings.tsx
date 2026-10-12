@@ -490,7 +490,7 @@ function GeneralPane() {
       </Section>
       <Section
         title={t("Apparence", "Appearance")}
-        note={t("« Système » suit le Mac : l'aube le jour, une nuit chaude le soir.", "“System” follows your Mac: dawn by day, a warm night in the evening.")}
+        note={!isTauri ? "“System” follows your device’s appearance settings." : t("« Système » suit le Mac : l'aube le jour, une nuit chaude le soir.", "“System” follows your Mac: dawn by day, a warm night in the evening.")}
       >
         <ThemePicker value={settings.theme || "system"} onChange={(v) => void setSetting("theme", v)} />
       </Section>

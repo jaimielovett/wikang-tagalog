@@ -25,3 +25,39 @@ test('mobile onboarding and navigation do not overflow',async({page})=>{
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('discover');});await expect(page.getByRole('heading',{name:'Discover Tagalog'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'outputs/web-mobile.png',fullPage:true});
 });
+
+test('web guidance explains online services without desktop privacy or installation claims', async ({page}) => {
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.goto('/');
+ await page.getByRole('button', {name:'Start learning', exact:true}).click();
+ await expect(page.locator('.reader')).toBeVisible();
+ await page.getByRole('button',{name:'Dock the word panel on the right'}).click();
+ await expect(page.getByText('Dictionary meanings appear here.', {exact:false})).toBeVisible();
+ await page.getByRole('button', {name:'Open the short guide'}).click();
+ const guide=page.getByRole('dialog', {name:"Wikang Tagalog's short guide"});
+ await expect(guide.locator('.g-line')).toHaveAttribute('lang', 'tl');
+ await guide.getByRole('tab', {name:'Listen, the lantern follows'}).click();
+ await expect(guide.getByText(/Video downloads and transcription happen in the desktop app/)).toBeVisible();
+ await guide.getByRole('tab', {name:'Your browser, connected'}).click();
+ await expect(guide.getByText(/send the relevant text to the provider/)).toBeVisible();
+ await expect(guide.getByText(/private learning data syncs through Supabase/)).toBeVisible();
+ await expect(guide.getByText(/^To install$|Whisper|Supertonic|Qwen3|on your Mac|never leaves/i)).toHaveCount(0);
+ await expect(guide.getByText('Internet and sign-in required')).toBeVisible();
+ await page.screenshot({path:'outputs/web-guide-corrected.png',fullPage:true});
+ await guide.getByRole('button', {name:'Voice & AI settings'}).click();
+ await expect(page.getByRole('heading',{name:'Tagalog, spoken and understood'})).toBeVisible();
+ await page.getByRole('button', {name:'Profile',exact:true}).click();
+ await expect(page.getByText('Private account sync',{exact:true})).toBeVisible();
+ await expect(page.getByText(/has no account|Not in iCloud|On this Mac/)).toHaveCount(0);
+ await page.getByRole('button', {name:'Chat',exact:true}).first().click();
+ await expect(page.getByText('Your Tagalog tutor, online',{exact:true})).toBeVisible();
+ await page.evaluate(async()=>{await (window as any).__lumen.useApp.getState().startTour()});
+ await expect(page.getByRole('dialog',{name:'Guided tour'})).toBeVisible({timeout:10000});
+ for (const step of [4,5,10,11,12]) {
+  await page.evaluate((step)=>{(window as any).__lumen.useApp.getState().setTourStep(step)},step);
+  const tour=page.getByRole('dialog',{name:'Guided tour'});
+  await expect(tour).toBeVisible({timeout:10000});
+  await expect(tour.getByText(/never leaves your Mac|Download Qwen|Local AI|offline|With a Gemini key/)).toHaveCount(0);
+ }
+ await page.evaluate(()=>{(window as any).__lumen.useApp.getState().endTour()});
+});

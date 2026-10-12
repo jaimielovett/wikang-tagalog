@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon";
 import { frenchSpaces } from "../components/Markdown";
-import { api } from "../lib/api";
+import { api, isTauri } from "../lib/api";
 import { useChat, type LessonRef } from "../lib/chat";
 import { confirmAsk } from "../lib/dialogs";
 import { locale, t } from "../lib/i18n";
@@ -77,7 +77,7 @@ export function Chat() {
             </button>
           </div>
           <p className="chat-side-sub">
-            {t(`Un professeur de ${langInfo(lang).name.toLowerCase()} sur votre Mac`, `Your ${langInfo(lang).name} teacher, on your Mac`)}
+            {!isTauri ? "Your Tagalog tutor, online" : t(`Un professeur de ${langInfo(lang).name.toLowerCase()} sur votre Mac`, `Your ${langInfo(lang).name} teacher, on your Mac`)}
           </p>
           <div className="chat-list">
             <button className={`chat-item new ${!thread ? "on" : ""}`} onClick={() => fresh(null)}>

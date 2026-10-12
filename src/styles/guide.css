@@ -504,3 +504,13 @@
 .guide-link svg {
   color: var(--light-strong);
 }
+
+/* Web service explanations need enough room for their text, including on phones. */
+.guide.web-guide { overflow-y: auto; }
+.guide-stage.web-services { height: auto; flex-shrink: 0; }
+.web-services .guide-scene-wrap { position: relative; }
+.web-services .g-scene { height: auto; }
+.web-services .g-role .head { flex-wrap: wrap; }
+@media (max-width: 520px) {
+  .web-services .g-roles { grid-template-columns: 1fr; }
+}

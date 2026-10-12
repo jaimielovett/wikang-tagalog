@@ -208,7 +208,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
               {t("Touchez un mot", "Tap a word")}
             </h2>
             <p className="muted" style={{ lineHeight: 1.55 }}>
-              {t(
+              {!isTauri ? "Dictionary meanings appear here. Sign in to request online AI translations in context, when the service is configured. Drag across several words to translate a passage or create a phrase." : t(
                 "Sa traduction dans cette phrase précise s'affiche ici, calculée sur votre Mac. Glissez sur plusieurs mots pour traduire tout un passage ou créer une expression.",
                 "Its translation in this exact sentence appears here, computed on your Mac. Drag across several words to translate a whole passage or create a phrase.",
               )}
@@ -231,7 +231,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
                 <button className="icon-btn close" onClick={() => void setSetting("guide_seen", "1")} aria-label={t("Plus tard", "Later")}>
                   <Icon name="close" size={12} />
                 </button>
-                <p>{t("Le principe, la lanterne et les modèles d'IA en quatre images, le temps d'un café.", "The idea, the lantern and the AI models in four pictures, over a coffee.")}</p>
+                <p>{!isTauri ? "Reading, listening, and how the connected web features work, in four pictures." : t("Le principe, la lanterne et les modèles d'IA en quatre images, le temps d'un café.", "The idea, the lantern and the AI models in four pictures, over a coffee.")}</p>
                 <button className="btn sm primary glow" onClick={() => openGuide()}>
                   <Icon name="bulb" size={14} /> {t("Ouvrir le petit guide", "Open the short guide")}
                 </button>
@@ -371,7 +371,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
             <span className="eyebrow">{sel.words > SENSE_MAX_WORDS ? t("Traduction", "Translation") : t("Dans cette phrase", "In this sentence")}</span>
             {aiState === "nomodel" ? (
               <div className="wp-note" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
-                {llmDownloading
+                {!isTauri ? "Context translation uses an online service. Sign in and check Voice & AI settings; the site owner must configure the provider." : llmDownloading
                   ? t(
                       "Le modèle de traduction se télécharge. La traduction en contexte apparaîtra ici dès qu'il sera prêt.",
                       "The translation model is downloading. The translation in context will appear here as soon as it's ready.",
@@ -382,7 +382,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
                     )}
                 {!llmDownloading && (
                   <button className="btn sm soft" onClick={() => openSettings("ai")}>
-                    {t("Installer un modèle", "Install a model")}
+                    {isTauri ? t("Installer un modèle", "Install a model") : "Voice & AI settings"}
                   </button>
                 )}
               </div>

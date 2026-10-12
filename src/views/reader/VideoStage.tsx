@@ -305,7 +305,7 @@ export function VideoStage({ lesson, tokens, terms, cursor, playing, onHost, onW
                 </>
               )
             ) : broken ? (
-              <strong>{t("Cette vidéo ne se lit pas sur ce Mac", "This video doesn't play on this Mac")}</strong>
+              <strong>{!isTauri ? "This video could not be played in your browser" : t("Cette vidéo ne se lit pas sur ce Mac", "This video doesn't play on this Mac")}</strong>
             ) : (
               <strong>{t("Leçon audio", "Audio lesson")}</strong>
             )}

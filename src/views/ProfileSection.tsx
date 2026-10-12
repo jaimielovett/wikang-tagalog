@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarArt } from "../components/Avatar";
 import { Icon } from "../components/Icon";
 import { Segmented } from "../components/ui";
-import { api, errorText } from "../lib/api";
+import { api, errorText, isTauri } from "../lib/api";
 import { useBackup } from "../lib/backup";
 import { confirmAsk } from "../lib/dialogs";
 import { count, locale, t } from "../lib/i18n";
@@ -237,7 +237,7 @@ export function ProfileSection() {
 
       <section className="set-section">
         <h3>{t("Où vit votre profil", "Where your profile lives")}</h3>
-        <WhereItLives />
+        {isTauri ? <WhereItLives /> : <WebProfileStorage />}
       </section>
 
       {!me.empty || me.why || me.interests.length || agree ? (
@@ -386,6 +386,11 @@ function Interests() {
   );
 }
 
+function WebProfileStorage() {
+  const openSettings = useApp((s) => s.openSettings);
+  return <div className="set-card"><div className="set-row"><Icon name="laptop" size={16}/><div className="grow"><strong>On this device</strong><span>Your profile is saved in this browser with your learning data.</span></div></div><div className="set-row"><Icon name="cloud" size={16}/><div className="grow"><strong>Private account sync</strong><span>When signed in, your profile and learning data sync privately through Supabase. Your profile is not part of public Discover lessons.</span></div></div><div className="set-row"><button className="btn sm soft" onClick={() => openSettings("backup")}>Backup settings</button></div></div>;
+}
+
 /** Où vit le profil : ce Mac, la sauvegarde iCloud (si elle est activée), personne d'autre. */
 function WhereItLives() {
   const status = useBackup((s) => s.status);
@@ -442,7 +447,7 @@ function WhereItLives() {
           <span>
             {t(
               "Wikang Tagalog n'a ni compte ni communauté : votre profil n'est envoyé à personne. Seul le chat de ce Mac le lit, pour vous répondre plus personnellement.",
-              "Wikang Tagalog has no account and no community: your profile is sent to no one. Only the chat on this Mac reads it, to answer you more personally.",
+              "Your desktop profile stays in this app and your backups. It is not published with lessons in Discover.",
             )}
           </span>
         </div>

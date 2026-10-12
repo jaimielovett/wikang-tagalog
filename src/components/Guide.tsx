@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { isTauri } from "../lib/api";
 import { count, t } from "../lib/i18n";
 import { useApp } from "../lib/store";
 import { useOnline } from "../lib/online";
@@ -23,6 +24,7 @@ export interface Sample {
 }
 
 const SAMPLES: Partial<Record<LangCode, Sample>> = {
+  tl: { text: "Pumapasok ang liwanag ng umaga sa silid.", st: [0, 4, 2, 4, 0, 4, 0], tap: 2, fr: "lumière", en: "light" },
   it: { text: "La luce del mattino entra piano nella stanza.", st: [4, 2, 4, 0, 4, 0, 4, 0], tap: 5, fr: "doucement", en: "softly" },
   es: { text: "La luz de la mañana entra despacio en la habitación.", st: [4, 2, 4, 4, 0, 4, 0, 4, 4, 0], tap: 6, fr: "lentement", en: "slowly" },
   de: { text: "Das Morgenlicht fällt leise ins Zimmer.", st: [4, 0, 2, 0, 4, 0], tap: 3, fr: "doucement", en: "softly" },
@@ -279,7 +281,21 @@ export const roles = (): Role[] => [
   },
 ];
 
-/** 4. Quatre modèles, quatre rôles, tous sur ce Mac. */
+function SceneWebServices({ still }: { still: boolean }) {
+  const services: { icon: IconName; name: string; model: string; what: string; state: string }[] = [
+    { icon: "book", name: "The dictionary", model: "Tagalog–English", what: "Look up word forms and meanings on this device after the dictionary loads.", state: "No account needed" },
+    { icon: "sparkle", name: "Context AI", model: "Online service", what: "Selected text, questions and attached lesson text are sent to the configured AI provider.", state: "Internet and sign-in required" },
+    { icon: "speaker", name: "Read aloud", model: "Device or online voice", what: "Use a Filipino voice on your device, or send text to the configured voice service to create audio.", state: "Online voice requires sign-in" },
+    { icon: "wave", name: "Video lessons", model: "Prepared on desktop", what: "Admins download and transcribe media in the desktop app, then publish lessons to Discover.", state: "Ready-to-play published lessons" },
+  ];
+  return <div className="g-scene models"><div className="g-roles">{services.map((r, i) => (
+    <motion.div key={r.name} className="g-role" initial={still ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.09 }}>
+      <span className="ic"><Icon name={r.icon} size={16}/></span><span className="body"><span className="head"><strong>{r.name}</strong><span className="model">{r.model}</span></span><span className="what">{r.what}</span><span className="state"><i/>{r.state}</span></span>
+    </motion.div>
+  ))}</div></div>;
+}
+
+/** Desktop model installation status. */
 function SceneModels({ still }: { still: boolean }) {
   const models = useApp((s) => s.models);
   const online = useOnline();
@@ -336,25 +352,25 @@ const cards = (): Card[] => [
   },
   {
     title: t("Touchez, puis tournez la page", "Tap, then turn the page"),
-    body: t(
+    body: !isTauri ? "Tap a word to see its dictionary meanings. Sign in to request a translation in context from the online AI service, when configured. Finish the page to mark untouched blue words as known." : t(
       "Touchez un mot inconnu : le dictionnaire et l'IA vous donnent son sens dans cette phrase précise. Terminez la page : les mots bleus que vous n'avez pas touchés, vous les avez compris, ils deviennent connus.",
       "Tap a word you don't know: the dictionary and the AI give you its meaning in this very sentence. Finish the page: the blue words you didn't tap, you understood, so they become known.",
     ),
   },
   {
     title: t("Écoutez, la lanterne suit", "Listen, the lantern follows"),
-    body: t(
+    body: !isTauri ? "Listen to published lessons from Discover while the lantern follows their prepared word timings. You can also import books, articles and text. Video downloads and transcription happen in the desktop app; admins publish those lessons for everyone to view here." : t(
       "Un halo glisse sur chaque mot prononcé : vous lisez et vous entendez en même temps. Importez un livre, un article, un podcast ou une vidéo YouTube, Wikang Tagalog en fait une leçon.",
       "A halo glides over each spoken word, so you read and hear at the same time. Import a book, an article, a podcast or a YouTube video, and Wikang Tagalog turns it into a lesson.",
     ),
   },
   {
-    title: t("Une IA qui vit sur votre Mac", "An AI that lives on your Mac"),
-    body: t(
-      "Un modèle, c'est un gros fichier qui a lu des milliards de phrases. Téléchargé une fois, il travaille ici, même sans Internet : ce que vous lisez ne quitte jamais votre Mac.",
-      "A model is a big file that has read billions of sentences. Downloaded once, it works right here, even offline: what you read never leaves your Mac.",
+    title: !isTauri ? "Your browser, connected" : t("Choisissez où travaille votre IA", "Choose where your AI works"),
+    body: !isTauri ? "Dictionary lookups and reading work on this device. AI translations, chat and generated audio use online services when configured by the site owner. They require sign-in and an Internet connection, and send the relevant text to the provider." : t(
+      "Téléchargez un modèle pour traduire sur cet appareil, même hors ligne. Si vous choisissez une IA en ligne, le texte concerné est envoyé au fournisseur. La transcription reste locale ; publier une leçon envoie son texte et ses médias à Supabase.",
+      "Download a model to translate on this device, even offline. If you choose online AI, the relevant text is sent to that provider. Desktop downloads and transcription run locally; publishing a lesson uploads its transcript and media to Supabase.",
     ),
-    note: t(
+    note: !isTauri ? "Your learning is saved in this browser. When you sign in, your private learning data syncs through Supabase. There are no AI models to install in the browser." : t(
       "Léger, Équilibré ou Maximum : c'est la taille du traducteur. Plus il est grand, plus il est fin, mais plus il pèse et demande de mémoire.",
       "Light, Balanced or Maximum is the size of the translator. The bigger it is, the finer it gets, but the more space and memory it needs.",
     ),
@@ -426,7 +442,7 @@ export function Guide() {
       {open !== null && (
         <motion.div className="scrim guide-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(e) => e.target === e.currentTarget && close()}>
           <motion.div
-            className="guide"
+            className={`guide ${!isTauri ? "web-guide" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-label={t("Le petit guide de Wikang Tagalog", "Wikang Tagalog's short guide")}
@@ -442,13 +458,13 @@ export function Guide() {
               </button>
             </div>
 
-            <div className="guide-stage">
+            <div className={`guide-stage ${!isTauri && card === 3 ? "web-services" : ""}`}>
               <AnimatePresence mode="wait" custom={dir} initial={false}>
                 <motion.div key={card} className="guide-scene-wrap" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.4, ease: EASE }}>
                   {card === 0 && <SceneLight sample={sample} lang={sampleLang} still={still} />}
                   {card === 1 && <SceneTap sample={sample} lang={sampleLang} still={still} />}
                   {card === 2 && <SceneListen sample={sample} lang={sampleLang} still={still} />}
-                  {card === 3 && <SceneModels still={still} />}
+                  {card === 3 && (isTauri ? <SceneModels still={still} /> : <SceneWebServices still={still} />)}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -462,7 +478,7 @@ export function Guide() {
                     <p className="note">
                       {c.note}{" "}
                       <button className="guide-more" onClick={seeModels}>
-                        {t("Voir les modèles", "See the models")} <Icon name="forward" size={12} stroke={2} />
+                        {isTauri ? t("Voir les modèles", "See the models") : "Voice & AI settings"} <Icon name="forward" size={12} stroke={2} />
                       </button>
                     </p>
                   )}

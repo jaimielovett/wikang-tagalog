@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { Icon } from "../../components/Icon";
 import { Markdown, frenchSpaces, plainText } from "../../components/Markdown";
 import { Orb } from "../../components/ui";
-import { api } from "../../lib/api";
+import { api, isTauri } from "../../lib/api";
 import { attachedLesson, efforts, langWithArticle, suggestions, useChat, type LessonRef, type Pending, type Suggestion } from "../../lib/chat";
 import { count, t } from "../../lib/i18n";
 import { inLang } from "../../lib/langs";
@@ -62,7 +62,7 @@ export function ChatThread({ compact = false, lessonNow = null }: { compact?: bo
               <span>{error.text}</span>
               {(error.noModel || onlineChat) && (
                 <button className="btn sm soft" onClick={() => openSettings("ai")}>
-                  {error.noModel ? t("Installer un modèle", "Install a model") : t("Réglages de l'IA", "AI settings")}
+                  {error.noModel && isTauri ? t("Installer un modèle", "Install a model") : t("Réglages de l'IA", "AI settings")}
                 </button>
               )}
             </motion.div>
@@ -131,7 +131,7 @@ function Welcome({ lang, lesson, compact }: { lang: LangCode; lesson: LessonRef 
         ))}
       </div>
       <p className="chat-private">
-        {online.chat ? (
+        {!isTauri ? <><span className="dot online"/> Sign in to use online AI when configured. Your questions and attached lesson text are sent to the provider.</> : online.chat ? (
           <>
             <span className="dot online" />{" "}
             {t(`${online.provider.name} répond, en ligne : vos questions et la leçon jointe lui sont envoyées`, `${online.provider.name} answers, online: your questions and the attached lesson are sent to it`)}
