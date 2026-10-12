@@ -13,3 +13,4 @@ supabase
 CLAUDE.md
 playwright.config.ts
 !public/wikang-tagalog-source.zip
+dist

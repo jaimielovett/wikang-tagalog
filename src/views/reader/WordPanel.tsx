@@ -369,7 +369,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
 
           <div className="wp-block wp-sense">
             <span className="eyebrow">{sel.words > SENSE_MAX_WORDS ? t("Traduction", "Translation") : t("Dans cette phrase", "In this sentence")}</span>
-            {!isTauri ? (online.ready ? "Dictionary on this device · context AI runs online" : "Dictionary on this device · sign in for context AI") : aiState === "nomodel" ? (
+            {aiState === "nomodel" ? (
               <div className="wp-note" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
                 {llmDownloading
                   ? t(
