@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+node_modules
+src-tauri
+design
+docs
+tests
+test-results
+outputs
+tools
+supabase
+CLAUDE.md
+playwright.config.ts
+!public/wikang-tagalog-source.zip

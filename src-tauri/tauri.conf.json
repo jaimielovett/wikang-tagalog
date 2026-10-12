@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Wikang Tagalog",
+  "version": "0.1.0",
+  "identifier": "app.wikangtagalog.reader",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1430",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Wikang Tagalog",
+        "width": 1380,
+        "height": 880,
+        "minWidth": 980,
+        "minHeight": 640,
+        "maximized": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 20,
+          "y": 24
+        },
+        "transparent": true,
+        "windowEffects": {
+          "effects": [
+            "sidebar"
+          ],
+          "state": "followsWindowActiveState"
+        },
+        "dragDropEnabled": true,
+        "acceptFirstMouse": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/media/**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app",
+      "dmg"
+    ],
+    "category": "Education",
+    "shortDescription": "Learn languages by reading and listening",
+    "copyright": "\u00a9 2026 Ulysse Rives",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "resources/dicts/*": "dicts/",
+      "locales/en.lproj/InfoPlist.strings": "en.lproj/InfoPlist.strings",
+      "locales/fr.lproj/InfoPlist.strings": "fr.lproj/InfoPlist.strings"
+    },
+    "externalBin": [
+      "binaries/lumen-whisper"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": "-",
+      "dmg": {
+        "background": "dmg/background.png",
+        "windowSize": {
+          "width": 660,
+          "height": 448
+        },
+        "appPosition": {
+          "x": 170,
+          "y": 200
+        },
+        "applicationFolderPosition": {
+          "x": 490,
+          "y": 200
+        }
+      }
+    },
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {}
+}

@@ -1,0 +1,26 @@
+[package]
+name = "lumen-whisper"
+version = "0.1.0"
+edition = "2021"
+description = "Transcription locale pour Lumen (processus séparé pour isoler whisper.cpp)"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+symphonia = { version = "0.5.5", features = ["all"] }
+anyhow = "1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.16", features = ["metal"] }
+
+[target.'cfg(not(any(target_os = "macos", windows)))'.dependencies]
+whisper-rs = { version = "0.16" }
+
+[target.'cfg(windows)'.dependencies]
+# la carte graphique par Vulkan, le processeur sans elle (src/vulkan.rs de l'app)
+whisper-rs = { version = "0.16", features = ["vulkan"] }
+# choisir la carte graphique dédiée plutôt que celle intégrée au processeur
+whisper-rs-sys = "0.15"
+# compter les cœurs réels du processeur (déjà compilé pour Tauri)
+windows-sys = { version = "0.61", features = ["Win32_System_SystemInformation"] }

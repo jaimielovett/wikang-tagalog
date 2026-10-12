@@ -1,0 +1,22 @@
+import { useState } from 'react';
+import { ReadingPane } from './Settings';
+import { ProfileSection } from './ProfileSection';
+import { useApp } from '../lib/store';
+import { api,errorText } from '../lib/api';
+import { download } from '../lib/web/api';
+import { storageKey,privateSnapshot,emptyDb } from '../lib/web/storage';
+import { confirmAsk } from '../lib/dialogs';
+import { readSnapshot,writeSnapshot } from '../lib/web/idb';
+import type { Snapshot } from '../lib/web/storage';
+import { useAccount } from '../lib/web/cloud';
+export function WebSettings() {
+ const {settings,setSetting,go}=useApp();const [tab,setTab]=useState('general');const [error,setError]=useState('');const account=useAccount();
+ const restore=async(file:File)=>{try{const data=JSON.parse(await file.text());if(data.format!=='wikang-tagalog-backup-v1'||!Array.isArray(data.data?.lessons)||!data.data?.terms||typeof data.data?.settings!=='object')throw new Error('Choose a Wikang Tagalog backup.');if(!await confirmAsk('Replace this device’s current learning data with this backup? Export your current data first.'))return;const current=await readSnapshot<Snapshot>(storageKey());await writeSnapshot(storageKey(),{data:data.data,revision:current?.revision ?? 0,dirty:true});location.reload();}catch(e){setError(errorText(e));}};
+ return <div className="view-scroll"><div className="view-pad web-settings"><header className="page-head"><div><h1>Settings</h1><p>A space that feels like yours.</p></div></header><div className="public-filters">{['general','reading','profile','voice & AI','backup','about'].map(t=><button key={t} className={`btn ${tab===t?'soft':'outline'}`} onClick={()=>setTab(t)}>{t[0].toUpperCase()+t.slice(1)}</button>)}</div>{error&&<p role="alert">{error}</p>}
+ {tab==='reading'&&<ReadingPane/>}{tab==='profile'&&<ProfileSection/>}
+ {tab==='general'&&<div className="settings-card"><h2>Appearance</h2><label>Theme<select value={settings.theme} onChange={e=>void setSetting('theme',e.target.value)}><option value="system">Follow my device</option><option value="light">Daylight</option><option value="dark">Evening</option></select></label><label>Daily learning goal (minutes)<input type="number" min={1} max={600} value={settings.daily_goal} onChange={e=>{const n=Number(e.target.value);if(n>=1&&n<=600)void setSetting('daily_goal',String(n));}}/></label></div>}
+ {tab==='voice & AI'&&<div className="settings-card"><h2>Tagalog, spoken and understood</h2><p>The bundled Tagalog–English dictionary works without an account. Context translations, chat, custom podcasts, and natural voice use the connected online services.</p><p>Sign in to use online features. Provider keys are managed by the site owner on the server.</p><button className="btn soft" onClick={()=>go('account')}>{account.session?'My account':'Sign in'}</button><p className="muted">Read-aloud also uses Filipino voices available on your device. Audio created in the browser uses estimated word timings; desktop transcription provides precise timings.</p></div>}
+ {tab==='backup'&&<div className="settings-card"><h2>Your learning belongs to you</h2><p>{account.sync}. Export a backup before switching accounts or restoring another device’s data.</p><div className="form-actions"><button className="btn soft" onClick={()=>void (async()=>{const raw=await readSnapshot<Snapshot>(storageKey());const data=raw?.data ?? emptyDb();download('wikang-tagalog-backup.json',JSON.stringify({format:'wikang-tagalog-backup-v1',data:privateSnapshot(data)},null,2));})()}>Export backup</button><label className="btn outline">Restore backup<input hidden type="file" accept="application/json" onChange={e=>e.target.files?.[0]&&void restore(e.target.files[0])}/></label><button className="btn outline" onClick={()=>void api().exportVocab('tl','')}>Export vocabulary CSV</button></div></div>}
+ {tab==='about'&&<div className="settings-card"><h2>Wikang Tagalog</h2><p>A reader, a listening companion, and a place to grow your Tagalog.</p><p>Download the <a href="/wikang-tagalog-source.zip">source code for this version</a>. Built from <a href="https://github.com/LivingTwice/lumen" target="_blank" rel="noreferrer">Lumen by Ulysse Rives</a>, under GPL-3.0-or-later. Dictionary definitions and word forms are from Wiktionary; attribution and source details are included in the project.</p><p>Web learning stays on this device until you sign in. Your signed-in learning data is private; only lessons published by admins appear in the shared catalogue.</p></div>}
+ </div></div>;
+}

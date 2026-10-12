@@ -1,0 +1,56 @@
+import "@fontsource-variable/geist";
+import "@fontsource-variable/literata";
+import "@fontsource-variable/literata/wght-italic.css";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/newsreader/wght-italic.css";
+import "./styles/app.css";
+import "./styles/views.css";
+import "./styles/reader.css";
+import "./styles/onboarding.css";
+import "./styles/chat.css";
+import "./styles/guide.css";
+import "./styles/discover.css";
+import "./styles/preview.css";
+import "./styles/news.css";
+import "./styles/tagalog.css";
+import "./styles/tour.css";
+
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { App } from "./App";
+import { api, initApi, isTauri } from "./lib/api";
+import { isWindows } from "./lib/platform";
+import { useApp } from "./lib/store";
+
+// sous Windows : boutons de la fenêtre, barres de défilement fines, polices de repli (styles .win)
+if (isWindows) document.documentElement.classList.add("win");
+
+/**
+ * Polices chargées avant le premier affichage : sinon titres et extraits
+ * changent de hauteur à leur arrivée (« swap ») et les cartes de la
+ * bibliothèque sautent. Une seconde et demie au plus, puis on affiche quand même.
+ */
+function fontsReady(): Promise<unknown> {
+  if (!document.fonts?.load) return Promise.resolve();
+  const wanted = ['500 21px "Newsreader Variable"', '400 16px "Literata Variable"', '400 14px "Geist Variable"'];
+  const all = Promise.all(wanted.map((f) => document.fonts.load(f).catch(() => null)));
+  return Promise.race([all, new Promise((r) => setTimeout(r, 1500))]);
+}
+
+Promise.all([initApi(), fontsReady()]).then(() => {
+  // accès de test dans l'aperçu navigateur (jamais dans l'application)
+  if (import.meta.env.DEV && !isTauri) (window as unknown as Record<string, unknown>).__lumen = { api, useApp };
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+});
+
+// Keep startup errors visible, including unavailable browser storage.
+window.addEventListener("unhandledrejection", (event) => {
+  if (document.getElementById("root")?.childElementCount) return;
+  const root=document.getElementById("root");if (!root) return;
+  const p=document.createElement("p");p.textContent="Wikang Tagalog could not start. " + (event.reason?.message ?? String(event.reason));
+  const button=document.createElement("button");button.textContent="Retry";button.onclick=()=>location.reload();root.append(p,button);
+});
