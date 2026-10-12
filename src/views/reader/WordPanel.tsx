@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../components/Icon";
-import { api, errorText, isNoModel } from "../../lib/api";
+import { api, errorText, isNoModel, isTauri } from "../../lib/api";
 import { useOnline } from "../../lib/online";
 import { askAbout } from "../../lib/chat";
 import { t } from "../../lib/i18n";
@@ -369,7 +369,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
 
           <div className="wp-block wp-sense">
             <span className="eyebrow">{sel.words > SENSE_MAX_WORDS ? t("Traduction", "Translation") : t("Dans cette phrase", "In this sentence")}</span>
-            {aiState === "nomodel" ? (
+            {!isTauri ? (online.ready ? "Dictionary on this device · context AI runs online" : "Dictionary on this device · sign in for context AI") : aiState === "nomodel" ? (
               <div className="wp-note" style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
                 {llmDownloading
                   ? t(
@@ -533,7 +533,7 @@ export function WordPanel({ lang, sel, term, onStatus, onTranslation, onSelectPh
       </AnimatePresence>
       <div className="wp-foot">
         <span className={`dot ${online.words ? "online" : "ok"}`} />
-        {aiState === "nomodel"
+        {!isTauri ? (online.ready ? "Dictionary on this device · context AI runs online" : "Dictionary on this device · sign in for context AI") : aiState === "nomodel"
           ? t("Dictionnaire hors ligne", "Offline dictionary")
           : online.words
             ? t(`Traduit en ligne par ${online.provider.name} · la phrase lui est envoyée`, `Translated online by ${online.provider.name} · the sentence is sent to it`)

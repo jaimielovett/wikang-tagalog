@@ -31,3 +31,8 @@ test('article importer blocks internal targets and credentials',async()=>{
  assert.equal(isPublicAddress('93.184.216.34'),true);assert.equal(isPublicAddress('2606:4700:4700::1111'),true);
  assert.throws(()=>articleUrl('file:///etc/passwd'));assert.throws(()=>articleUrl('https://user:password@example.com'));assert.throws(()=>articleUrl('https://example.com:8080'));
 });
+
+test('browser dictionary exports multiple senses as separate readable definitions',async()=>{
+ const {readFile}=await import('node:fs/promises');const {gunzipSync}=await import('node:zlib');const dictionary=JSON.parse(gunzipSync(await readFile('public/tagalog-dictionary.json.gz')).toString('utf8'));
+ assert.ok(dictionary.entries.bahay.length>0);assert.ok(dictionary.entries.umaga.some(e=>e.glosses.includes('morning')));assert.equal(JSON.stringify(dictionary).includes('␞'),false);
+});

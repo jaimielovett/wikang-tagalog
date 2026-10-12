@@ -36,7 +36,7 @@ import { useUser } from "../lib/user";
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 /** Dépôt public du code de Wikang Tagalog (GPL-3.0). */
-const SOURCE_URL = "https://github.com/jaimielovett/lumen";
+const SOURCE_URL = "https://wikang-tagalog.vercel.app/wikang-tagalog-source.zip";
 
 interface Tab {
   id: SettingsTab;

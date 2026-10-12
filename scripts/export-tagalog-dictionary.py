@@ -9,8 +9,8 @@ try:
     for k,word,pos,ipa,gloss,rank in conn.execute('select k,word,pos,ipa,gloss,rank from entries order by rank'):
         rows=entries.setdefault(k,[])
         match=next((r for r in rows if r['word']==word and r['pos']==pos and r['ipa']==ipa),None)
-        if match: match['glosses'].append(gloss)
-        else: rows.append(dict(word=word,pos=pos,ipa=ipa,glosses=[gloss]))
+        if match: match['glosses'].extend(g.rstrip('.') for g in gloss.split('\u241e'))
+        else: rows.append(dict(word=word,pos=pos,ipa=ipa,glosses=[g.rstrip('.') for g in gloss.split('\u241e')]))
     for k,lemma,note in conn.execute('select k,lemma,note from forms'):
         forms.setdefault(k,[]).append(dict(lemma=lemma,note=note))
     Path('public').mkdir(exist_ok=True)

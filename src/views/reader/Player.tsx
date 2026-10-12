@@ -144,7 +144,7 @@ function MakeAudio({ lesson, again, onVoiced }: { lesson: Lesson; again?: boolea
     <button
       className="btn sm soft player-voice"
       onClick={start}
-      title={google ? t("Google lit le tagalog en ligne ; la lanterne suit chaque mot", "Google reads Tagalog online; the lantern follows each word") : t("La voix naturelle lit toute la leçon, calculée sur votre Mac ; la lanterne suit chaque mot", "The natural voice reads the whole lesson, computed on your Mac; the lantern follows every word")}
+      title={!isTauri ? "Create Tagalog audio with the connected natural voice service. Word timing is estimated." : google ? t("Google lit le tagalog en ligne ; la lanterne suit chaque mot", "Google reads Tagalog online; the lantern follows each word") : t("La voix naturelle lit toute la leçon, calculée sur votre Mac ; la lanterne suit chaque mot", "The natural voice reads the whole lesson, computed on your Mac; the lantern follows every word")}
     >
       <Icon name="wave" size={14} /> <span className="voice-label">{t("Créer l'audio", "Create audio")}</span>
     </button>
