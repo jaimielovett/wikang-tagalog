@@ -10,3 +10,6 @@ export async function readSnapshot<T>(key:string):Promise<T|undefined> {
 export async function writeSnapshot(key:string,value:unknown) {
  const db=await open();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction('snapshots','readwrite');tx.objectStore('snapshots').put(value,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error ?? new Error('Could not save your learning data.'));});}finally{db.close();}
 }
+export async function deleteSnapshot(key:string) {
+ const db=await open();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction('snapshots','readwrite');tx.objectStore('snapshots').delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}finally{db.close();}
+}

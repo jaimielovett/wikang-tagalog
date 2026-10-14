@@ -33,7 +33,7 @@ The website starts without external credentials: guest reading, the bundled Taga
 
 6. Restart both apps after changing their build-time connection values. A distributed desktop build embeds only public Supabase configuration; every admin signs in with their own account. No service-role key is required by either app.
 
-Supabase row-level security isolates each account's learning data. Cloud saves compare revisions so two devices cannot silently overwrite one another. A conflict keeps the local copy and stops writes; export it in Settings, then sign in on a clean browser to obtain the cloud copy. Exported guest backups can be restored into a signed-in account. Desktop learning remains local; desktop accounts currently provide catalogue access and admin publication, while web learning syncs across web devices.
+Supabase row-level security isolates each account's learning data. Cloud saves compare revisions so two devices cannot silently overwrite one another. A conflict keeps the local copy and stops writes; export it in Settings, then sign in on a clean browser to obtain the cloud copy. Learning done as a guest joins the account automatically the first time you sign in on that browser; exported guest backups from other browsers can still be restored into a signed-in account. Desktop learning remains local; desktop accounts currently provide catalogue access and admin publication, while web learning syncs across web devices.
 
 ## Branded account email
 

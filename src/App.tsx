@@ -9,6 +9,7 @@ import { Sidebar } from "./components/Sidebar";
 import { WindowControls } from "./components/WindowControls";
 import { Orb, Toasts } from "./components/ui";
 import { api, isTauri } from "./lib/api";
+import { useAccount } from "./lib/web/cloud";
 import { MEDIA_EXT, TEXT_EXT, extOf } from "./lib/importers";
 import { startBackupEvents } from "./lib/backup";
 import { setUiLang, t, type UiLang } from "./lib/i18n";
@@ -79,6 +80,8 @@ export function App() {
   const init = useApp((s) => s.init);
   const view = useApp((s) => s.view);
   const onboarded = useApp((s) => s.settings.onboarded);
+  const signedIn = useAccount((s) => !!s.session);
+  const askName = useApp((s) => !isTauri && signedIn && !(s.settings.user_name ?? "").trim() && s.settings.profile_asked !== "1");
   const replay = useApp((s) => s.replay);
   // langue de l'interface : appliquée avant le rendu des vues (t() la lit au rendu)
   const ui = useApp((s) => s.settings.ui_lang) as UiLang;
@@ -157,6 +160,10 @@ export function App() {
       </>
     );
   }
+
+  // signed in on the web without a name: the guest skipped that step, so ask it now, once
+  if (onboarded && !replay && askName)
+    return <Onboarding nameOnly />;
 
   if (!onboarded || replay)
     return (

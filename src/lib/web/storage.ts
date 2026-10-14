@@ -1,8 +1,10 @@
 import { cloud, useAccount } from './cloud';
-import { readSnapshot,writeSnapshot } from './idb';
+import { deleteSnapshot,readSnapshot,writeSnapshot } from './idb';
+import { hasLearning,mergeGuest } from './merge';
 import type { Db } from './local';
 export const emptyDb = (): Db => ({settings:{lang:'tl',langs:'tl',ui_lang:'en'},lessons:[],terms:{},activity:{},nextId:1,installed:[]});
-export function storageKey() { return `wikang-tagalog:${useAccount.getState().session?.user.id ?? 'guest'}`; }
+const GUEST_KEY = 'wikang-tagalog:guest';
+export function storageKey() { return useAccount.getState().session ? `wikang-tagalog:${useAccount.getState().session!.user.id}` : GUEST_KEY; }
 export interface Snapshot { data: Db; revision: number; dirty: boolean }
 export function privateSnapshot(db: Db): Db {
   // Desktop and browser API keys must never enter a shared database or backup.
@@ -23,6 +25,16 @@ export async function openDb() {
         useAccount.setState({sync:'Sync conflict — export this device’s backup before restoring the cloud copy'});
         // Keep all unsent local work, and refuse to overwrite another device.
       } else if (!snapshot.dirty) snapshot = {data:data.data as Db,revision:data.revision,dirty:false};
+    }
+    // Learning done as a guest joins the account the first time it signs in on this browser.
+    // Only once the account's own copy is known, so the merge never races another device.
+    if (!error) {
+      const guest = await readSnapshot<Snapshot>(GUEST_KEY);
+      if (hasLearning(guest?.data)) {
+        snapshot = {data:mergeGuest(snapshot.data,guest.data),revision:snapshot.revision,dirty:true};
+        await writeSnapshot(key,snapshot);
+        await deleteSnapshot(GUEST_KEY);
+      }
     }
   }
   return {snapshot,key};

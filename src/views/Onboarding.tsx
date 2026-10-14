@@ -36,7 +36,8 @@ function glow(e: React.MouseEvent<HTMLElement>) {
 /** Welcome steps with a dot; the web skips the name step (guests stay anonymous until they sign in). */
 const dots = isTauri ? [0, 1, 2, 3, 4] : [0, 2, 3, 4];
 
-export function Onboarding() {
+/** `nameOnly`: just the name and avatar, for a signed-in account that has none yet (the guest skipped it). */
+export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   const setSetting = useApp((s) => s.setSetting);
   // la langue de l'interface peut changer à tout moment de l'accueil
   const ui = useApp((s) => s.settings.ui_lang);
@@ -46,7 +47,7 @@ export function Onboarding() {
   const openLesson = useApp((s) => s.openLesson);
   const replay = useApp((s) => s.replay);
   const setReplay = useApp((s) => s.setReplay);
-  const [n, setN] = useState(0);
+  const [n, setN] = useState(nameOnly ? 1 : 0);
   // en relecture, les langues déjà choisies restent cochées
   const langs: LangCode[] = ["tl"];
   const [goal, setGoal] = useState(() => Number(useApp.getState().settings.daily_goal) || 10);
@@ -73,6 +74,12 @@ export function Onboarding() {
   const meAvatar = useApp((s) => s.settings.user_avatar ?? "");
   const mePhoto = useApp((s) => s.settings.user_photo ?? "");
   const me = userFrom(meName, meAvatar, mePhoto);
+  /** leaves the name step: on to the goal, or straight into the app when only the name was asked */
+  const nameDone = () => {
+    saveMeName();
+    if (nameOnly) void setSetting("profile_asked", "1");
+    else setN(2);
+  };
   const firstName = useApp((s) => (s.settings.user_name ?? "").trim());
   const [saveCloud, setSaveCloud] = useState(true);
   // nuages du Mac : sans iCloud Drive, la sauvegarde va dans le premier autre (Dropbox, Google Drive…)
@@ -369,9 +376,7 @@ export function Onboarding() {
                   onChange={(e) => setMeName(e.target.value)}
                   onBlur={saveMeName}
                   onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
-                    saveMeName();
-                    setN(2);
+                    if (e.key === "Enter") nameDone();
                   }}
                   aria-label={t("Votre prénom ou un pseudo", "Your first name or a nickname")}
                   spellCheck={false}
@@ -381,16 +386,12 @@ export function Onboarding() {
                 <ObAvatarPicker name={me.name} />
               </div>
               <div className="ob-actions">
-                <button className="ob-link" onClick={() => setN(0)}>
-                  {t("Retour", "Back")}
-                </button>
-                <button
-                  className="ob-cta"
-                  onClick={() => {
-                    saveMeName();
-                    setN(2);
-                  }}
-                >
+                {!nameOnly && (
+                  <button className="ob-link" onClick={() => setN(0)}>
+                    {t("Retour", "Back")}
+                  </button>
+                )}
+                <button className="ob-cta" onClick={nameDone}>
                   {meName.trim() || !me.empty ? t("Continuer", "Continue") : t("Plus tard", "Later")} <Icon name="forward" size={16} stroke={2} />
                 </button>
               </div>
@@ -542,7 +543,7 @@ export function Onboarding() {
 
           {n === 5 && !isTauri && (
             <motion.div key="5web" className="ob-step form ob-account" {...stepAnim}>
-              <Account/>
+              <Account embedded/>
               <button className="ob-link" onClick={() => setN(0)}>Back to the welcome</button>
             </motion.div>
           )}
@@ -639,7 +640,7 @@ export function Onboarding() {
         </AnimatePresence>
       </div>
 
-      <div className="ob-dots" role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${dots.indexOf(n) + 1} of ${dots.length}`}>
+      <div className="ob-dots" hidden={nameOnly} role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${dots.indexOf(n) + 1} of ${dots.length}`}>
         {/* la restauration (étape 5) n'a pas de point : elle remplace les étapes 1 à 4 */}
         {dots.map((i) => (
           <i key={i} className={i === n ? "on" : ""} />

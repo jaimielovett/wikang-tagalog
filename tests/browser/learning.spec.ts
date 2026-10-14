@@ -68,7 +68,7 @@ test('welcome offers Supabase recovery and can be replayed without losing learni
  await page.goto('/');
  await page.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
  await expect(page.getByRole('textbox',{name:'Email',exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:'Create an account',exact:true})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Create an account',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Back to the welcome',exact:true}).click();
  await completeWelcome(page);
  await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
