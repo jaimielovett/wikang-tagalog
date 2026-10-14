@@ -14,6 +14,7 @@ import type { BackupInfo, BackupRestored, LangCode } from "../lib/types";
 import { HUES, NAME_MAX, avatarString, avatarStyles, choosePhoto, newSeed, userFrom, type AvatarStyle } from "../lib/user";
 import { useDraft } from "./ProfileSection";
 import { Account } from "./Account";
+import { useAccount } from "../lib/web/cloud";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 // marge au-dessus de la scène pour que les rayons de l'astre ne soient pas coupés
@@ -33,8 +34,6 @@ function glow(e: React.MouseEvent<HTMLElement>) {
   el.style.setProperty("--my", `${e.clientY - r.top}px`);
 }
 
-/** Welcome steps with a dot; the web skips the name step (guests stay anonymous until they sign in). */
-const dots = isTauri ? [0, 1, 2, 3, 4] : [0, 2, 3, 4];
 
 /** `nameOnly`: just the name and avatar, for a signed-in account that has none yet (the guest skipped it). */
 export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
@@ -48,6 +47,13 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   const replay = useApp((s) => s.replay);
   const setReplay = useApp((s) => s.setReplay);
   const [n, setN] = useState(nameOnly ? 1 : 0);
+  // web: guests stay anonymous until they sign in, so their welcome skips the name step
+  const signedIn = useAccount((s) => !!s.session);
+  const named = isTauri || signedIn;
+  const dots = named ? [0, 1, 2, 3, 4] : [0, 2, 3, 4];
+  // the web's first screen offers an account (to create or sign in to) or a guest start
+  const choose = !isTauri && !signedIn && !replay;
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   // en relecture, les langues déjà choisies restent cochées
   const langs: LangCode[] = ["tl"];
   const [goal, setGoal] = useState(() => Number(useApp.getState().settings.daily_goal) || 10);
@@ -77,8 +83,8 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   /** leaves the name step: on to the goal, or straight into the app when only the name was asked */
   const nameDone = () => {
     saveMeName();
-    if (nameOnly) void setSetting("profile_asked", "1");
-    else setN(2);
+    void setSetting("profile_asked", "1");
+    if (!nameOnly) setN(2);
   };
   const firstName = useApp((s) => (s.settings.user_name ?? "").trim());
   const [saveCloud, setSaveCloud] = useState(true);
@@ -167,6 +173,10 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
     setN(5);
     if (isTauri) void search();
   };
+  const openAuth = (mode: "signin" | "signup") => {
+    setAuthMode(mode);
+    openRestore();
+  };
 
   const chooseFolder = async () => {
     const dir = await pickBackupFolder();
@@ -245,7 +255,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && n === 0) setN(1);
+      if (e.key === "Enter" && n === 0 && !choose) setN(named ? 1 : 2);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -337,14 +347,31 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
                 </motion.span>
               </motion.p>
               <motion.div className="ob-welcome-actions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.8, duration: 0.8, ease: EASE }}>
-                {/* on the web you start as a guest: your name comes with an account */}
-                <button className="ob-cta" onClick={() => setN(isTauri ? 1 : 2)}>
-                  {t("Commencer", "Get started")} <Icon name="forward" size={16} stroke={2} />
-                </button>
-                {!replay && (
-                  <button className="ob-restore-link" onClick={openRestore}>
-                    <Icon name="cloud" size={15} /> {t("J'ai déjà utilisé Wikang Tagalog : retrouver ma progression", "I've used Wikang Tagalog before: get my progress back")}
-                  </button>
+                {choose ? (
+                  <>
+                    <div className="ob-auth-choices">
+                      <button className="ob-cta" onClick={() => openAuth("signup")}>
+                        {t("Créer un compte", "Create an account")} <Icon name="forward" size={16} stroke={2} />
+                      </button>
+                      <button className="ob-cta ob-cta-quiet" onClick={() => openAuth("signin")}>
+                        {t("Se connecter", "Sign in")}
+                      </button>
+                    </div>
+                    <button className="ob-restore-link" onClick={() => setN(2)}>
+                      {t("Continuer en invité : votre apprentissage reste dans ce navigateur", "Continue as a guest: your learning stays in this browser")}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="ob-cta" onClick={() => setN(named ? 1 : 2)}>
+                      {t("Commencer", "Get started")} <Icon name="forward" size={16} stroke={2} />
+                    </button>
+                    {isTauri && !replay && (
+                      <button className="ob-restore-link" onClick={openRestore}>
+                        <Icon name="cloud" size={15} /> {t("J'ai déjà utilisé Wikang Tagalog : retrouver ma progression", "I've used Wikang Tagalog before: get my progress back")}
+                      </button>
+                    )}
+                  </>
                 )}
               </motion.div>
             </motion.div>
@@ -405,7 +432,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
               <div className="ob-grid profiles" role="group" aria-label="Daily learning goal">
                 {[5, 10, 20].map(minutes => <button key={minutes} className={`ob-card ${goal === minutes ? "on" : ""}`} aria-pressed={goal === minutes} onClick={() => setGoal(minutes)}><strong className="pname">{minutes} minutes</strong><span className="pdesc">{minutes === 5 ? "A small daily habit" : minutes === 10 ? "Time for a short story" : "Room to read and listen"}</span></button>)}
               </div>
-              <div className="ob-actions"><button className="ob-link" onClick={() => setN(isTauri ? 1 : 0)}>Back</button><button className="ob-cta" onClick={() => setN(3)}>Continue <Icon name="forward" size={16}/></button></div>
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(named ? 1 : 0)}>Back</button><button className="ob-cta" onClick={() => setN(3)}>Continue <Icon name="forward" size={16}/></button></div>
             </motion.div>
           )}
 
@@ -543,8 +570,9 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
 
           {n === 5 && !isTauri && (
             <motion.div key="5web" className="ob-step form ob-account" {...stepAnim}>
-              <Account embedded/>
-              <button className="ob-link" onClick={() => setN(0)}>Back to the welcome</button>
+              {/* above the panel: always in view, however tall the form */}
+              <button className="ob-link ob-back-top" onClick={() => setN(0)}><Icon name="left" size={15}/> Back</button>
+              <Account embedded mode={authMode}/>
             </motion.div>
           )}
 

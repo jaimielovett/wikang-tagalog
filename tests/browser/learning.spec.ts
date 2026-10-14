@@ -66,10 +66,17 @@ test('web guidance explains online services without desktop privacy or installat
 
 test('welcome offers Supabase recovery and can be replayed without losing learning', async ({page}) => {
  await page.goto('/');
- await page.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
+ // the first screen: create an account, sign in, or continue as a guest
+ await expect(page.getByRole('button',{name:/^Continue as a guest/})).toBeVisible();
+ await page.getByRole('button',{name:'Create an account',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Create your account'})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Create an account',exact:true})).toHaveAttribute('aria-checked','true');
+ await page.getByRole('button',{name:'Back',exact:true}).click();
+ await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
  await expect(page.getByRole('textbox',{name:'Email',exact:true})).toBeVisible();
  await expect(page.getByRole('radio',{name:'Create an account',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Back to the welcome',exact:true}).click();
+ await page.getByRole('button',{name:'Back',exact:true}).click();
  await completeWelcome(page);
  await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
  await page.getByRole('button',{name:'Settings',exact:true}).click();

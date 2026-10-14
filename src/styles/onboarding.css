@@ -451,6 +451,21 @@
   flex-direction: column;
   align-items: center;
 }
+/* web: create an account, or sign in, side by side; the guest start sits beneath */
+.ob-auth-choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.ob-cta-quiet {
+  background: var(--ob-glass);
+  color: var(--ob-text);
+  box-shadow: none;
+}
+.ob-cta-quiet::after {
+  display: none;
+}
 .ob-restore-link {
   margin-top: 16px;
   display: inline-flex;
@@ -966,7 +981,7 @@
 .ob-account { text-align: left; }
 .ob-account .view-scroll { overflow: visible; width: min(720px, 100%); }
 .ob-account .account-page { padding: 0; }
-.ob-account .ob-link { margin-top: 24px; }
+.ob-account .ob-back-top { margin: 0 0 6px; height: 36px; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; }
 @media (max-width: 600px) {
   .ob-stage { min-height: 620px; }
   .ob-step { padding-left: 20px; padding-right: 20px; }

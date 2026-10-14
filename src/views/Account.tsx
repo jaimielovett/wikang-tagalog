@@ -10,8 +10,8 @@ import { Icon } from '../components/Icon';
 import { Orb, Segmented } from '../components/ui';
 import { Avatar } from '../components/Avatar';
 import { DiscoverSourcesAdmin } from './DiscoverSourcesAdmin';
-export function Account({embedded=false}:{embedded?:boolean}) {
- const account=useAccount();const [mode,setMode]=useState<'signin'|'signup'>('signin');const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [message,setMessage]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [drafts,setDrafts]=useState<PublishedLesson[]>([]);const [lessons,setLessons]=useState<LessonSummary[]>([]);const [picked,setPicked]=useState('');const [stage,setStage]=useState('');const [rights,setRights]=useState<Record<string,boolean>>({});
+export function Account({embedded=false,mode:startMode='signin'}:{embedded?:boolean;mode?:'signin'|'signup'}) {
+ const account=useAccount();const [mode,setMode]=useState<'signin'|'signup'>(startMode);const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [message,setMessage]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [drafts,setDrafts]=useState<PublishedLesson[]>([]);const [lessons,setLessons]=useState<LessonSummary[]>([]);const [picked,setPicked]=useState('');const [stage,setStage]=useState('');const [rights,setRights]=useState<Record<string,boolean>>({});
  const load=async()=>{if(!account.admin)return;try{setDrafts(await queue());setLessons(await api().lessonsList('tl'));}catch(e){setError(errorText(e));}};
  useEffect(()=>{void load();},[account.admin]);
  const run=async(fn:()=>Promise<void>)=>{setBusy(true);setError('');setMessage('');try{await fn();}catch(e){setError(errorText(e));}finally{setBusy(false);setStage('');}};
@@ -20,8 +20,8 @@ export function Account({embedded=false}:{embedded?:boolean}) {
  const preview=(row:PublishedLesson)=>void run(async()=>{const id=await adoptPublished(api(),row.id);useApp.getState().bumpLibrary();useApp.getState().openLesson(id);});
   const auth=<section className="auth-panel">
    <Orb size={40}/>
-   <h1 className="display">{embedded?'Welcome back':'Take your Tagalog with you'}</h1>
-   <p className="auth-lead">{isTauri?'Sign in to reach the shared catalogue and admin publishing. Your desktop library stays on this computer.':'Sign in to keep your private learning in sync across browsers and devices.'}</p>
+   <h1 className="display">{!embedded?'Take your Tagalog with you':mode==='signup'?'Create your account':'Welcome back'}</h1>
+   <p className="auth-lead">{isTauri?'Sign in to reach the shared catalogue and admin publishing. Your desktop library stays on this computer.':mode==='signup'?'An account keeps your private learning in sync across browsers and devices.':'Sign in to keep your private learning in sync across browsers and devices.'}</p>
    {!cloud?<p className="auth-note"><Icon name="cloud" size={15}/>Accounts aren't connected yet. You can read, import text and build your vocabulary on this device in the meantime.</p>:<>
     <form className="auth-form" onSubmit={e=>{e.preventDefault();signin(mode==='signup');}}>
      <Segmented id="auth-mode" label="Account" value={mode} onChange={v=>{setMode(v);setError('');setMessage('');}} options={[{value:'signin',label:'Sign in'},{value:'signup',label:'Create an account'}]}/>
@@ -31,7 +31,7 @@ export function Account({embedded=false}:{embedded?:boolean}) {
      {message&&<p className="auth-message" role="status">{message}</p>}
      <button className="btn primary glow lg auth-submit" disabled={busy}>{busy?'One moment…':mode==='signup'?'Create my account':'Sign in'}</button>
     </form>
-    <p className="auth-note"><Icon name="cloud" size={15}/>As a guest, your learning stays in this browser. To bring it into your account, export a backup in Settings first.</p>
+    <p className="auth-note"><Icon name="cloud" size={15}/>Anything you learnt as a guest in this browser joins your account when you sign in.</p>
    </>}
   </section>;
  if(embedded)return auth;

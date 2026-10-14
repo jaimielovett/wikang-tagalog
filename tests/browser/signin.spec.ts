@@ -45,7 +45,7 @@ test('two devices on one account stay in step, item by item',async({browser})=>{
  // a second browser signs in from the welcome and goes straight to its learning
  const phone=await (await browser.newContext()).newPage();await account.attach(phone);
  await phone.goto('/');
- await phone.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
+ await phone.getByRole('button',{name:'Sign in',exact:true}).click();
  await signIn(phone);
  await expect(phone.getByRole('button',{name:'Library',exact:true})).toBeVisible({timeout:15000});
  await expect(phone.getByRole('button',{name:'Get started',exact:true})).toHaveCount(0);
@@ -70,7 +70,7 @@ test('an account saved the old way becomes records the first time it signs in',a
  account.setLegacy({settings:{lang:'tl',langs:'tl',ui_lang:'en',onboarded:'1',user_name:'Jamie',daily_goal:'20'},lessons:[{id:1,lang:'tl',title:'Lumang aralin',text:'May bahay sa tabi ng dagat.',collection:'',kind:'text',source:'',media_path:null,timings:null,video_path:null,hue:40,word_count:6,page:0,completed:false,position:0,anchor:0,duration:0,cover_path:null,timing_v:0,created_at:1}],terms:{'tl|dagat':{term:'dagat',status:4,translation:'sea',note:'',lemma:'',context:'',updated_at:1}},activity:{},nextId:2,installed:[]});
  await account.attach(page);
  await page.goto('/');
- await page.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
+ await page.getByRole('button',{name:'Sign in',exact:true}).click();
  await signIn(page);
  await expect(page.getByRole('button',{name:'Jamie',exact:true})).toBeVisible({timeout:15000});
  expect(await known(page)).toContain('dagat');
