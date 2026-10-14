@@ -17,6 +17,15 @@ export async function authenticate(req,fetcher=fetch) {
  if(!quota.ok) {const result=await quota.json().catch(()=>({}));throw Object.assign(new Error(result.message?.includes('daily_limit_reached')?'Your daily online-service limit has been reached.':'Online services are temporarily unavailable.'),{status:429});}
  return user;
 }
+// The desktop app's own page (macOS and Windows) may call these endpoints; requests carry a bearer token, never cookies.
+const DESKTOP_ORIGINS=new Set(['tauri://localhost','http://tauri.localhost','https://tauri.localhost']);
+/** CORS for the desktop app. Returns true when the request was a preflight, already answered. */
+export function allowDesktop(req,res) {
+ const origin=req.headers.origin;
+ if(origin&&DESKTOP_ORIGINS.has(origin)) {res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Max-Age','86400');}
+ if(req.method==='OPTIONS') {res.status(204).end();return true;}
+ return false;
+}
 export function fail(res,error) {res.status(error.status||500).json({error:error.status?error.message:'The online service could not complete this request. Please retry.'});}
 export function inputText(value,max=12000) {if(typeof value!=='string'||!value.trim()||value.length>max)throw Object.assign(new Error('Please enter shorter, non-empty text.'),{status:400});return value;}
 export function buildMessages(task,input,ui) {

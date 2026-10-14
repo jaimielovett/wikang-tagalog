@@ -21,6 +21,7 @@ mod proc;
 mod publishing;
 mod search;
 mod state;
+mod sync;
 mod text;
 mod tools;
 mod user;
@@ -88,6 +89,8 @@ pub fn run() {
             commands::lesson_open,
             commands::lesson_create,
             commands::lesson_update,
+            commands::sync_export,
+            commands::sync_apply,
             commands::lesson_delete,
             commands::lessons_delete,
             commands::lesson_set_cover,

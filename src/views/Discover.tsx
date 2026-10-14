@@ -18,6 +18,7 @@ import type { DiscoverItem, LangCode } from "../lib/types";
 import { JobBadge, SearchBar, SearchResults, seedOf } from "./discover/Search";
 import { SourcesButton, WebItemSheet, openOnWeb } from "./discover/WebDiscover";
 import { PUBLISHED_SOURCE } from "../lib/web/discover";
+import { cloud } from "../lib/web/cloud";
 
 type Kind = "all" | "video" | "audio" | "text";
 
@@ -45,7 +46,7 @@ function sourceLabel(it: DiscoverItem): string {
 /** Ce que devient l'élément une fois choisi, dit simplement. */
 function whatHappens(it: DiscoverItem): string {
   if (it.lesson_id) return t("Déjà dans votre bibliothèque : reprenez là où vous en étiez.", "Already in your library: pick up where you left off.");
-  if (!isTauri && it.source === PUBLISHED_SOURCE) return t("Une leçon préparée et vérifiée : ouvrez-la et commencez tout de suite.", "A prepared, reviewed lesson: open it and start right away.");
+  if (it.source === PUBLISHED_SOURCE) return t("Une leçon préparée et vérifiée : ouvrez-la et commencez tout de suite.", "A prepared, reviewed lesson: open it and start right away.");
   if (!isTauri && it.kind !== "text") return t("Regardez ou écoutez ici ; l'application de bureau en fait une leçon, transcrite mot à mot.", "Watch or listen here; the desktop app turns it into a lesson, transcribed word by word.");
   if (it.kind === "text") return t("L'article devient une leçon de lecture. Trop riche ? Le bouton « Simplifier » le réécrit à votre niveau.", "The article becomes a reading lesson. Too rich? The “Simplify” button rewrites it at your level.");
   if (it.page_text) return t("Le son et le texte publié par la source : la lanterne suit la voix, mot à mot.", "The sound and the text published by the source: the lantern follows the voice, word by word.");
@@ -59,7 +60,8 @@ function useOpenItem() {
   const lang = useApp((s) => s.lang)();
   return (it: DiscoverItem) => {
     if (it.lesson_id) openLesson(it.lesson_id);
-    else if (!isTauri) openOnWeb(it, lang);
+    // a published lesson is ready everywhere; the desktop previews the rest before making a lesson of it
+    else if (!isTauri || it.source === PUBLISHED_SOURCE) openOnWeb(it, lang);
     else open(fromItem(it));
   };
 }
@@ -68,7 +70,7 @@ function useOpenItem() {
 function useMakeLesson() {
   const enqueue = useImports((s) => s.enqueue);
   return (it: DiscoverItem, lang: LangCode) => {
-    if (isTauri) enqueue(jobOf(fromItem(it), lang));
+    if (isTauri && it.source !== PUBLISHED_SOURCE) enqueue(jobOf(fromItem(it), lang));
     else openOnWeb(it, lang, true);
   };
 }
@@ -466,7 +468,7 @@ export function Discover({ lang }: { lang: LangCode }) {
                   ? t(`Mis à jour ${formatWhen(feed.refreshed_at)}`, `Updated ${formatWhen(feed.refreshed_at)}`)
                   : t("Pas encore mis à jour", "Not updated yet")}
             </span>
-            {!isTauri && <SourcesButton />}
+            {(!isTauri || cloud) && <SourcesButton />}
             <button className="btn soft sm" disabled={working} onClick={() => void refresh(lang)}>
               <span className={`disc-refresh-icon ${working ? "turning" : ""}`}>
                 <Icon name="refresh" size={14} />

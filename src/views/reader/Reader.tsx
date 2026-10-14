@@ -12,6 +12,7 @@ import { fitPages, pageOfToken } from "../../lib/pagefit";
 import { isWindows } from "../../lib/platform";
 import { panelMode, readerLook, roomForSidePanel } from "../../lib/reading";
 import { paginate, sentenceBounds, type PageRange } from "../../lib/tokenize";
+import { remoteMedia } from "../../lib/remote-media";
 import type { LessonSummary, OpenedLesson, Term, Token } from "../../lib/types";
 import { Player, type PlayerHandle, type PlaybackState } from "./Player";
 import { useChat } from "../../lib/chat";
@@ -1217,7 +1218,7 @@ export function Reader() {
 
   const li = langInfo(lang);
   const isLast = page === pages.length - 1;
-  const isVideo = lesson.kind === "video" || !!lesson.video_path;
+  const isVideo = lesson.kind === "video" || !!lesson.video_path || remoteMedia(lesson)?.kind === "youtube";
   const sideHidden = settings.reader_sidebar === "0";
   // en arabe, la page suivante est à gauche
   const flip = li.rtl ? -1 : 1;

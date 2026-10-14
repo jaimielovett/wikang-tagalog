@@ -82,7 +82,7 @@ export function App() {
   const view = useApp((s) => s.view);
   const onboarded = useApp((s) => s.settings.onboarded);
   const signedIn = useAccount((s) => !!s.session);
-  const askName = useApp((s) => !isTauri && signedIn && !(s.settings.user_name ?? "").trim() && s.settings.profile_asked !== "1");
+  const askName = useApp((s) => signedIn && !(s.settings.user_name ?? "").trim() && s.settings.profile_asked !== "1");
   const replay = useApp((s) => s.replay);
   // langue de l'interface : appliquée avant le rendu des vues (t() la lit au rendu)
   const ui = useApp((s) => s.settings.ui_lang) as UiLang;

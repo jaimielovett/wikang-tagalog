@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseBody,buildMessages,authenticate,inputText} from '../server/services.mjs';
+import {parseBody,buildMessages,authenticate,inputText,allowDesktop} from '../server/services.mjs';
 import ai from '../api/ai.mjs';
 import voice from '../api/voice.mjs';
 const response=()=>({code:0,value:null,headers:{},status(n){this.code=n;return this;},json(v){this.value=v;return this;},setHeader(k,v){this.headers[k]=v;}});
@@ -35,4 +35,11 @@ test('article importer blocks internal targets and credentials',async()=>{
 test('browser dictionary exports multiple senses as separate readable definitions',async()=>{
  const {readFile}=await import('node:fs/promises');const {gunzipSync}=await import('node:zlib');const dictionary=JSON.parse(gunzipSync(await readFile('public/tagalog-dictionary.json.gz')).toString('utf8'));
  assert.ok(dictionary.entries.bahay.length>0);assert.ok(dictionary.entries.umaga.some(e=>e.glosses.includes('morning')));assert.equal(JSON.stringify(dictionary).includes('␞'),false);
+});
+
+test('only the desktop app\'s own page gets CORS, and preflights are answered',()=>{
+ const res=()=>{const r={headers:{},code:0,setHeader(k,v){r.headers[k]=v;},status(c){r.code=c;return r;},end(){return r;}};return r;};
+ for(const origin of ['tauri://localhost','http://tauri.localhost']){const r=res();assert.equal(allowDesktop({method:'OPTIONS',headers:{origin}},r),true);assert.equal(r.code,204);assert.equal(r.headers['Access-Control-Allow-Origin'],origin);}
+ const other=res();assert.equal(allowDesktop({method:'POST',headers:{origin:'https://evil.example'}},other),false);assert.equal(other.headers['Access-Control-Allow-Origin'],undefined);
+ const plain=res();assert.equal(allowDesktop({method:'POST',headers:{}},plain),false);
 });

@@ -1,6 +1,7 @@
 // Browser learning data uses the same rules as the desktop SQLite backend.
 import type { Api, TermUpdate } from "../api";
 import { t } from "../i18n";
+import { remoteMedia } from "../remote-media";
 import { normalize, tokenize } from "../tokenize";
 import type { ChatMessage, ChatSummary, DayStat, GoalReached, Lesson, LessonSummary, NewLesson, Playlist, Span, Stats, Term } from "../types";
 export interface Db {
@@ -107,7 +108,7 @@ export function createLocalApi(db: Db, commit: () => Promise<void>) {
       word_count: l.word_count,
       page: l.page,
       completed: l.completed,
-      has_media: !!l.media_path,
+      has_media: !!l.media_path || !!remoteMedia(l),
       created_at: (l as Lesson & { created_at?: number }).created_at ?? 0,
       opened_at: (l as Lesson & { opened_at?: number }).opened_at ?? null,
       new_words: uniq.size,
@@ -117,7 +118,7 @@ export function createLocalApi(db: Db, commit: () => Promise<void>) {
       excerpt: l.text.slice(0, 220).replace(/\n/g, " "),
       position: l.position ?? 0,
       // comme lessons_list : durée lue dans le fichier, à défaut la fin du dernier mot minuté
-      duration: l.duration || (l.media_path ? lastWordEnd(l.timings) : 0),
+      duration: l.duration || (l.media_path || remoteMedia(l) ? lastWordEnd(l.timings) : 0),
       cover_path: l.cover_path ?? null,
     };
   };

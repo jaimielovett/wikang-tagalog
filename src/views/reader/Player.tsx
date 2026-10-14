@@ -8,6 +8,7 @@ import { t } from "../../lib/i18n";
 import { useAccount, cloud } from "../../lib/web/cloud";
 import { stopPronunciation } from "../../lib/pronounce";
 import { playbackRates } from "../../lib/reading";
+import { remoteMedia, YouTubeMedia } from "../../lib/remote-media";
 import { formatDuration, useApp } from "../../lib/store";
 import { RUN_ON_WORDS, longestRun, type PageRange } from "../../lib/tokenize";
 import { loadVoices, speak, ttsAvailable, voicesFor, type SpeakHandle } from "../../lib/tts";
@@ -175,15 +176,23 @@ export function lastLE(n: number, get: (i: number) => number, x: number): number
 export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, tokens, pages, page, onPage, onCursor, videoHost, onState, onResynced, onVoiced, autoplay, onFinished }, ref) {
   const settings = useApp((s) => s.settings);
   const setSetting = useApp((s) => s.setSetting);
-  const hasMedia = !!lesson.media_path;
-  const videoPath = lesson.video_path;
+  // lesson made on another device: its video plays from YouTube, its podcast from the episode's address
+  const mediaUrl = (lesson as Lesson & { media_url?: string | null }).media_url;
+  const remote = useMemo(() => remoteMedia({ media_path: lesson.media_path, source: lesson.source, media_url: mediaUrl }), [lesson.media_path, lesson.source, mediaUrl]);
+  const youtube = remote?.kind === "youtube" ? remote.id : null;
+  const audioSrc = lesson.media_path ? api().mediaUrl(lesson.media_path) : remote?.kind === "audio" ? remote.url : null;
+  const hasMedia = !!lesson.media_path || !!remote;
+  const videoPath = youtube ? null : lesson.video_path;
   // une seule source (vidéo locale avec son) ou deux (image + son téléchargés séparément)
   const single = !!videoPath && videoPath === lesson.media_path;
   const dual = !!videoPath && !single;
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const master = (): HTMLMediaElement | null => (single ? videoRef.current : audioRef.current);
+  const ytRef = useRef<YouTubeMedia | null>(null);
+  const [ytHost, setYtHost] = useState<HTMLDivElement | null>(null);
+  const master = (): Pick<HTMLMediaElement, "currentTime" | "duration" | "paused" | "playbackRate" | "play" | "pause"> | null =>
+    youtube ? ytRef.current : single ? videoRef.current : audioRef.current;
 
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -244,7 +253,7 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
   const [punctTried, setPunctTried] = useState(false);
   const runOn = useMemo(() => hasMedia && longestRun(tokens) > RUN_ON_WORDS * 2, [hasMedia, tokens]);
   const punctuate = runOn && !punctTried;
-  const canResync = isTauri && hasMedia && (!(lesson.timing_v >= 2) || punctuate);
+  const canResync = isTauri && !!lesson.media_path && (!(lesson.timing_v >= 2) || punctuate);
   const recaler = async () => {
     setResync(0);
     try {
@@ -317,7 +326,7 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
     if (!hasMedia || !playing) return;
     let raf = 0;
     const tick = () => {
-      const el = single ? videoRef.current : audioRef.current;
+      const el = master();
       if (el) {
         const t = el.currentTime;
         setTime(t);
@@ -349,7 +358,8 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [hasMedia, playing, timing, setCursor, single, dual, rate, remember]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMedia, playing, timing, setCursor, single, dual, rate, remember, youtube]);
 
   // temps d'écoute
   useEffect(() => {
@@ -651,6 +661,30 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
     },
     onTimeUpdate: (e: React.SyntheticEvent<HTMLMediaElement>) => !playing && setTime(e.currentTarget.currentTime),
   };
+  const eventsRef = useRef(masterEvents);
+  eventsRef.current = masterEvents;
+
+  // YouTube's player, driven like the media elements above
+  useEffect(() => {
+    if (!youtube || !ytHost) return;
+    const m = new YouTubeMedia(ytHost, youtube, savedDuration.current);
+    ytRef.current = m;
+    const as = (f: (e: React.SyntheticEvent<HTMLMediaElement>) => void) => () => f({ currentTarget: m } as unknown as React.SyntheticEvent<HTMLMediaElement>);
+    const on: [string, () => void][] = [
+      ["play", () => eventsRef.current.onPlay()],
+      ["pause", as((e) => eventsRef.current.onPause(e))],
+      ["ended", () => eventsRef.current.onEnded()],
+      ["loadedmetadata", as((e) => eventsRef.current.onLoadedMetadata(e))],
+      ["error", () => useApp.getState().toast("This video can't be played from YouTube here", "error")],
+    ];
+    for (const [k, f] of on) m.addEventListener(k, f);
+    return () => {
+      for (const [k, f] of on) m.removeEventListener(k, f);
+      m.destroy();
+      ytRef.current = null;
+    };
+  }, [youtube, ytHost]);
+  const ytFrame = youtube ? <div ref={setYtHost} className="yt-host" /> : null;
 
   const video = videoPath ? (
     <video
@@ -668,8 +702,9 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
 
   return (
     <>
-      {hasMedia && !single && <audio ref={audioRef} src={api().mediaUrl(lesson.media_path!)} preload="auto" {...masterEvents} />}
+      {audioSrc && !single && <audio ref={audioRef} src={audioSrc} preload="auto" {...masterEvents} />}
       {video && videoHost ? createPortal(video, videoHost) : video && <div style={{ display: "none" }}>{video}</div>}
+      {ytFrame && (videoHost ? createPortal(ytFrame, videoHost) : <div className="yt-offstage">{ytFrame}</div>)}
       <div className={`player ${canResync ? "has-resync" : ""}`} data-tour="player">
         <button className={`play-btn ${playing ? "playing" : ""}`} onClick={toggle} aria-label={playing ? t("Pause", "Pause") : t("Lecture", "Play")} disabled={!hasMedia && !ttsAvailable()}>
           <Icon name={playing ? "pause" : "play"} size={18} />

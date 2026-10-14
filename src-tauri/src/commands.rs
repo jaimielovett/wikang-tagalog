@@ -181,6 +181,18 @@ pub async fn lesson_update(state: State<'_, AppState>, id: i64, patch: LessonPat
     db::lesson_update(&state.db.lock(), id, &patch).map_err(err)
 }
 
+/// Everything that syncs with the learner's account, in the web's record shapes (src/lib/desktop-sync.ts).
+#[tauri::command]
+pub async fn sync_export(state: State<'_, AppState>) -> R<serde_json::Value> {
+    crate::sync::export(&state.db.lock()).map_err(err)
+}
+
+/// Applies the account's changes; returns the ids given to lessons, playlists and chats new to this computer.
+#[tauri::command]
+pub async fn sync_apply(state: State<'_, AppState>, changes: Vec<crate::sync::Change>) -> R<Vec<crate::sync::Created>> {
+    crate::sync::apply(&mut state.db.lock(), &changes).map_err(err)
+}
+
 #[tauri::command]
 pub async fn lesson_delete(state: State<'_, AppState>, id: i64) -> R<()> {
     lessons_delete(state, vec![id]).await
@@ -1233,6 +1245,8 @@ pub async fn import_link(
     let conn = state.db.lock();
     let id = db::lesson_create(&conn, &lesson).map_err(err)?;
     db::lesson_set_timings(&conn, id, &timings, db::TIMING_PRECISE).map_err(err)?;
+    // the address the web can play this lesson from once it syncs (YouTube page or the file itself)
+    conn.execute("UPDATE lessons SET remote_media=?1 WHERE id=?2", rusqlite::params![item.url, id]).map_err(err)?;
     if let Some(c) = cover {
         db::lesson_set_cover(&conn, id, Some(&c.display().to_string())).map_err(err)?;
     }

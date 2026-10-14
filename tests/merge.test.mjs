@@ -29,17 +29,20 @@ test('an existing account keeps its lessons and settings, gains the guest\'s, an
   terms:{'tl|bahay':term(4,99)},activity:{'2026-10-14|tl':day(40,30)},playlists:[{id:1,lang:'tl',name:'Guest list',lessons:[1,2],current:2,created_at:0}],
   chats:[{id:1,lang:'tl',title:'',lesson_id:2,created_at:0,updated_at:0,messages:[]}]});
  const merged=mergeGuest(account,guest);
- assert.deepEqual(merged.lessons.map(l=>[l.id,l.title]),[[1,'Ang parola sa isla'],[2,'Mine'],[3,'Guest story']]);
- assert.equal(merged.nextId,4);
+ assert.deepEqual(merged.lessons.map(l=>l.title),['Ang parola sa isla','Mine','Guest story']);
+ assert.deepEqual(merged.lessons.slice(0,2).map(l=>l.id),[1,2],'the account keeps its lessons and ids');
+ const guestStory=merged.lessons[2].id;
+ assert.ok(guestStory>Date.UTC(2026,0)*1000,'a guest lesson gets an id from the clock');
+ assert.ok(merged.nextId>guestStory);
  assert.equal(merged.settings.daily_goal,'10');
- assert.equal(merged.settings.catalogue_abc,'3');
- assert.equal(merged.settings.published_3,'abc');
+ assert.equal(merged.settings.catalogue_abc,String(guestStory));
+ assert.equal(merged.settings[`published_${guestStory}`],'abc');
  assert.equal(merged.settings.published_2,undefined);
  assert.equal(merged.terms['tl|bahay'].status,4);
  assert.equal(merged.activity['2026-10-14|tl'].words_read,140);
  assert.equal(merged.activity['2026-10-14|tl'].learn_secs,90);
- assert.deepEqual(merged.playlists[0].lessons,[1,3]);
- assert.equal(merged.playlists[0].current,3);
- assert.equal(merged.chats[0].lesson_id,3);
+ assert.deepEqual(merged.playlists[0].lessons,[1,guestStory]);
+ assert.equal(merged.playlists[0].current,guestStory);
+ assert.equal(merged.chats[0].lesson_id,guestStory);
  assert.equal(account.lessons.length,2,'the account input is untouched');
 });

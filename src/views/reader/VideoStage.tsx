@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../../components/Icon";
 import { api, errorText, isTauri } from "../../lib/api";
+import { remoteMedia } from "../../lib/remote-media";
 import { useApp } from "../../lib/store";
 import { sentenceBounds } from "../../lib/tokenize";
 import type { Lesson, Term, Token } from "../../lib/types";
@@ -81,7 +82,9 @@ export function VideoStage({ lesson, tokens, terms, cursor, playing, onHost, onW
   // un format que ce moteur ne lit pas) : on propose de la télécharger à nouveau
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [lesson.video_path]);
-  const hasVideo = !!lesson.video_path && !broken;
+  // made on another device from YouTube: the player shows YouTube's picture
+  const youtube = remoteMedia(lesson)?.kind === "youtube";
+  const hasVideo = youtube || (!!lesson.video_path && !broken);
   const canFetch = isTauri && !hasVideo && /^https?:\/\//.test(lesson.source);
 
   const setHost = useCallback(
@@ -306,6 +309,8 @@ export function VideoStage({ lesson, tokens, terms, cursor, playing, onHost, onW
               )
             ) : broken ? (
               <strong>{!isTauri ? "This video could not be played in your browser" : t("Cette vidéo ne se lit pas sur ce Mac", "This video doesn't play on this Mac")}</strong>
+            ) : !isTauri && !lesson.media_path ? (
+              <strong>Made from a file on your computer: watch it in the desktop app</strong>
             ) : (
               <strong>{t("Leçon audio", "Audio lesson")}</strong>
             )}

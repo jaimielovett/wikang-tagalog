@@ -1,5 +1,5 @@
 // Discover on the web: admin-chosen sources, read by the server into a shared cache.
-import { cloud } from "./cloud";
+import { apiBase, cloud } from "./cloud";
 import type { DiscoverItem } from "../types";
 
 /** The published lessons count as one more source, on by default. */
@@ -99,7 +99,7 @@ export const isStale = (refreshedAt: number) => Date.now() / 1000 - refreshedAt 
 /** Asks the server to read the sources. Admins (signed in) skip the "refreshed recently" window. */
 export async function requestRefresh(): Promise<{ refreshed: boolean; sources: number; failed: string[] }> {
   const session = cloud ? (await cloud.auth.getSession()).data.session : null;
-  const response = await fetch("/api/discover-refresh", {
+  const response = await fetch(`${apiBase}/api/discover-refresh`, {
     method: "POST",
     headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
   });

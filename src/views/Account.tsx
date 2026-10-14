@@ -21,7 +21,7 @@ export function Account({embedded=false,mode:startMode='signin'}:{embedded?:bool
   const auth=<section className="auth-panel">
    <Orb size={40}/>
    <h1 className="display">{!embedded?'Take your Tagalog with you':mode==='signup'?'Create your account':'Welcome back'}</h1>
-   <p className="auth-lead">{isTauri?'Sign in to reach the shared catalogue and admin publishing. Your desktop library stays on this computer.':mode==='signup'?'An account keeps your private learning in sync across browsers and devices.':'Sign in to keep your private learning in sync across browsers and devices.'}</p>
+   <p className="auth-lead">{isTauri?(mode==='signup'?'An account keeps your learning in sync with the web: lessons you make here from videos and podcasts appear in your library there.':'Sign in to sync this computer with your account: lessons you make here appear in your library on the web.'):mode==='signup'?'An account keeps your private learning in sync across browsers and devices.':'Sign in to keep your private learning in sync across browsers and devices.'}</p>
    {!cloud?<p className="auth-note"><Icon name="cloud" size={15}/>Accounts aren't connected yet. You can read, import text and build your vocabulary on this device in the meantime.</p>:<>
     <form className="auth-form" onSubmit={e=>{e.preventDefault();signin(mode==='signup');}}>
      <Segmented id="auth-mode" label="Account" value={mode} onChange={v=>{setMode(v);setError('');setMessage('');}} options={[{value:'signin',label:'Sign in'},{value:'signup',label:'Create an account'}]}/>
@@ -31,7 +31,7 @@ export function Account({embedded=false,mode:startMode='signin'}:{embedded?:bool
      {message&&<p className="auth-message" role="status">{message}</p>}
      <button className="btn primary glow lg auth-submit" disabled={busy}>{busy?'One moment…':mode==='signup'?'Create my account':'Sign in'}</button>
     </form>
-    <p className="auth-note"><Icon name="cloud" size={15}/>Anything you learnt as a guest in this browser joins your account when you sign in.</p>
+    <p className="auth-note"><Icon name="cloud" size={15}/>{isTauri?'Anything you learnt on this computer joins your account when you sign in.':'Anything you learnt as a guest in this browser joins your account when you sign in.'}</p>
    </>}
   </section>;
  if(embedded)return auth;

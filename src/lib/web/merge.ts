@@ -8,19 +8,30 @@ export function hasLearning(db: Db | undefined): db is Db {
 
 const sameLesson = (a: Db["lessons"][number], b: Db["lessons"][number]) => a.lang === b.lang && a.title === b.title && a.text === b.text;
 
+/** How the guest's lessons, playlists and chats were renumbered in the merge (guest id → merged id). */
+export interface MergeIds {
+  lessons: Map<number, number>;
+  playlists: Map<number, number>;
+  chats: Map<number, number>;
+}
+export const newMergeIds = (): MergeIds => ({ lessons: new Map(), playlists: new Map(), chats: new Map() });
+
 /**
  * Merges `guest` into `account` and returns the result; neither input is changed.
  * The account wins where both have a value, except that known words keep their
  * latest status and daily activity is added together.
  */
-export function mergeGuest(account: Db, guest: Db): Db {
+export function mergeGuest(account: Db, guest: Db, renumbered: MergeIds = newMergeIds()): Db {
   const out: Db = structuredClone(account);
   const g = structuredClone(guest);
   out.playlists ??= [];
   out.chats ??= [];
+  // ids from the clock, as devices hand them out: two merges into one account never collide
+  const clock = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  out.nextId = Math.max(out.nextId, clock);
 
   // lessons: the same lesson (the welcome story) is kept once, others get new ids
-  const ids = new Map<number, number>();
+  const ids = renumbered.lessons;
   for (const lesson of g.lessons) {
     const twin = out.lessons.find((l) => sameLesson(l, lesson));
     if (twin) {
@@ -55,14 +66,18 @@ export function mergeGuest(account: Db, guest: Db): Db {
       : day;
   }
 
-  let playlistId = Math.max(0, ...out.playlists.map((p) => p.id));
+  let playlistId = Math.max(clock, ...out.playlists.map((p) => p.id));
   for (const p of g.playlists ?? []) {
     const lessons = p.lessons.map((id) => ids.get(id)).filter((id): id is number => id != null);
-    out.playlists.push({ ...p, id: ++playlistId, lessons, current: lessonId(p.current) });
+    renumbered.playlists.set(p.id, ++playlistId);
+    out.playlists.push({ ...p, id: playlistId, lessons, current: lessonId(p.current) });
   }
 
-  let chatId = Math.max(0, ...out.chats.map((c) => c.id));
-  for (const c of g.chats ?? []) out.chats.push({ ...c, id: ++chatId, lesson_id: lessonId(c.lesson_id) });
+  let chatId = Math.max(clock, ...out.chats.map((c) => c.id));
+  for (const c of g.chats ?? []) {
+    renumbered.chats.set(c.id, ++chatId);
+    out.chats.push({ ...c, id: chatId, lesson_id: lessonId(c.lesson_id) });
+  }
 
   // settings: the account's choices stay; the guest fills in what is missing.
   // Keys that point at a lesson follow its new id.

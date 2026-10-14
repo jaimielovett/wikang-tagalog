@@ -87,3 +87,28 @@ test('welcome offers Supabase recovery and can be replayed without losing learni
  expect(saved.lessons).toHaveLength(1);
  expect(saved.terms.items.some((t:any)=>t.term==='bahay')).toBeTruthy();
 });
+test('a lesson made from YouTube on the desktop plays on the web through YouTube, the lantern following',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ // YouTube's player, offline: it plays from where it is told and reports its time
+ await page.route('https://www.youtube.com/iframe_api',r=>r.fulfill({contentType:'text/javascript',body:`
+  window.YT={Player:function(el,o){const f=document.createElement('iframe');f.dataset.video=o.videoId;el.replaceWith(f);let t=0,at=0,on=false;window.__yt=this;
+   const now=()=>on?t+(performance.now()-at)/1000:t;
+   this.playVideo=()=>{t=now();at=performance.now();on=true;o.events.onStateChange({data:1});};
+   this.pauseVideo=()=>{t=now();on=false;o.events.onStateChange({data:2});};
+   this.seekTo=(s)=>{t=s;at=performance.now();};this.getCurrentTime=now;this.getDuration=()=>4;this.setPlaybackRate=()=>{};this.destroy=()=>f.remove();
+   setTimeout(()=>o.events.onReady(),50);}};
+  setTimeout(()=>window.onYouTubeIframeAPIReady&&window.onYouTubeIframeAPIReady(),0);`}));
+ await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
+ await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;
+  const id=await api().lessonCreate({lang:'tl',title:'Adobong manok',kind:'video',source:'https://www.youtube.com/watch?v=ninongry001',text:'Magandang araw po. Luto tayo.',timings:JSON.stringify([[0,8,0,0.6],[9,13,0.6,1.2],[14,17,1.2,1.5],[19,23,1.6,2],[24,29,2,2.6]])});
+  useApp.getState().openLesson(id);});
+ await expect(page.locator('.video-stage iframe[data-video="ninongry001"]')).toBeAttached();
+ await expect(page.locator('.video-missing')).toHaveCount(0);
+ await page.locator('.play-btn').click();
+ await expect(page.locator('.play-btn.playing')).toBeVisible();
+ await page.waitForFunction(()=>(window as any).__yt.getCurrentTime()>1.3);
+ // the lantern lights up and follows YouTube's time
+ await expect.poll(()=>page.locator('.reader .lantern').first().evaluate(e=>getComputedStyle(e).opacity)).toBe('1');
+ await page.locator('.play-btn').click();await expect(page.locator('.play-btn.playing')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

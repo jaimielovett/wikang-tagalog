@@ -80,3 +80,17 @@ test('daily activity adds up across devices without counting anything twice',asy
 test('fingerprints tell values apart and mark deletion with 0',()=>{
  assert.equal(fingerprint(null),0);assert.notEqual(fingerprint({a:1}),fingerprint({a:2}));assert.notEqual(fingerprint(''),0);
 });
+
+test('fingerprints ignore field order, and old sync states move to them without inventing changes',async()=>{
+ const {upgradeFingerprints}=await import('../src/lib/web/sync.ts');
+ assert.equal(fingerprint({a:1,b:{c:2,d:3}}),fingerprint({b:{d:3,c:2},a:1}));
+ // a device that synced before the change: its shadow holds order-sensitive fingerprints
+ const server=fakeServer();const a=device('a');
+ a.db.terms['tl|bahay']=term(4,1);a.db.settings.daily_goal='20';await sync(a,server,1000);
+ const legacy=(v)=>{let h1=0xdeadbeef,h2=0x41c6ce57;const s=JSON.stringify(v);for(let i=0;i<s.length;i++){const ch=s.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)||1;};
+ for(const k of Object.keys(a.state.shadow))a.state.shadow[k][0]=legacy(k.startsWith('term:')?a.db.terms['tl|bahay']:a.db.settings.daily_goal);
+ delete a.state.fv;
+ const before=server.pushes.length;await sync(a,server,2000);
+ assert.equal(server.pushes.length,before,'nothing is re-sent after the switch');
+ assert.equal(a.state.fv,2);
+});

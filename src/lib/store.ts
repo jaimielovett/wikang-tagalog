@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, errorText, isTauri } from "./api";
+import { api, errorText } from "./api";
 import { formatNumber as fmtNumber, locale, setUiLang, t, type UiLang } from "./i18n";
 import type { AppInfo, DiscoverItem, DownloadEvent, LangCode, ModelRow, Streak } from "./types";
 import { LOOK_DEFAULTS } from "./reading";
@@ -270,8 +270,8 @@ export const useApp = create<AppStore>((set, get) => ({
     setUiLang(ui);
     set({ info, settings: { ...DEFAULTS, ...settings, lang: "tl", langs: "tl", ui_lang: ui }, lessonId: last, queue, ready: true });
     if (settings.ui_lang !== ui) void get().setSetting("ui_lang", ui);
-    // web: changes made on another device arrive while the app is open
-    if (!isTauri && !remoteListening) {
+    // changes made on another device arrive while the app is open (web, or the desktop once signed in)
+    if (!remoteListening) {
       remoteListening = true;
       window.addEventListener("wikang:remote-change", () => {
         void api()

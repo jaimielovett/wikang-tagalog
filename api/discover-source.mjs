@@ -1,8 +1,9 @@
-import {authenticate,parseBody,inputText,fail} from '../server/services.mjs';
+import {allowDesktop,authenticate,parseBody,inputText,fail} from '../server/services.mjs';
 import {findSource,learnerSources,readSource} from '../server/discover.mjs';
 // A learner's own Discover sources: find the feed behind a pasted address, or read their sources.
 // Each request counts against the learner's daily budget; nothing read here is stored on the server.
 export default async function handler(req,res) {
+ if(allowDesktop(req,res))return;
  if(req.method!=='POST')return res.status(405).json({error:'POST required.'});
  try {
   const body=parseBody(req);

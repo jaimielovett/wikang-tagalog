@@ -1,9 +1,10 @@
-import {fail} from '../server/services.mjs';
+import {allowDesktop,fail} from '../server/services.mjs';
 import {refreshDiscover} from '../server/discover.mjs';
 // Reads the Discover sources into the shared cache. The database only accepts results
 // signed with DISCOVER_SECRET, refreshes at most every few hours, and never twice at once,
 // so visitors may ask freely: a stale cache refreshes itself.
 export default async function handler(req,res) {
+ if(allowDesktop(req,res))return;
  if(!['GET','POST'].includes(req.method))return res.status(405).json({error:'GET or POST required.'});
  try {
   const url=process.env.SUPABASE_URL?.trim().replace(/\/+$/,'');const key=process.env.SUPABASE_ANON_KEY?.trim();const secret=process.env.DISCOVER_SECRET?.trim();

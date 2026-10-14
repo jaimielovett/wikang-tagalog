@@ -38,13 +38,29 @@ export interface SyncState {
   pulled_at: string | null;
   /** other devices' activity: "day|lang" → device → their day */
   others: Record<string, Record<string, Day>>;
+  /** fingerprint version: 2 ignores the order of a record's fields */
+  fv?: number;
 }
-export const newSyncState = (): SyncState => ({ v: 2, shadow: {}, pending: {}, pulled_at: null, others: {} });
+export const newSyncState = (): SyncState => ({ v: 2, shadow: {}, pending: {}, pulled_at: null, others: {}, fv: 2 });
 
-/** A 53-bit fingerprint (cyrb53); never 0, which marks a deleted record. */
+/** JSON with every object's keys sorted: the same record reads the same whichever device built it. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_k, v) =>
+    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, (v as Record<string, unknown>)[k]])) : v,
+  );
+}
+
+/** A 53-bit fingerprint (cyrb53); never 0, which marks a deleted record. Field order does not matter. */
 export function fingerprint(value: unknown): number {
   if (value === undefined || value === null) return 0;
-  const str = JSON.stringify(value);
+  return cyrb53(canonical(value));
+}
+/** The first fingerprint, which read fields in their order: only to carry old sync states over. */
+function legacyFingerprint(value: unknown): number {
+  if (value === undefined || value === null) return 0;
+  return cyrb53(JSON.stringify(value));
+}
+function cyrb53(str: string): number {
   let h1 = 0xdeadbeef,
     h2 = 0x41c6ce57;
   for (let i = 0; i < str.length; i++) {
@@ -187,16 +203,21 @@ export function applyRecord(db: Db, state: SyncState, device: string, key: strin
   }
 }
 
+/** Records a device leaves to the others (the desktop's own settings): never sent, never deleted. */
+export type Skip = (key: string) => boolean;
+
 /** Notes local changes since the last sync: new or changed records, and deleted ones. */
-export function detectChanges(db: Db, state: SyncState, device: string, now: number) {
+export function detectChanges(db: Db, state: SyncState, device: string, now: number, skip?: Skip) {
   const current = recordsOf(db, state, device);
   for (const [key, value] of current) {
+    if (skip?.(key)) continue;
     const f = fingerprint(value);
     const known = state.pending[key]?.[0] ?? state.shadow[key]?.[0];
     if (known !== f) state.pending[key] = [f, now];
   }
   for (const key of Object.keys(state.shadow)) {
     const own = !key.startsWith("activity:") || activityKey(key).device === device;
+    if (skip?.(key)) continue;
     if (own && !current.has(key) && state.shadow[key][0] !== 0 && state.pending[key]?.[0] !== 0) state.pending[key] = [0, now];
   }
   // a change undone before it was sent is no change at all
@@ -258,11 +279,27 @@ export async function pushPending(db: Db, state: SyncState, device: string, remo
 }
 
 /**
+ * States saved before fingerprints ignored field order: a record still equal to what was synced
+ * gets its new fingerprint, so the switch is not mistaken for a change (which could undo another
+ * device's newer edit).
+ */
+export function upgradeFingerprints(db: Db, state: SyncState, device: string) {
+  if (state.fv === 2) return;
+  for (const book of [state.shadow, state.pending])
+    for (const [key, entry] of Object.entries(book)) {
+      const value = recordFor(db, state, device, key);
+      if (entry[0] !== 0 && legacyFingerprint(value) === entry[0]) entry[0] = fingerprint(value);
+    }
+  state.fv = 2;
+}
+
+/**
  * One round: note local changes, take the server's newer ones, send what's left.
  * Returns whether the local data changed (the view should refresh).
  */
-export async function syncOnce(db: Db, state: SyncState, device: string, remote: Remote, now = Date.now()): Promise<boolean> {
-  detectChanges(db, state, device, now);
+export async function syncOnce(db: Db, state: SyncState, device: string, remote: Remote, now = Date.now(), skip?: Skip): Promise<boolean> {
+  upgradeFingerprints(db, state, device);
+  detectChanges(db, state, device, now, skip);
   // a little overlap: a change committed just before the last pull may carry an earlier server time
   const since = state.pulled_at ? new Date(Date.parse(state.pulled_at) - 120_000).toISOString() : null;
   const changed = applyRows(db, state, device, await remote.pull(since));

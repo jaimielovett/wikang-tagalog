@@ -86,6 +86,9 @@ pub fn open(path: &Path) -> Result<Connection> {
     add_column(&conn, "lessons", "cover_path", "TEXT")?;
     // qualité du minutage des mots (voir TIMING_PRECISE)
     add_column(&conn, "lessons", "timing_v", "INTEGER NOT NULL DEFAULT 0")?;
+    // where a link import's sound or video came from (a YouTube page, a podcast file): the web
+    // plays a synced lesson from there, since the downloaded file stays on this computer
+    add_column(&conn, "lessons", "remote_media", "TEXT")?;
     // playlists : leçons d'une langue dans l'ordre choisi (une leçon supprimée en sort d'elle-même)
     conn.execute_batch(
         r#"

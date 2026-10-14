@@ -14,7 +14,7 @@ import type { BackupInfo, BackupRestored, LangCode } from "../lib/types";
 import { HUES, NAME_MAX, avatarString, avatarStyles, choosePhoto, newSeed, userFrom, type AvatarStyle } from "../lib/user";
 import { useDraft } from "./ProfileSection";
 import { Account } from "./Account";
-import { useAccount } from "../lib/web/cloud";
+import { cloud, useAccount } from "../lib/web/cloud";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 // marge au-dessus de la scène pour que les rayons de l'astre ne soient pas coupés
@@ -51,9 +51,11 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   const signedIn = useAccount((s) => !!s.session);
   const named = isTauri || signedIn;
   const dots = named ? [0, 1, 2, 3, 4] : [0, 2, 3, 4];
-  // the web's first screen offers an account (to create or sign in to) or a guest start
-  const choose = !isTauri && !signedIn && !replay;
+  // the first screen offers an account (to create or sign in to) or a guest start, on the web and the desktop
+  const choose = !!cloud && !signedIn && !replay;
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  // step 5 on the desktop: the account, or a backup to restore
+  const [panel, setPanel] = useState<"auth" | "restore">("restore");
   // en relecture, les langues déjà choisies restent cochées
   const langs: LangCode[] = ["tl"];
   const [goal, setGoal] = useState(() => Number(useApp.getState().settings.daily_goal) || 10);
@@ -171,12 +173,14 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
 
   const openRestore = () => {
     useBackup.setState({ restoreError: "" });
+    setPanel("restore");
     setN(5);
     if (isTauri) void search();
   };
   const openAuth = (mode: "signin" | "signup") => {
     setAuthMode(mode);
-    openRestore();
+    setPanel("auth");
+    setN(5);
   };
 
   const chooseFolder = async () => {
@@ -367,9 +371,16 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
                         {t("Se connecter", "Sign in")}
                       </button>
                     </div>
-                    <button className="ob-restore-link" onClick={() => setN(2)}>
-                      {t("Continuer en invité : votre apprentissage reste dans ce navigateur", "Continue as a guest: your learning stays in this browser")}
+                    <button className="ob-restore-link" onClick={() => setN(named ? 1 : 2)}>
+                      {isTauri
+                        ? t("Continuer en invité : votre apprentissage reste sur cet ordinateur", "Continue as a guest: your learning stays on this computer")
+                        : t("Continuer en invité : votre apprentissage reste dans ce navigateur", "Continue as a guest: your learning stays in this browser")}
                     </button>
+                    {isTauri && (
+                      <button className="ob-restore-link" onClick={openRestore}>
+                        <Icon name="cloud" size={15} /> {t("Retrouver ma progression depuis une sauvegarde", "Restore my progress from a backup")}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -574,11 +585,11 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
               <button className="ob-cta" onClick={() => void finish()} disabled={!!bloom || !langs.length}>
                 {t("Ouvrir ma première lecture", "Open my first reading")} <Icon name="book" size={16} />
               </button>
-              <div className="ob-actions"><button className="ob-link" onClick={() => setN(3)}>Back</button>{!isTauri && <button className="ob-link" onClick={() => setN(5)}>Sign in first</button>}</div>
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(3)}>Back</button>{choose && <button className="ob-link" onClick={() => openAuth("signin")}>Sign in first</button>}</div>
             </motion.div>
           )}
 
-          {n === 5 && !isTauri && (
+          {n === 5 && (!isTauri || panel === "auth") && (
             <motion.div key="5web" className="ob-step form ob-account" {...stepAnim}>
               {/* above the panel: always in view, however tall the form */}
               <button className="ob-link ob-back-top" onClick={() => setN(0)}><Icon name="left" size={15}/> Back</button>
@@ -586,7 +597,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
             </motion.div>
           )}
 
-          {n === 5 && isTauri && (
+          {n === 5 && isTauri && panel === "restore" && (
             <motion.div key="5" className="ob-step form" {...stepAnim}>
               <h2>{t("Retrouver ma progression", "Get my progress back")}</h2>
               <p className="ob-sub">{t("Vos mots, vos expressions, vos leçons et vos réglages reviennent tels que vous les aviez laissés.", "Your words, phrases, lessons and settings come back just as you left them.")}</p>
@@ -678,7 +689,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
         </AnimatePresence>
       </div>
 
-      <div className="ob-dots" hidden={nameOnly} role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${dots.indexOf(n) + 1} of ${dots.length}`}>
+      <div className="ob-dots" hidden={nameOnly} role="status" aria-label={n === 5 ? (panel === "auth" && isTauri) || !isTauri ? "Your account" : "Recover your learning" : `Welcome step ${dots.indexOf(n) + 1} of ${dots.length}`}>
         {/* la restauration (étape 5) n'a pas de point : elle remplace les étapes 1 à 4 */}
         {dots.map((i) => (
           <i key={i} className={i === n ? "on" : ""} />
