@@ -4,7 +4,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { Sheet } from "../components/ui";
 import { api, errorText, isTauri } from "../lib/api";
 import { youtubeId } from "../lib/covers";
-import { pickFiles } from "../lib/dialogs";
+import { pickFiles, pickWebFiles } from "../lib/dialogs";
 import { cleanTitle, useDiscover } from "../lib/discover";
 import { stageText } from "../lib/imports";
 import {
@@ -29,11 +29,22 @@ import { PodcastTab, usePodcastForm } from "./import/PodcastTab";
 
 type Tab = ImportTab;
 
+/** A document to read: a path in the desktop app, a chosen File in the browser. */
+interface DocSource {
+  name: string;
+  read(): Promise<ArrayBuffer>;
+}
+
+const pathSource = (p: string): DocSource => ({ name: p, read: () => api().readFile(p) });
+const fileSource = (f: File): DocSource => ({ name: f.name, read: () => f.arrayBuffer() });
+
+const DOC_EXT = ["epub", "pdf", "txt", "md", "srt", "vtt", "html", "htm"];
+
 const tabs = (): { id: Tab; label: string; hint: string; icon: IconName }[] => [
   { id: "text", label: t("Texte", "Text"), hint: t("Coller", "Paste"), icon: "text" },
-  { id: "link", label: t("Lien", "Link"), hint: t("Web, vidéo, podcast", "Web, video, podcast"), icon: "link" },
+  { id: "link", label: t("Lien", "Link"), hint: isTauri ? t("Web, vidéo, podcast", "Web, video, podcast") : t("Articles", "Articles"), icon: "link" },
   { id: "file", label: t("Fichier", "File"), hint: "EPUB, PDF, SRT…", icon: "file" },
-  { id: "media", label: t("Audio, vidéo", "Audio, video"), hint: "Transcription", icon: "wave" },
+  { id: "media", label: t("Audio, vidéo", "Audio, video"), hint: isTauri ? "Transcription" : t("Application de bureau", "Desktop app"), icon: "wave" },
   { id: "podcast", label: "Podcast", hint: t("Écrit pour vous", "Made for you"), icon: "podcast" },
 ];
 
@@ -193,7 +204,7 @@ export function ImportSheet() {
         setMediaFiles(media);
       } else {
         setTab("file");
-        void loadDocs(docs);
+        void loadDocs(docs.map(pathSource));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,12 +349,14 @@ export function ImportSheet() {
   };
 
   // ---------- fichiers ----------
-  async function loadDocs(paths: string[]) {
+  async function loadDocs(sources: DocSource[]) {
     await run(t("Lecture du fichier", "Reading the file"), async () => {
       const pend: Pending[] = [];
-      for (const p of paths) {
+      for (const { name: p, read } of sources) {
         const ext = extOf(p);
-        const data = await api().readFile(p);
+        const data = await read();
+        // a browser file has no path worth keeping
+        const source = isTauri ? p : "";
         if (ext === "epub") {
           const { book, chapters } = await extractEpub(data);
           setBook({ title: book, chapters: chapters.map((c) => ({ ...c, on: true })) });
@@ -351,14 +364,14 @@ export function ImportSheet() {
         }
         if (ext === "pdf") {
           const r = await extractPdf(data);
-          pend.push({ title: r.title === t("Document PDF", "PDF document") ? baseName(p) : r.title, text: r.text, kind: "pdf", source: p });
+          pend.push({ title: r.title === t("Document PDF", "PDF document") ? baseName(p) : r.title, text: r.text, kind: "pdf", source });
         } else if (ext === "srt" || ext === "vtt") {
-          pend.push({ title: baseName(p), text: extractSubtitles(decodeText(data)), kind: "subtitles", source: p });
+          pend.push({ title: baseName(p), text: extractSubtitles(decodeText(data)), kind: "subtitles", source });
         } else if (ext === "html" || ext === "htm") {
           const a = extractArticle(decodeText(data), "file:///" + p);
-          pend.push({ title: a.title || baseName(p), text: a.text, kind: "web", source: p });
+          pend.push({ title: a.title || baseName(p), text: a.text, kind: "web", source });
         } else {
-          pend.push({ title: baseName(p), text: cleanText(decodeText(data)), kind: "text", source: p });
+          pend.push({ title: baseName(p), text: cleanText(decodeText(data)), kind: "text", source });
         }
       }
       if (pend.length === 1) setPreview(pend[0]);
@@ -370,8 +383,13 @@ export function ImportSheet() {
   }
 
   const chooseDocs = async () => {
-    const paths = await pickFiles([{ name: t("Textes et livres", "Texts and books"), extensions: ["epub", "pdf", "txt", "md", "srt", "vtt", "html", "htm"] }]);
-    if (paths.length) await loadDocs(paths);
+    if (!isTauri) {
+      const chosen = await pickWebFiles(DOC_EXT);
+      if (chosen.length) await loadDocs(chosen.map(fileSource));
+      return;
+    }
+    const paths = await pickFiles([{ name: t("Textes et livres", "Texts and books"), extensions: DOC_EXT }]);
+    if (paths.length) await loadDocs(paths.map(pathSource));
   };
 
   const createBook = () =>
@@ -500,7 +518,19 @@ export function ImportSheet() {
           <Icon name="sparkle" size={15} /> {t("Créer le podcast", "Create the podcast")}
         </button>
       );
-    if (tab === "media")
+    if (tab === "media" && !isTauri)
+      footer = (
+        <button
+          className="btn primary"
+          onClick={() => {
+            close();
+            go("discover");
+          }}
+        >
+          {t("Ouvrir Découvrir", "Open Discover")}
+        </button>
+      );
+    if (tab === "media" && isTauri)
       footer = (
         <button className="btn primary" disabled={!mediaFiles.length || !asrReady} onClick={transcribeAll}>
           {mediaFiles.length > 1 ? t(`Transcrire ${mediaFiles.length} fichiers`, `Transcribe ${mediaFiles.length} files`) : t("Transcrire", "Transcribe")}
@@ -559,7 +589,7 @@ export function ImportSheet() {
                 <span className="muted num">{t(`${Math.round(progress)} %`, `${Math.round(progress)}%`)}</span>
               </>
             )}
-            <span className="import-hint">{t("Tout se passe sur votre Mac. Rien n'est envoyé en ligne.", "Everything happens on your Mac. Nothing is sent online.")}</span>
+            {isTauri && <span className="import-hint">{t("Tout se passe sur votre Mac. Rien n'est envoyé en ligne.", "Everything happens on your Mac. Nothing is sent online.")}</span>}
           </motion.div>
         ) : (
           <motion.div key={tab + (preview ? "p" : "") + (book ? "b" : "") + (found ? "f" : "")} className="import-pane" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -645,9 +675,13 @@ export function ImportSheet() {
                   {(
                     [
                       ["globe", t("Articles et blogs", "Articles and blogs")],
-                      ["youtube", t("YouTube et mille sites vidéo", "YouTube and a thousand video sites")],
-                      ["podcast", t("Podcasts et radios", "Podcasts and radio shows")],
-                      ["music", "Spotify"],
+                      ...(isTauri
+                        ? [
+                            ["youtube", t("YouTube et mille sites vidéo", "YouTube and a thousand video sites")],
+                            ["podcast", t("Podcasts et radios", "Podcasts and radio shows")],
+                            ["music", "Spotify"],
+                          ]
+                        : []),
                     ] as [IconName, string][]
                   ).map(([icon, label]) => (
                     <span key={icon} className="link-source">
@@ -655,6 +689,14 @@ export function ImportSheet() {
                     </span>
                   ))}
                 </div>
+                {!isTauri ? (
+                  <span className="import-hint">
+                    {t(
+                      "Collez le lien d'un article : Wikang Tagalog en garde le texte pour en faire une leçon. Les vidéos et les podcasts sont préparés dans l'application de bureau.",
+                      "Paste an article link: Wikang Tagalog keeps its text and turns it into a lesson. Videos and podcasts are prepared in the desktop app.",
+                    )}
+                  </span>
+                ) : (
                 <span className="import-hint">
                   {t(
                     "Collez n'importe quel lien : Wikang Tagalog trouve l'article, la vidéo ou les épisodes qui s'y cachent, et vous choisissez quoi importer. Le son est transcrit mot à mot sur votre Mac.",
@@ -662,17 +704,18 @@ export function ImportSheet() {
                   )}
                   {info && !info.ytdlp ? t(" Pour les vidéos, Wikang Tagalog installe la première fois ses composants (environ 40 Mo).", " For videos, Wikang Tagalog installs its components the first time (about 40 MB).") : ""}
                 </span>
+                )}
               </>
             )}
 
             {!preview && tab === "link" && found && <LinkFound found={found} onChange={setFound} asrMissing={!asrReady && found.choice !== "article" ? <AsrMissing /> : null} />}
 
             {!preview && tab === "file" && !book && (
-              <button className="file-drop" onClick={chooseDocs} disabled={!isTauri}>
+              <button className="file-drop" onClick={chooseDocs}>
                 <Icon name="file" size={28} />
                 <strong style={{ color: "var(--text)" }}>{t("Choisir des fichiers", "Choose files")}</strong>
                 <span>{t("EPUB (un chapitre par leçon), PDF, TXT, Markdown, sous-titres SRT ou VTT, pages HTML", "EPUB (one chapter per lesson), PDF, TXT, Markdown, SRT or VTT subtitles, HTML pages")}</span>
-                <span className="import-hint">{t("Vous pouvez aussi les déposer n'importe où dans la fenêtre.", "You can also drop them anywhere in the window.")}</span>
+                {isTauri && <span className="import-hint">{t("Vous pouvez aussi les déposer n'importe où dans la fenêtre.", "You can also drop them anywhere in the window.")}</span>}
               </button>
             )}
 
@@ -700,7 +743,20 @@ export function ImportSheet() {
 
             {tab === "podcast" && <PodcastTab form={podcast} />}
 
-            {tab === "media" && (
+            {tab === "media" && !isTauri && (
+              <div className="file-drop" role="note">
+                <Icon name="wave" size={28} />
+                <strong style={{ color: "var(--text)" }}>{t("Préparé dans l'application de bureau", "Prepared in the desktop app")}</strong>
+                <span>
+                  {t(
+                    "Les vidéos et les sons sont transcrits mot à mot dans l'application de bureau. Les leçons publiées vous attendent dans Découvrir.",
+                    "Video and audio are transcribed word by word in the desktop app. Published lessons are waiting for you in Discover.",
+                  )}
+                </span>
+              </div>
+            )}
+
+            {tab === "media" && isTauri && (
               <>
                 {!asrReady && <AsrMissing />}
                 <button className="file-drop" onClick={chooseMedia} disabled={!isTauri}>

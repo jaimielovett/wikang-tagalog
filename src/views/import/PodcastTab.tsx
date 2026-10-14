@@ -7,6 +7,8 @@ import { t } from "../../lib/i18n";
 import { useImports } from "../../lib/imports";
 import { inLang, theLang } from "../../lib/langs";
 import { useApp } from "../../lib/store";
+import { isTauri } from "../../lib/api";
+import { useAccount } from "../../lib/web/cloud";
 import type { LangCode, PodcastFormat, PodcastRequest } from "../../lib/types";
 import { GeminiKey } from "../PodcastSection";
 import { interestLabel, useUser } from "../../lib/user";
@@ -59,6 +61,9 @@ const notebookLevel = (level: number) =>
 
 export function usePodcastForm(lang: LangCode, playlistId?: number) {
   const settings = useApp((s) => s.settings);
+  // on the web the AI key stays on the server: signing in is enough
+  const signedIn = !!useAccount((s) => s.session);
+  const hasKey = isTauri ? !!(settings.gemini_key ?? "").trim() : signedIn;
   const setSetting = useApp((s) => s.setSetting);
   const learner = useLevel(lang);
   const [topic, setTopic] = useState("");
@@ -95,8 +100,8 @@ export function usePodcastForm(lang: LangCode, playlistId?: number) {
     setMinutes: (m: number) => setSetting("podcast_minutes", String(m)),
     useWords,
     setUseWords: (on: boolean) => setSetting("podcast_words", on ? "1" : "0"),
-    hasKey: !!(settings.gemini_key ?? "").trim(),
-    ready: !!(settings.gemini_key ?? "").trim() && topic.trim().length >= 2,
+    hasKey,
+    ready: hasKey && topic.trim().length >= 2,
     ideas: [
       ...(offset === 0 ? mine.map((label) => ({ label, mine: true })) : []),
       ...pool.slice(offset, offset + 5 - (offset === 0 ? mine.length : 0)).map((label) => ({ label, mine: false })),
@@ -138,8 +143,16 @@ export function PodcastTab({ form }: { form: PodcastForm }) {
       ) : (
         <motion.div key="key" className="pod-form" {...enter}>
           <PodcastIntro lang={form.lang} />
-          <GeminiKey compact />
-          <NotebookRoute form={form} />
+          {isTauri ? (
+            <>
+              <GeminiKey compact />
+              <NotebookRoute form={form} />
+            </>
+          ) : (
+            <button className="btn primary" onClick={() => { useApp.getState().closeImport(); useApp.getState().go("account"); }}>
+              {t("Se connecter", "Sign in")}
+            </button>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -163,11 +176,18 @@ function PodcastIntro({ lang }: { lang: LangCode }) {
             `A topic, your level, a length: Gemini, Google's AI, writes a podcast ${inLang(lang)} and has two voices perform it. It becomes a full lesson, with its lantern.`,
           )}
         </span>
-        <ol className="pod-steps">
-          <li>{t("Créez une clé gratuite sur Google AI Studio.", "Create a free key on Google AI Studio.")}</li>
-          <li>{t("Collez-la ci-dessous : Wikang Tagalog la vérifie et la garde sur ce Mac.", "Paste it below: Wikang Tagalog checks it and keeps it on this Mac.")}</li>
-          <li>{t("Choisissez un sujet. Le podcast vous attend dans la bibliothèque.", "Choose a topic. The podcast will wait for you in the library.")}</li>
-        </ol>
+        {isTauri ? (
+          <ol className="pod-steps">
+            <li>{t("Créez une clé gratuite sur Google AI Studio.", "Create a free key on Google AI Studio.")}</li>
+            <li>{t("Collez-la ci-dessous : Wikang Tagalog la vérifie et la garde sur ce Mac.", "Paste it below: Wikang Tagalog checks it and keeps it on this Mac.")}</li>
+            <li>{t("Choisissez un sujet. Le podcast vous attend dans la bibliothèque.", "Choose a topic. The podcast will wait for you in the library.")}</li>
+          </ol>
+        ) : (
+          <ol className="pod-steps">
+            <li>{t("Connectez-vous à votre compte.", "Sign in to your account.")}</li>
+            <li>{t("Choisissez un sujet. Le podcast vous attend dans la bibliothèque.", "Choose a topic. The podcast will wait for you in the library.")}</li>
+          </ol>
+        )}
       </div>
     </div>
   );

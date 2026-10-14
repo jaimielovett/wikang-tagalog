@@ -2,7 +2,7 @@
 // Dailymotion. Le natif interroge chaque plateforme (search.rs) ; ici, les
 // résultats par plateforme, les pages suivantes et les recherches récentes.
 import { create } from "zustand";
-import { api, errorText } from "./api";
+import { api, errorText, isTauri } from "./api";
 import { t } from "./i18n";
 import { useApp } from "./store";
 import type { LangCode, LinkInfo, SearchHit, SearchPlatform } from "./types";
@@ -93,6 +93,8 @@ async function fetchBucket(platform: SearchPlatform, page: number) {
 
 /** Plateformes à interroger pour l'onglet affiché. */
 function wanted(tab: SearchTab): SearchPlatform[] {
+  // the web has no online search: only the published lessons already listed
+  if (!isTauri) return [];
   return tab === "all" ? PLATFORMS : [tab];
 }
 

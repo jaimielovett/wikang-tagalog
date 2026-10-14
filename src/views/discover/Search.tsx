@@ -14,6 +14,7 @@ import { fromArticle, fromHit, fromLink, usePreview } from "../../lib/preview";
 import { PLATFORMS, URL_LIKE, forgetSearches, platformName, recentSearches, searchIdeas, useSearch, type Length, type SearchTab } from "../../lib/search";
 import { formatDuration, useApp } from "../../lib/store";
 import type { DiscoverItem, LangCode, LinkInfo, SearchHit, SearchPlatform } from "../../lib/types";
+import { isTauri } from "../../lib/api";
 
 /** Graine reproductible d'une chaîne (FNV-1a) : l'œuvre générée ne change pas d'un affichage à l'autre. */
 export function seedOf(s: string): number {
@@ -442,7 +443,8 @@ export function SearchBar({ lang }: { lang: LangCode }) {
           </motion.div>
         )}
       </AnimatePresence>
-      {!(query && URL_LIKE.test(query)) && (
+      {/* the web searches the published lessons only: no platforms to choose */}
+      {isTauri && !(query && URL_LIKE.test(query)) && (
         <div className="disc-search-tabs" role="tablist" aria-label={t("Où chercher", "Where to search")}>
           {(["all", ...PLATFORMS] as SearchTab[]).map((p) => (
             <button
@@ -512,9 +514,14 @@ export function SearchResults({ lang, local, onBack, renderLocal }: { lang: Lang
               {renderLocal(local)}
             </section>
           )}
-          {(tab === "all" ? PLATFORMS : [tab]).map((p) => (
-            <PlatformResults key={p} platform={p as SearchPlatform} compact={tab === "all"} />
-          ))}
+          {!isTauri && local.length === 0 && (
+            <div className="empty disc-empty">
+              <h3>{t("Aucune leçon trouvée", "No lessons found")}</h3>
+              <p>{t("Essayez un autre mot, ou revenez aux découvertes du jour.", "Try another word, or go back to today's finds.")}</p>
+            </div>
+          )}
+          {isTauri &&
+            (tab === "all" ? PLATFORMS : [tab]).map((p) => <PlatformResults key={p} platform={p as SearchPlatform} compact={tab === "all"} />)}
         </>
       )}
     </motion.div>

@@ -23,7 +23,8 @@ import { isWindows } from "./lib/platform";
 import { useApp } from "./lib/store";
 
 // sous Windows : boutons de la fenêtre, barres de défilement fines, polices de repli (styles .win)
-if (isWindows) document.documentElement.classList.add("win");
+// the frameless-window chrome only exists in the desktop app
+if (isWindows && "__TAURI_INTERNALS__" in window) document.documentElement.classList.add("win");
 
 /**
  * Polices chargées avant le premier affichage : sinon titres et extraits

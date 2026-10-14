@@ -19,10 +19,9 @@ import { useApp } from "./lib/store";
 import { ImportSheet } from "./views/ImportSheet";
 import { Preview } from "./components/Preview";
 import { Chat } from "./views/Chat";
-import { PublicDiscover as DiscoverView } from "./views/PublicDiscover";
+import { DiscoverView } from "./views/Discover";
 import { Account } from "./views/Account";
 import { WebSettings } from "./views/WebSettings";
-import { WebImport } from "./views/WebImport";
 import { Library } from "./views/Library";
 import { Onboarding } from "./views/Onboarding";
 import { Playlists } from "./views/Playlists";
@@ -195,7 +194,7 @@ export function App() {
           </motion.div>
         </AnimatePresence>
       </main>
-      {isTauri ? <ImportSheet /> : <WebImport />}
+      <ImportSheet />
       <Preview />
       <Guide />
       <News />

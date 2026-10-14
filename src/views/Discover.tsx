@@ -4,7 +4,9 @@ import { CoverArt } from "../components/Cover";
 import { Icon, type IconName } from "../components/Icon";
 import { prefetchStream } from "../components/Preview";
 import { Menu, Orb, ScrollTop, Segmented, useGlow } from "../components/ui";
+import { api, errorText, isTauri } from "../lib/api";
 import { formatWhen } from "../lib/backup";
+import { adoptPublished } from "../lib/web/catalogue";
 import { grainTexture, youtubeId } from "../lib/covers";
 import { LEVELS, ago, cleanTitle, fits, isNew, levelName, levelRange, markSeen, openSource, seenAt, unitsLabel, useDiscover, useLevel } from "../lib/discover";
 import { t } from "../lib/i18n";
@@ -42,16 +44,44 @@ function sourceLabel(it: DiscoverItem): string {
 /** Ce que devient l'élément une fois choisi, dit simplement. */
 function whatHappens(it: DiscoverItem): string {
   if (it.lesson_id) return t("Déjà dans votre bibliothèque : reprenez là où vous en étiez.", "Already in your library: pick up where you left off.");
+  if (!isTauri) return t("Une leçon préparée et vérifiée : ouvrez-la et commencez tout de suite.", "A prepared, reviewed lesson: open it and start right away.");
   if (it.kind === "text") return t("L'article devient une leçon de lecture. Trop riche ? Le bouton « Simplifier » le réécrit à votre niveau.", "The article becomes a reading lesson. Too rich? The “Simplify” button rewrites it at your level.");
   if (it.page_text) return t("Le son et le texte publié par la source : la lanterne suit la voix, mot à mot.", "The sound and the text published by the source: the lantern follows the voice, word by word.");
   return t("Regardez ou écoutez d'abord ; si ça vous plaît, Wikang Tagalog en fait une leçon pendant que vous continuez d'explorer.", "Watch or listen first; if you like it, Wikang Tagalog turns it into a lesson while you keep exploring.");
+}
+
+/** On the web, Discover lists published lessons: adding one copies it into the private library. */
+async function adopt(it: DiscoverItem, lang: LangCode): Promise<number | null> {
+  try {
+    const id = await adoptPublished(api(), it.id);
+    await useDiscover.getState().mark(lang, it.id, id);
+    useApp.getState().bumpLibrary();
+    return id;
+  } catch (e) {
+    useApp.getState().toast(errorText(e), "error");
+    return null;
+  }
 }
 
 /** Toucher un élément : la leçon s'il en est déjà une, sinon l'aperçu (regarder, écouter, lire). */
 function useOpenItem() {
   const openLesson = useApp((s) => s.openLesson);
   const open = usePreview((s) => s.open);
-  return (it: DiscoverItem) => (it.lesson_id ? openLesson(it.lesson_id) : open(fromItem(it)));
+  const lang = useApp((s) => s.lang)();
+  return (it: DiscoverItem) => {
+    if (it.lesson_id) openLesson(it.lesson_id);
+    else if (!isTauri) void adopt(it, lang).then((id) => id && openLesson(id));
+    else open(fromItem(it));
+  };
+}
+
+/** « En faire une leçon » : la file d'importation sur le bureau, la copie publiée sur le web. */
+function useMakeLesson() {
+  const enqueue = useImports((s) => s.enqueue);
+  return (it: DiscoverItem, lang: LangCode) => {
+    if (isTauri) enqueue(jobOf(fromItem(it), lang));
+    else void adopt(it, lang).then((id) => id && useApp.getState().toast(t("Ajoutée à la bibliothèque", "Added to your library"), "light"));
+  };
 }
 
 /** Une vidéo survolée un instant se prépare : l'aperçu s'ouvrira aussitôt. */
@@ -59,7 +89,7 @@ function useWarm(it: DiscoverItem) {
   const timer = useRef<number | null>(null);
   return {
     onMouseEnter: () => {
-      if (it.lesson_id || it.kind !== "video" || !youtubeId(it.url)) return;
+      if (!isTauri || it.lesson_id || it.kind !== "video" || !youtubeId(it.url)) return;
       timer.current = window.setTimeout(() => void prefetchStream(it.url, false).catch(() => {}), 450);
     },
     onMouseLeave: () => timer.current !== null && window.clearTimeout(timer.current),
@@ -125,7 +155,7 @@ function FindCard({ item, lang, index, intro, seen }: { item: DiscoverItem; lang
   const open = useOpenItem();
   const warm = useWarm(item);
   const hide = useDiscover((s) => s.hide);
-  const enqueue = useImports((s) => s.enqueue);
+  const makeLesson = useMakeLesson();
   const song = item.shelf === "music" && !!item.track;
   const title = song ? item.track : cleanTitle(item.title);
   return (
@@ -171,13 +201,15 @@ function FindCard({ item, lang, index, intro, seen }: { item: DiscoverItem; lang
             }
           >
             {!item.lesson_id && (
-              <button className="menu-item" onClick={() => (setMenu(false), enqueue(jobOf(fromItem(item), lang)))}>
+              <button className="menu-item" onClick={() => (setMenu(false), makeLesson(item, lang))}>
                 <Icon name="sparkle" size={16} /> {t("En faire une leçon tout de suite", "Make it a lesson right away")}
               </button>
             )}
-            <button className="menu-item" onClick={() => (setMenu(false), void openSource(item.page || item.url))}>
-              <Icon name="external" size={16} /> {sourceLabel(item)}
-            </button>
+            {!!(item.page || item.url) && (
+              <button className="menu-item" onClick={() => (setMenu(false), void openSource(item.page || item.url))}>
+                <Icon name="external" size={16} /> {sourceLabel(item)}
+              </button>
+            )}
             <div className="menu-sep" />
             <button className="menu-item" onClick={() => (setMenu(false), void hide(lang, item))}>
               <Icon name="ban" size={16} /> {t("Ne plus proposer", "Don't suggest again")}
@@ -241,7 +273,7 @@ function FindHero({ item, lang }: { item: DiscoverItem; lang: LangCode }) {
   const glow = useGlow<HTMLDivElement>();
   const open = useOpenItem();
   const warm = useWarm(item);
-  const enqueue = useImports((s) => s.enqueue);
+  const makeLesson = useMakeLesson();
   const verb = item.kind === "text" ? t("Lire", "Read") : item.kind === "audio" ? t("Écouter", "Listen") : t("Regarder", "Watch");
   const facts = [item.source_name, kindLabel(item), item.duration > 0 ? formatDuration(item.duration) : "", ago(item.published)].filter(Boolean);
   return (
@@ -281,13 +313,15 @@ function FindHero({ item, lang }: { item: DiscoverItem; lang: LangCode }) {
             <Icon name={item.lesson_id ? "book" : item.kind === "text" ? "text" : "play"} size={17} /> {item.lesson_id ? t("Ouvrir la leçon", "Open the lesson") : verb}
           </button>
           {!item.lesson_id && (
-            <button className="btn soft" onClick={() => enqueue(jobOf(fromItem(item), lang))}>
+            <button className="btn soft" onClick={() => makeLesson(item, lang)}>
               <Icon name="sparkle" size={15} /> {t("En faire une leçon", "Make it a lesson")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => void openSource(item.page || item.url)}>
-            <Icon name="external" size={15} /> {sourceLabel(item)}
-          </button>
+          {!!(item.page || item.url) && (
+            <button className="btn ghost" onClick={() => void openSource(item.page || item.url)}>
+              <Icon name="external" size={15} /> {sourceLabel(item)}
+            </button>
+          )}
           <JobBadge jobKey={item.url} />
         </div>
       </div>
@@ -587,13 +621,13 @@ export function DiscoverView() {
   const scroller = useRef<HTMLDivElement>(null);
   return (
     <>
-      <div className="titlebar drag" data-tauri-drag-region />
+      {isTauri && <div className="titlebar drag" data-tauri-drag-region />}
       <div className="view" ref={scroller}>
         <div className="view-inner">
           <header className="page-head">
             <div>
               <h1>{t("Découvrir", "Discover")}</h1>
-              <p>{allLevels ? t(`Des vidéos, des podcasts, des chansons et des articles ${inLang(lang)}, pour tous les niveaux.`, `Videos, podcasts, songs and articles ${inLang(lang)}, for every level.`) : t(`Des vidéos, des podcasts, des chansons et des articles ${inLang(lang)}, à votre niveau.`, `Videos, podcasts, songs and articles ${inLang(lang)}, at your level.`)}</p>
+              <p>{!isTauri ? t(`Des vidéos, des sons et des textes ${inLang(lang)}, préparés pour apprendre.`, `Videos, audio and texts ${inLang(lang)}, prepared for learners.`) : allLevels ? t(`Des vidéos, des podcasts, des chansons et des articles ${inLang(lang)}, pour tous les niveaux.`, `Videos, podcasts, songs and articles ${inLang(lang)}, for every level.`) : t(`Des vidéos, des podcasts, des chansons et des articles ${inLang(lang)}, à votre niveau.`, `Videos, podcasts, songs and articles ${inLang(lang)}, at your level.`)}</p>
             </div>
           </header>
           <Discover lang={lang} />

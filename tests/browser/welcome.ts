@@ -1,9 +1,7 @@
 import {expect, type Page} from '@playwright/test';
-export async function completeWelcome(page: Page, name = '', goal = 10) {
+export async function completeWelcome(page: Page, goal = 10) {
  await page.getByRole('button', {name:'Get started',exact:true}).click();
- await expect(page.getByRole('heading',{name:"Let's get acquainted"})).toBeVisible();
- if (name) await page.getByRole('textbox',{name:'Your first name or a nickname'}).fill(name);
- await page.getByRole('button',{name:name ? 'Continue' : 'Later',exact:true}).click();
+ // the web skips the name step: guests stay anonymous until they sign in
  await expect(page.getByRole('heading',{name:'A little Tagalog, every day'})).toBeVisible();
  await page.getByRole('button',{name:`${goal} minutes`,exact:false}).click();
  await page.getByRole('button',{name:'Continue',exact:true}).click();

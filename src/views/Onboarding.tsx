@@ -33,6 +33,9 @@ function glow(e: React.MouseEvent<HTMLElement>) {
   el.style.setProperty("--my", `${e.clientY - r.top}px`);
 }
 
+/** Welcome steps with a dot; the web skips the name step (guests stay anonymous until they sign in). */
+const dots = isTauri ? [0, 1, 2, 3, 4] : [0, 2, 3, 4];
+
 export function Onboarding() {
   const setSetting = useApp((s) => s.setSetting);
   // la langue de l'interface peut changer à tout moment de l'accueil
@@ -198,7 +201,7 @@ export function Onboarding() {
   const finish = async () => {
     setFinishError("");
     try {
-      await setSetting("user_name", meName.trim());
+      if (isTauri) await setSetting("user_name", meName.trim());
       await setSetting("daily_goal", String(goal));
       startBloom();
       const started = performance.now();
@@ -327,7 +330,8 @@ export function Onboarding() {
                 </motion.span>
               </motion.p>
               <motion.div className="ob-welcome-actions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.8, duration: 0.8, ease: EASE }}>
-                <button className="ob-cta" onClick={() => setN(1)}>
+                {/* on the web you start as a guest: your name comes with an account */}
+                <button className="ob-cta" onClick={() => setN(isTauri ? 1 : 2)}>
                   {t("Commencer", "Get started")} <Icon name="forward" size={16} stroke={2} />
                 </button>
                 {!replay && (
@@ -400,7 +404,7 @@ export function Onboarding() {
               <div className="ob-grid profiles" role="group" aria-label="Daily learning goal">
                 {[5, 10, 20].map(minutes => <button key={minutes} className={`ob-card ${goal === minutes ? "on" : ""}`} aria-pressed={goal === minutes} onClick={() => setGoal(minutes)}><strong className="pname">{minutes} minutes</strong><span className="pdesc">{minutes === 5 ? "A small daily habit" : minutes === 10 ? "Time for a short story" : "Room to read and listen"}</span></button>)}
               </div>
-              <div className="ob-actions"><button className="ob-link" onClick={() => setN(1)}>Back</button><button className="ob-cta" onClick={() => setN(3)}>Continue <Icon name="forward" size={16}/></button></div>
+              <div className="ob-actions"><button className="ob-link" onClick={() => setN(isTauri ? 1 : 0)}>Back</button><button className="ob-cta" onClick={() => setN(3)}>Continue <Icon name="forward" size={16}/></button></div>
             </motion.div>
           )}
 
@@ -635,9 +639,9 @@ export function Onboarding() {
         </AnimatePresence>
       </div>
 
-      <div className="ob-dots" role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${n + 1} of 5`}>
+      <div className="ob-dots" role="status" aria-label={n === 5 ? "Recover your learning" : `Welcome step ${dots.indexOf(n) + 1} of ${dots.length}`}>
         {/* la restauration (étape 5) n'a pas de point : elle remplace les étapes 1 à 4 */}
-        {[0, 1, 2, 3, 4].map((i) => (
+        {dots.map((i) => (
           <i key={i} className={i === n ? "on" : ""} />
         ))}
       </div>

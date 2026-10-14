@@ -6,6 +6,14 @@ import { useMemo } from "react";
 import { pickCoverImage } from "./covers";
 import { t } from "./i18n";
 import { useApp } from "./store";
+import { isTauri } from "./api";
+import { useAccount } from "./web/cloud";
+
+/** On the web you are a guest until you sign in: no name, no avatar. */
+export function useGuest(): boolean {
+  const signedIn = useAccount((s) => !!s.session);
+  return !isTauri && !signedIn;
+}
 
 /** Avatar : l'initiale du nom, une lumière générée (aube, halo, aurore, nuit) ou une photo. */
 export type AvatarStyle = "initial" | "dawn" | "halo" | "aurora" | "night" | "photo";
@@ -148,12 +156,14 @@ export function useUser(): UserProfile {
   const photo = useApp((s) => s.settings.user_photo ?? "");
   const why = useApp((s) => s.settings.user_why ?? "");
   const interests = useApp((s) => s.settings.user_interests ?? "");
-  return useMemo(() => userFrom(name, avatar, photo, why, interests), [name, avatar, photo, why, interests]);
+  const guest = useGuest();
+  return useMemo(() => (guest ? userFrom("", "", "", why, interests) : userFrom(name, avatar, photo, why, interests)), [guest, name, avatar, photo, why, interests]);
 }
 
 /** Le nom seul (« Bonsoir, Ulysse. »). */
 export function useUserName(): string {
-  return useApp((s) => (s.settings.user_name ?? "").trim());
+  const name = useApp((s) => (s.settings.user_name ?? "").trim());
+  return useGuest() ? "" : name;
 }
 
 /**
