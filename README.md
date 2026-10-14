@@ -22,7 +22,7 @@ The website starts without external credentials: guest reading, the bundled Taga
 ## Connect Supabase
 
 1. Create a new project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync, and [supabase/migrations/202610140003_app_requirements.sql](supabase/migrations/202610140003_app_requirements.sql) for the oldest app versions allowed to sync.
+2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync, and [supabase/migrations/202610140003_app_requirements.sql](supabase/migrations/202610140003_app_requirements.sql) for the oldest app versions allowed to sync, then [supabase/migrations/202610140004_discover_refresh_where.sql](supabase/migrations/202610140004_discover_refresh_where.sql). Run every migration in date order.
 3. Copy `.env.example` to `.env`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the project URL and public publishable/anon key. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the same values for server functions.
 4. Configure the site's URL and allowed redirect URLs under Authentication. Password sign-in and email-confirmed sign-up are implemented. For local development allow `http://localhost:1430`.
 5. Create your account in the app. Copy its UUID from Authentication → Users and grant admin membership in the trusted SQL editor:
@@ -59,7 +59,7 @@ To enable refreshing:
 2. Store its hash in the Supabase SQL editor:
 
    ```sql
-   update public.discover_refresh set secret_hash=encode(sha256(convert_to('YOUR_SECRET','UTF8')),'hex');
+   update public.discover_refresh set secret_hash=encode(sha256(convert_to('YOUR_SECRET','UTF8')),'hex') where id;
    ```
 
 3. Set the same value as the server-only `DISCOVER_SECRET` on Vercel, and set `CRON_SECRET` to another random value so the scheduled refresh is recognised.
@@ -117,7 +117,7 @@ Local `npm run app:build` also signs update packages: set `TAURI_SIGNING_PRIVATE
 When a release changes how learning is stored, raise the minimums in Supabase so older apps are asked to update instead of syncing data in the old format:
 
 ```sql
-update public.app_requirements set min_record_version=2, min_desktop_version='0.2.0';
+update public.app_requirements set min_record_version=2, min_desktop_version='0.2.0' where id;
 ```
 
 Outdated web tabs are asked to reload; an outdated desktop app shows an update card that cannot be dismissed. Builds are not code-signed with an Apple or Microsoft certificate yet, so first installs show a macOS Gatekeeper or Windows SmartScreen warning.

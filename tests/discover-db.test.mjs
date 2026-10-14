@@ -17,6 +17,7 @@ test('Discover sources: admins curate, the cache only takes signed results, lear
  insert into auth.users values('${admin}'),('${learner}');`);
  await db.exec(await readFile('supabase/migrations/202610120001_wikang_tagalog.sql','utf8'));
  await db.exec(await readFile('supabase/migrations/202610140001_discover_sources.sql','utf8'));
+ await db.exec(await readFile('supabase/migrations/202610140004_discover_refresh_where.sql','utf8'));
  await db.exec(`insert into public.admins values('${admin}');update public.discover_refresh set secret_hash=encode(sha256(convert_to('${secret}','UTF8')),'hex');`);
  const as=async(role,id='')=>db.exec(`reset role;set role ${role};select set_config('request.jwt.claim.sub','${id}',false);`);
  const item=(id,extra={})=>({id:id.repeat(32).slice(0,32),kind:'text',title:'Balita ngayon',url:'https://example.org/a',page:'https://example.org/a',image:'',summary:'',duration:0,published:Math.floor(Date.now()/1000),lo:3,hi:5,...extra});

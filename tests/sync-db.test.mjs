@@ -14,7 +14,7 @@ test('learning records: newest change wins per record, accounts stay private, ol
  grant usage on schema public,auth,storage to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;
  alter default privileges in schema public grant select,insert,update,delete on tables to anon,authenticated;
  insert into auth.users values('${learner}'),('${other}');`);
- for(const f of ['202610120001_wikang_tagalog','202610140001_discover_sources','202610140002_learner_records','202610140003_app_requirements'])await db.exec(await readFile(`supabase/migrations/${f}.sql`,'utf8'));
+ for(const f of ['202610120001_wikang_tagalog','202610140001_discover_sources','202610140002_learner_records','202610140003_app_requirements','202610140004_discover_refresh_where'])await db.exec(await readFile(`supabase/migrations/${f}.sql`,'utf8'));
  const as=async(role,id='')=>db.exec(`reset role;set role ${role};select set_config('request.jwt.claim.sub','${id}',false);`);
  const push=(rows)=>db.query('select public.push_learner_records($1) as n',[JSON.stringify(rows)]).then(r=>r.rows[0].n);
  const row=async(key)=>(await db.query('select data,updated_at from public.learner_records where key=$1',[key])).rows[0];
