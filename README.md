@@ -110,7 +110,7 @@ To release:
 
 1. Set the new version in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) (and `package.json`), commit, and push a matching tag, e.g. `git tag v0.2.0` then `git push origin v0.2.0`.
 2. [.github/workflows/release.yml](.github/workflows/release.yml) builds the Windows and macOS apps, signs their update packages and attaches them, with `latest.json`, to a **draft** release.
-3. Review the draft and publish it. Only then do installed apps offer the update, and Discover's "Get the desktop app" link serves it.
+3. Review the draft: its description already has download instructions for the new version; add what changed. Then publish it. Only then do installed apps offer the update, and Discover's "Get the desktop app" link serves it.
 
 Local `npm run app:build` also signs update packages: set `TAURI_SIGNING_PRIVATE_KEY` to the key file's path and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` first, or build with `--config '{"bundle":{"createUpdaterArtifacts":false}}'`.
 

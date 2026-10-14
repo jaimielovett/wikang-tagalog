@@ -1,8 +1,9 @@
 # Desktop releases of Wikang Tagalog. Push a version tag (git tag v0.2.0 && git push origin v0.2.0)
 # and this builds the Windows and macOS apps, signs their update packages with this fork's own
 # updater key (secrets TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD), and
-# attaches everything, with latest.json, to a DRAFT GitHub release. Nothing reaches anyone until
-# the draft is published: then installed apps offer the update, and the download link serves it.
+# attaches everything, with latest.json, to a DRAFT GitHub release with download instructions as its
+# description (add what changed before publishing). Nothing reaches anyone until the draft is
+# published: then installed apps offer the update, and the download link serves it.
 name: Release
 
 on:
@@ -39,7 +40,15 @@ jobs:
               repo: context.repo.repo,
               tag_name: tag,
               name: `Wikang Tagalog ${tag.slice(1)}`,
-              body: 'Review the changes, then publish this release to send the update to everyone.',
+              // public once published: written for people downloading the app
+              body: [
+                `Wikang Tagalog ${tag.slice(1)} for Windows and Macs with Apple silicon.`,
+                '',
+                `- **Windows:** download \`Wikang.Tagalog_${tag.slice(1)}_x64-setup.exe\`. Windows may warn that the app is unrecognised: choose **More info → Run anyway**.`,
+                `- **Mac:** download \`Wikang.Tagalog_${tag.slice(1)}_aarch64.dmg\` and drag the app into Applications. If macOS blocks the first launch, go to **System Settings → Privacy & Security → Open Anyway**.`,
+                '',
+                'Installed copies update themselves.',
+              ].join('\n'),
               draft: true,
             });
             core.setOutput('id', data.id);
