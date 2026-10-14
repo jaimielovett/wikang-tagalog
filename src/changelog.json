@@ -656,6 +656,31 @@
       ]
     },
     {
+      "version": "0.1.1",
+      "date": "2026-10-14",
+      "title": { "fr": "Votre bureau et le web, ensemble", "en": "Your desktop and the web, together" },
+      "items": [
+        {
+          "icon": "cloud",
+          "title": { "fr": "Un seul compte partout", "en": "One account everywhere" },
+          "body": {
+            "fr": "Connectez-vous dans l'application : vos leçons, vos mots et vos playlists se synchronisent avec le web. Une leçon faite ici depuis YouTube ou un podcast s'ouvre aussi dans votre bibliothèque en ligne.",
+            "en": "Sign in in the app: your lessons, words and playlists sync with the web. A lesson you make here from YouTube or a podcast opens in your library online too."
+          },
+          "action": "settings:profile"
+        },
+        {
+          "icon": "globe",
+          "title": { "fr": "Découvrir, partagé", "en": "Discover, shared" },
+          "body": {
+            "fr": "Découvrir montre les mêmes sources et leçons publiées que le site, avec vos propres sources.",
+            "en": "Discover shows the same sources and published lessons as the website, along with your own sources."
+          },
+          "action": "view:discover"
+        }
+      ]
+    },
+    {
       "version": "0.1.0",
       "date": "2026-10-03",
       "title": { "fr": "Chat, playlists, voix naturelle, sauvegarde", "en": "Chat, playlists, natural voice, backup" },
