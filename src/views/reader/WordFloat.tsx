@@ -19,7 +19,15 @@ interface Place {
   maxH: number;
   /** pointe de la carte, depuis son bord gauche */
   tip: number;
+  /** on a phone: a sheet the screen's width, at the foot of the screen (or its top, for a word low down) */
+  sheet?: "top" | "bottom";
 }
+
+/** Phones get a sheet: a card squeezed between a word and the screen's edge is too small to use. */
+const onPhone = () => window.matchMedia("(max-width: 700px)").matches;
+/** The sheet never takes less than this share of the screen, nor more than this one. */
+const SHEET_MIN = 0.42;
+const SHEET_MAX = 0.62;
 
 interface Props {
   /** colonne de lecture : repère des positions, barre du haut et lecteur audio */
@@ -65,6 +73,19 @@ export function WordFloat({ col, page, scroller, a, b, layout, children }: Props
       const maxY = (box.querySelector(".player")?.getBoundingClientRect().top ?? c.bottom) - c.top - EDGE;
       // mot sorti de la vue (défilement) : la carte attend qu'il revienne
       if (bottom < minY || top > maxY) return setSeen(false);
+      if (onPhone()) {
+        // the sheet takes the half of the screen the word is not in
+        const h = window.innerHeight;
+        const wordTop = Math.min(ra.top, rb.top);
+        const wordBottom = Math.max(ra.bottom, rb.bottom);
+        const low = (wordTop + wordBottom) / 2 > h / 2;
+        const room = low ? wordTop - EDGE : h - wordBottom - EDGE;
+        const maxH = Math.round(Math.min(h * SHEET_MAX, Math.max(h * SHEET_MIN, room)));
+        const next: Place = { left: 0, y: 0, width: 0, up: !low, maxH, tip: 0, sheet: low ? "top" : "bottom" };
+        setSeen(true);
+        setPlace((p) => (p && p.sheet === next.sheet && p.maxH === next.maxH ? p : next));
+        return;
+      }
       // sur une ligne : le milieu du passage ; sur plusieurs : son premier mot
       const oneLine = Math.abs(ra.top - rb.top) < ra.height / 2;
       const x = (oneLine ? (Math.min(ra.left, rb.left) + Math.max(ra.right, rb.right)) / 2 : ra.left + ra.width / 2) - c.left;
@@ -105,6 +126,25 @@ export function WordFloat({ col, page, scroller, a, b, layout, children }: Props
       ro.disconnect();
     };
   }, [col, page, scroller, a, b, layout]);
+
+  if (place?.sheet)
+    return (
+      <div key="sheet" className={`wp-float-at sheet ${place.sheet} ${seen ? "" : "gone"}`}>
+        <motion.div
+          className="wp-float sheet"
+          data-tour="panel"
+          role="dialog"
+          aria-label={t("Détail du mot", "Word details")}
+          style={{ maxHeight: place.maxH }}
+          initial={{ opacity: 0, scale: 1, y: place.sheet === "bottom" ? 40 : -40 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, y: place.sheet === "bottom" ? 40 : -40, transition: { duration: 0.16 } }}
+          transition={{ type: "spring", stiffness: 480, damping: 40 }}
+        >
+          {children}
+        </motion.div>
+      </div>
+    );
 
   return (
     <div

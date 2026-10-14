@@ -133,5 +133,12 @@ test('on a phone, a bar at the foot of the screen leads everywhere, and no view 
   expect(await wide()).toBeLessThanOrEqual(391);
  }
  await bar.getByRole('button',{name:'More'}).click();await page.getByRole('menuitem',{name:'Now reading'}).click();await expect(page.locator('.reader')).toBeVisible();
+ // pages turn from buttons within reach of a thumb, and a tapped word opens a sheet the screen's width
+ const count=page.locator('.leaf-progress .num');await expect(count).toHaveText(/^1 \//);
+ await page.locator('.leaf-step').last().click();await expect(count).toHaveText(/^2 \//);
+ await page.locator('.leaf-step').first().click();await expect(count).toHaveText(/^1 \//);
+ await page.locator('.leaf-page [data-i]').nth(2).click();
+ const sheet=page.locator('.wp-float.sheet');await expect(sheet).toBeVisible();
+ await expect.poll(()=>sheet.evaluate(e=>Math.round(e.getBoundingClientRect().width))).toBe(390);
  expect(errors).toEqual([]);
 });

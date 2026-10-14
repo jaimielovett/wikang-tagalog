@@ -777,6 +777,26 @@ export function Reader() {
     goPage(pageNow.current + (forward ? 1 : -1));
   };
 
+  // on a touch screen, a finger swept sideways across the page turns it, like a book
+  const touch = useRef<{ x: number; y: number; at: number; turned: boolean } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const f = e.touches[0];
+    touch.current = e.touches.length === 1 ? { x: f.clientX, y: f.clientY, at: Date.now(), turned: false } : null;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const s = touch.current;
+    const f = e.touches[0];
+    if (!s || s.turned || !f) return;
+    const dx = f.clientX - s.x;
+    const dy = f.clientY - s.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.6 || Date.now() - s.at > 800) return;
+    // a sweep, not a selection: the words it crossed stay unselected
+    s.turned = true;
+    drag.current = null;
+    setRange(null);
+    goPage(pageNow.current + (dx < 0 !== !!langInfo(lang).rtl ? 1 : -1));
+  };
+
   const findNext = async () => {
     if (!lesson) return null;
     // dans une playlist, la suivante est la sienne ; sinon, celle de la collection
@@ -1474,7 +1494,7 @@ export function Reader() {
         )}
 
         {paged ? (
-          <div className="reader-leaves" onWheel={onSwipe} onPointerDown={onVoidDown}>
+          <div className="reader-leaves" onWheel={onSwipe} onPointerDown={onVoidDown} onTouchStart={onTouchStart} onTouchMove={onTouchMove}>
             {arrow("left")}
             <div className="leaf">
               <div className="leaf-view" ref={viewRef}>
@@ -1501,9 +1521,18 @@ export function Reader() {
                       </div>
                     ))}
                   {pages.length > 1 && (
-                    <span className="num">
-                      {page + 1} / {pages.length}
-                    </span>
+                    <>
+                      {/* phones: the side arrows give way to these, within easy reach of a thumb */}
+                      <button className="icon-btn leaf-step" onClick={() => goPage(page - (li.rtl ? -1 : 1))} disabled={li.rtl ? page >= pages.length - 1 : page <= 0} aria-label={li.rtl ? t("Page suivante", "Next page") : t("Page précédente", "Previous page")}>
+                        <Icon name="left" size={22} />
+                      </button>
+                      <span className="num">
+                        {page + 1} / {pages.length}
+                      </span>
+                      <button className="icon-btn leaf-step" onClick={() => goPage(page + (li.rtl ? -1 : 1))} disabled={li.rtl ? page <= 0 : page >= pages.length - 1} aria-label={li.rtl ? t("Page précédente", "Previous page") : t("Page suivante", "Next page")}>
+                        <Icon name="right" size={22} />
+                      </button>
+                    </>
                   )}
                 </div>
                 {/* la page ne tourne pas avec la lecture : le conseil cède la place à « Y aller » */}

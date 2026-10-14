@@ -343,3 +343,154 @@
     overflow-x: clip;
   }
 }
+
+/* page buttons by the page count: phones only, where the side arrows go */
+.leaf-step {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  /* the page turns with a sweep of the finger, or the buttons at its foot */
+  .reader-leaves {
+    grid-template-columns: 6px minmax(0, 1fr) 6px;
+    touch-action: pan-y;
+  }
+  .reader-leaves .leaf-arrow {
+    visibility: hidden;
+    width: 0;
+  }
+  .leaf-step {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    color: var(--text);
+  }
+  .leaf-step:disabled {
+    opacity: 0.25;
+  }
+  .leaf-progress {
+    gap: 2px;
+    margin-left: -10px;
+  }
+  .leaf-progress .leaf-rail {
+    display: none;
+  }
+
+  /* the word: a sheet the screen's width, in the half of the screen the word is not in */
+  .wp-float-at.sheet {
+    position: fixed;
+    z-index: 70;
+    left: 0;
+    right: 0;
+    height: auto;
+    transition: opacity 0.18s ease, visibility 0s;
+  }
+  .wp-float-at.sheet.bottom {
+    bottom: 0;
+    top: auto;
+  }
+  .wp-float-at.sheet.top {
+    top: 0;
+    bottom: auto;
+  }
+  .wp-float.sheet {
+    position: relative;
+    border-radius: 22px 22px 0 0;
+    border-width: 1px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow: hidden;
+  }
+  .wp-float-at.sheet.top .wp-float.sheet {
+    border-radius: 0 0 22px 22px;
+    border-width: 0 0 1px;
+    padding: env(safe-area-inset-top) 0 0;
+  }
+  .wp-float.sheet .wp-scroll {
+    padding: 20px 20px 18px;
+    gap: 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .wp-float.sheet .wp-word h2 {
+    font-size: 34px;
+  }
+  .wp-float.sheet .wp-word h2.long {
+    font-size: 24px;
+  }
+  .wp-float.sheet .wp-ai {
+    font-size: 21px;
+  }
+  .wp-float.sheet .status-bar button {
+    height: 48px;
+    font-size: 15px;
+  }
+  .wp-float.sheet .btn {
+    min-height: 44px;
+  }
+  .wp-float.sheet .wp-foot {
+    font-size: 12.5px;
+    padding: 10px 20px;
+  }
+}
+
+/* ---------- short screens (a tablet or phone on its side) ----------
+   The text always keeps room under the video: the picture gives way first. */
+.video-frame {
+  max-height: min(54vh, calc(100vh - 380px));
+}
+.video-stage.compact .video-frame {
+  max-height: min(260px, calc(100vh - 380px));
+}
+/* landscape and short: the video beside the text, as in a book with its picture on the facing page */
+@media (orientation: landscape) and (max-height: 760px) and (min-width: 760px) {
+  .reader-col:has(> .video-stage:not(.cinema)) {
+    display: grid;
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .reader-col:has(> .video-stage:not(.cinema)) > .reader-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .reader-col:has(> .video-stage:not(.cinema)) > .video-stage {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+    padding: 0 6px 10px 16px;
+  }
+  .reader-col:has(> .video-stage:not(.cinema)) > .video-stage .video-frame {
+    max-height: calc(100vh - 200px);
+  }
+  .reader-col:has(> .video-stage:not(.cinema)) > .reader-leaves,
+  .reader-col:has(> .video-stage:not(.cinema)) > .reader-scroll {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+  }
+  .reader-col:has(> .video-stage:not(.cinema)) > .player {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 700px) {
+  /* one card, not a card inside a frame */
+  .wp-float-at.sheet {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  .wp-float.sheet {
+    margin: 0;
+    width: 100%;
+  }
+  /* a video lesson keeps its first page for the text */
+  .reader-col:has(> .video-stage) .reader-head h1 {
+    font-size: 26px;
+  }
+  .reader-col:has(> .video-stage) .reader-chips {
+    display: none;
+  }
+}
