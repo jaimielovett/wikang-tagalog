@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, errorText } from "./api";
+import { api, errorText, isTauri } from "./api";
 import { formatNumber as fmtNumber, locale, setUiLang, t, type UiLang } from "./i18n";
 import type { AppInfo, DiscoverItem, DownloadEvent, LangCode, ModelRow, Streak } from "./types";
 import { LOOK_DEFAULTS } from "./reading";
@@ -173,6 +173,8 @@ let toastId = 0;
 /** File des écritures de réglages (dans l'ordre des clics). */
 let writes: Promise<unknown> = Promise.resolve();
 
+let remoteListening = false;
+
 export const useApp = create<AppStore>((set, get) => ({
   ready: false,
   info: null,
@@ -268,6 +270,19 @@ export const useApp = create<AppStore>((set, get) => ({
     setUiLang(ui);
     set({ info, settings: { ...DEFAULTS, ...settings, lang: "tl", langs: "tl", ui_lang: ui }, lessonId: last, queue, ready: true });
     if (settings.ui_lang !== ui) void get().setSetting("ui_lang", ui);
+    // web: changes made on another device arrive while the app is open
+    if (!isTauri && !remoteListening) {
+      remoteListening = true;
+      window.addEventListener("wikang:remote-change", () => {
+        void api()
+          .settingsGet()
+          .then((fresh) => {
+            set((s) => ({ settings: { ...DEFAULTS, ...fresh, lang: "tl", langs: "tl", ui_lang: s.settings.ui_lang } }));
+            get().bumpLibrary();
+            void get().refreshKnown();
+          });
+      });
+    }
     await get().refreshModels();
     await get().refreshKnown();
     // prépare l'IA en arrière-plan dès l'ouverture de l'application

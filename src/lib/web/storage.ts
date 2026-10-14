@@ -1,75 +1,158 @@
 import { cloud, useAccount } from './cloud';
 import { deleteSnapshot,readSnapshot,writeSnapshot } from './idb';
 import { hasLearning,mergeGuest } from './merge';
+import { applyRows,fingerprint,newSyncState,syncOnce,type Remote,type RemoteRow,type SyncState } from './sync';
 import type { Db } from './local';
 export const emptyDb = (): Db => ({settings:{lang:'tl',langs:'tl',ui_lang:'en'},lessons:[],terms:{},activity:{},nextId:1,installed:[]});
 const GUEST_KEY = 'wikang-tagalog:guest';
 export function storageKey() { return useAccount.getState().session ? `wikang-tagalog:${useAccount.getState().session!.user.id}` : GUEST_KEY; }
-export interface Snapshot { data: Db; revision: number; dirty: boolean }
+/** Fired when other devices' changes arrive: the app re-reads what it shows. */
+export const REMOTE_CHANGE = 'wikang:remote-change';
+
+export interface Snapshot {
+  data: Db;
+  /** item-by-item sync (signed in) */
+  sync?: SyncState;
+  /** this browser's name in the account's activity records */
+  device?: string;
+  /** the local data has been reconciled with the account once */
+  synced?: boolean;
+  /** a restored backup: it replaces the account's data everywhere */
+  replace?: boolean;
+  /** before item-by-item sync: unsent changes on top of the saved document */
+  dirty?: boolean;
+  revision?: number;
+}
 export function privateSnapshot(db: Db): Db {
   // Desktop and browser API keys must never enter a shared database or backup.
   return {...db, settings: Object.fromEntries(Object.entries(db.settings).filter(([k]) => !/key|token|secret|password/i.test(k)))};
 }
+/** Replaces the data in place: the local API keeps its reference to `target`. */
+function replaceDb(target: Db, source: Db) {
+  for (const k of Object.keys(target)) delete (target as unknown as Record<string, unknown>)[k];
+  Object.assign(target, emptyDb(), structuredClone(source));
+}
+const setSync = (sync: string) => useAccount.setState({sync});
+
+function remoteFor(userId: string): Remote {
+  return {
+    async push(rows) {
+      const {error} = await cloud!.rpc('push_learner_records',{records:rows});
+      if (error) throw new Error(error.message);
+    },
+    async pull(since) {
+      const out: RemoteRow[] = [];
+      for (let after = since;;) {
+        let query = cloud!.from('learner_records').select('key,data,updated_at,server_at').eq('user_id',userId).order('server_at').limit(1000);
+        if (after) query = query.gt('server_at',after);
+        const {data,error} = await query;
+        if (error) throw new Error(error.message);
+        out.push(...(data as RemoteRow[]));
+        if (data.length < 1000) return out;
+        after = data[data.length-1].server_at;
+      }
+    },
+  };
+}
+const ownKey = (key: string, device: string) => !key.startsWith('activity:') || key.endsWith(`:${device}`);
+
+/**
+ * Brings this browser's data and the account together, once: a restored backup replaces the
+ * account's data; a first sync on this browser takes the account's (or, the first time the
+ * account syncs item by item, its saved document); learning done as a guest joins in.
+ */
+async function reconcile(snapshot: Snapshot, key: string, userId: string) {
+  const db = snapshot.data;const device = snapshot.device!;const remote = remoteFor(userId);
+  let guestJoined = false;
+  if (snapshot.replace) {
+    const state = snapshot.sync = newSyncState();
+    const rows = await remote.pull(null);
+    const now = Date.now();
+    for (const row of rows) {
+      if (!state.pulled_at || row.server_at > state.pulled_at) state.pulled_at = row.server_at;
+      if (row.data === null) continue;
+      // the backup's activity already counts every device: their records are cleared
+      if (ownKey(row.key,device)) state.shadow[row.key] = [fingerprint(row.data),Date.parse(row.updated_at)];
+      else state.pending[row.key] = [0,now];
+    }
+  } else if (!snapshot.synced) {
+    snapshot.sync = newSyncState();
+    const rows = await remote.pull(null);
+    let base: Db | null = null;
+    if (rows.length) {
+      base = emptyDb();
+      applyRows(base,snapshot.sync,device,rows);
+    } else {
+      // the first sync of this account: its saved document becomes records
+      const {data,error} = await cloud!.from('learner_state').select('data').eq('user_id',userId).maybeSingle();
+      if (error) throw new Error(error.message);
+      if (data?.data) base = {...emptyDb(),...(data.data as Db)};
+    }
+    // changes this browser had not sent yet are kept, joined like a guest's learning
+    if (base) replaceDb(db,snapshot.dirty ? mergeGuest(base,db) : base);
+  }
+  // learning done as a guest joins the account the first time it signs in on this browser
+  const guest = await readSnapshot<Snapshot>(GUEST_KEY);
+  if (hasLearning(guest?.data)) {replaceDb(db,mergeGuest(db,guest.data));guestJoined = true;}
+  snapshot.synced = true;
+  delete snapshot.replace;delete snapshot.dirty;delete snapshot.revision;
+  await syncOnce(db,snapshot.sync!,device,remote);
+  await writeSnapshot(key,snapshot);
+  if (guestJoined) await deleteSnapshot(GUEST_KEY);
+}
+
 export async function openDb() {
   const key = storageKey();
-  let snapshot: Snapshot = {data:emptyDb(),revision:0,dirty:false};
   const saved = await readSnapshot<Snapshot>(key);
-  if (saved) snapshot = saved;
+  const snapshot: Snapshot = saved ?? {data:emptyDb()};
+  snapshot.data = {...emptyDb(),...snapshot.data};
+  snapshot.device ??= crypto.randomUUID().replace(/-/g,'').slice(0,12);
   const user = useAccount.getState().session?.user;
   if (cloud && user) {
-    const {data, error} = await cloud.from('learner_state').select('data,revision').eq('user_id',user.id).maybeSingle();
-    if (error) useAccount.setState({sync:'Offline — saved on this device'});
-    else if (data) {
-      useAccount.setState({sync:snapshot.dirty ? "Saving…" : "Synced"});
-      if (snapshot.dirty && snapshot.revision !== data.revision) {
-        useAccount.setState({sync:'Sync conflict — export this device’s backup before restoring the cloud copy'});
-        // Keep all unsent local work, and refuse to overwrite another device.
-      } else if (!snapshot.dirty) snapshot = {data:data.data as Db,revision:data.revision,dirty:false};
-    }
-    // Learning done as a guest joins the account the first time it signs in on this browser.
-    // Only once the account's own copy is known, so the merge never races another device.
-    if (!error) {
-      const guest = await readSnapshot<Snapshot>(GUEST_KEY);
-      if (hasLearning(guest?.data)) {
-        snapshot = {data:mergeGuest(snapshot.data,guest.data),revision:snapshot.revision,dirty:true};
-        await writeSnapshot(key,snapshot);
-        await deleteSnapshot(GUEST_KEY);
-      }
+    snapshot.sync ??= newSyncState();
+    try {
+      if (!snapshot.synced || snapshot.replace) await reconcile(snapshot,key,user.id);
+      else await syncOnce(snapshot.data,snapshot.sync,snapshot.device,remoteFor(user.id));
+      setSync('Synced');
+    } catch (e) {
+      setSync(String((e as Error)?.message).includes('storage_full') ? 'Storage full — remove some lessons to keep syncing' : 'Offline — saved on this device');
     }
   }
   return {snapshot,key};
 }
+
 export function persistence(key: string, snapshot: Snapshot) {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let sending = false;
-  let generation = 0;
-  let conflict = false;
+  let running = false;let again = false;
   const write = () => writeSnapshot(key,snapshot);
-  const flush = async () => {
+  const cycle = async () => {
     const user = useAccount.getState().session?.user;
-    if (!cloud || !user || storageKey() !== key || conflict || sending || !snapshot.dirty) return;
-    sending = true;
-    const current = generation;
-    useAccount.setState({sync:'Saving…'});
+    if (!cloud || !user || storageKey() !== key || !snapshot.sync) return;
+    if (running) {again = true;return;}
+    running = true;
     try {
-      const {data,error} = await cloud.rpc('save_learner_state',{expected_revision:snapshot.revision,new_data:privateSnapshot(snapshot.data)});
-      if (error) {
-        conflict = error.message.includes('sync_conflict');
-        throw error;
+      let changed: boolean;
+      if (!snapshot.synced || snapshot.replace) {await reconcile(snapshot,key,user.id);changed = true;}
+      else {
+        if (Object.keys(snapshot.sync.pending).length) setSync('Saving…');
+        changed = await syncOnce(snapshot.data,snapshot.sync,snapshot.device!,remoteFor(user.id));
+        await write();
       }
-      snapshot.revision = Number(data);
-      snapshot.dirty = generation !== current;
-      await write();
-      useAccount.setState({sync:snapshot.dirty?'Saving…':'Synced'});
-    } catch {
-      useAccount.setState({sync:conflict?'Sync conflict — export a backup in Settings':'Offline — saved on this device'});
+      setSync('Synced');
+      if (changed) window.dispatchEvent(new Event(REMOTE_CHANGE));
+    } catch (e) {
+      setSync(String((e as Error)?.message).includes('storage_full') ? 'Storage full — remove some lessons to keep syncing' : 'Offline — saved on this device');
+      clearTimeout(timer);timer = setTimeout(() => void cycle(),15000);
     } finally {
-      sending=false;
-      if (snapshot.dirty && !conflict) timer=setTimeout(() => void flush(),5000);
+      running = false;
+      if (again) {again = false;void cycle();}
     }
   };
-  window.addEventListener('online',() => void flush());
+  // other devices' changes arrive every minute while the app is in view, and when it comes back
+  setInterval(() => {if (document.visibilityState === 'visible') void cycle();},60_000);
+  document.addEventListener('visibilitychange',() => {if (document.visibilityState === 'visible') void cycle();});
+  window.addEventListener('online',() => void cycle());
   window.addEventListener('pagehide',() => {void write();});
-  if (snapshot.dirty) timer=setTimeout(() => void flush(),1000);
-  return {async commit() {generation++; snapshot.dirty=true;await write(); clearTimeout(timer);timer=setTimeout(() => void flush(),700);},flush};
+  if (snapshot.sync && !snapshot.synced) timer = setTimeout(() => void cycle(),5000);
+  return {async commit() {await write();clearTimeout(timer);timer = setTimeout(() => void cycle(),700);},flush:cycle};
 }

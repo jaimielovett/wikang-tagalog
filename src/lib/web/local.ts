@@ -23,6 +23,12 @@ const parseDay = (s: string) => new Date(Number(s.slice(0, 4)), Number(s.slice(5
 const emptyDay = (day: string): DayStat => ({ day, words_read: 0, known_added: 0, lingqs: 0, listen_secs: 0, learn_secs: 0, goal_met: false });
 export function createLocalApi(db: Db, commit: () => Promise<void>) {
   const playlists = () => (db.playlists ??= []);
+  /** Ids from the clock (microsecond scale): two devices of one account never hand out the same one. */
+  const newId = () => {
+    const id = Math.max(db.nextId, Date.now() * 1000 + Math.floor(Math.random() * 1000));
+    db.nextId = id + 1;
+    return id;
+  };
   const chats = () => (db.chats ??= []);
   const chatSummary = (c: ReturnType<typeof chats>[number]): ChatSummary => {
     const last = c.messages[c.messages.length - 1];
@@ -146,7 +152,7 @@ export function createLocalApi(db: Db, commit: () => Promise<void>) {
       return { lesson: l, tokens, terms };
     },
     async lessonCreate(n: NewLesson) {
-      const id = db.nextId++;
+      const id = newId();
       const l: Lesson & { created_at: number } = {
         id,
         lang: "tl",
@@ -198,7 +204,7 @@ export function createLocalApi(db: Db, commit: () => Promise<void>) {
         .sort((a, b) => b.created_at - a.created_at || b.id - a.id);
     },
     async playlistCreate(lang, name, lessons) {
-      const id = Math.max(0, ...playlists().map((p) => p.id)) + 1;
+      const id = newId();
       playlists().push({ id, lang, name: name.trim().replace(/\s+/g, " ").slice(0, 120) || t("Nouvelle playlist", "New playlist"), lessons: fill(lang, lessons), current: null, created_at: Date.now() / 1000 });
       await commit();
       return id;
@@ -388,7 +394,7 @@ export function createLocalApi(db: Db, commit: () => Promise<void>) {
       return { chat: chatSummary(c), messages: c.messages };
     },
     async chatCreate(lang, lesson) {
-      const id = Math.max(0, ...chats().map((c) => c.id)) + 1;
+      const id = newId();
       const now = Date.now() / 1000;
       const lesson_id = lesson && db.lessons.some((l) => l.id === lesson && l.lang === lang) ? lesson : null;
       const c = { id, lang, title: "", lesson_id, created_at: now, updated_at: now, messages: [] };

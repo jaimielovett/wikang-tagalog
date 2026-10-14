@@ -46,7 +46,15 @@ Differences from the plan below:
   Limits on source count, fetch frequency and feed size.
 - Items stay private to the user; they never enter the shared cache.
 
-## Phase 3: Item-by-item sync (web)
+## Phase 3: Item-by-item sync (web) — built
+
+Differences from the plan below:
+- Records are kept per account in `learner_records` (key, data or null when deleted, change time, format version, server time); `push_learner_records` applies the newest change per record and caps each account's storage.
+- Local changes are found by fingerprinting records, so the learning code is unchanged; offline edits keep the time they were first noticed.
+- Lessons, playlists and chats now get clock-based ids, so two devices never create the same one.
+- Browsers sync on each change, every minute while in view, and on returning to view; Realtime can replace the polling in phase 6.
+- The old `save_learner_state` refuses writes once an account has records; `learner_state` is kept, read once per account to migrate.
+
 
 - Replace the single learning document (`learner_state`, whole-file saves with revision checks) with one row per item:
   lessons, words, playlists, chats, reading positions, settings. Each row has `updated_at`; the latest change wins per item.

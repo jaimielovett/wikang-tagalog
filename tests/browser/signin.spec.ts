@@ -1,27 +1,22 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Page} from '@playwright/test';
 import {completeWelcome} from './welcome';
-const userId='55555555-5555-5555-5555-555555555555';
-const b64=(o:object)=>Buffer.from(JSON.stringify(o)).toString('base64url');
-const exp=Math.floor(Date.now()/1000)+3600;
-const token=`${b64({alg:'HS256',typ:'JWT'})}.${b64({sub:userId,exp,aud:'authenticated',role:'authenticated',email:'learner@example.org'})}.sig`;
-const user={id:userId,aud:'authenticated',role:'authenticated',email:'learner@example.org',app_metadata:{},user_metadata:{},created_at:'2026-10-14T00:00:00Z'};
-test('signing in after learning as a guest keeps that learning and skips the welcome',async({page})=>{
- let saved:any=null;
- const cors={'Access-Control-Allow-Origin':'*'};
- await page.route('https://wikang-test.supabase.co/**',async route=>{const url=new URL(route.request().url());
-  if(url.pathname==='/auth/v1/token')return route.fulfill({json:{access_token:token,token_type:'bearer',expires_in:3600,expires_at:exp,refresh_token:'refresh',user},headers:cors});
-  if(url.pathname==='/auth/v1/user')return route.fulfill({json:user,headers:cors});
-  if(url.pathname.includes('/rpc/save_learner_state')){saved=route.request().postDataJSON();return route.fulfill({json:1,headers:cors});}
-  // a brand-new account: no admin role, no saved learning, no published lessons
-  if(url.pathname.includes('/admins')||url.pathname.includes('/learner_state'))return route.fulfill({status:200,body:'null',headers:{...cors,'Content-Type':'application/vnd.pgrst.object+json'}});
-  return route.fulfill({json:[],headers:cors});
- });
- await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
- await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+import {fakeAccount} from './cloud';
+
+async function signIn(page:Page) {
  await page.getByLabel('Email').fill('learner@example.org');await page.getByLabel('Password').fill('correct horse');
  // signing in reloads the app into the account
  await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);
+}
+const known=(page:Page)=>page.evaluate(async()=>(await (window as any).__lumen.api().termsList({lang:'tl',filter:'known',offset:0,limit:50})).items.map((t:any)=>t.term));
+/** The app syncs when it comes back into view: a quick way to ask for a round now. */
+const syncNow=(page:Page)=>page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+
+test('signing in after learning as a guest keeps that learning and skips the welcome',async({page})=>{
+ const account=fakeAccount();await account.attach(page);
+ await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
+ await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
+ await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await signIn(page);
  // the guest never gave a name: the account asks for it once, and only that
  await expect(page.getByRole('heading',{name:"Let's get acquainted"})).toBeVisible({timeout:15000});
  await expect(page.getByRole('button',{name:'Get started',exact:true})).toHaveCount(0);
@@ -29,7 +24,56 @@ test('signing in after learning as a guest keeps that learning and skips the wel
  await page.getByRole('textbox',{name:'Your first name or a nickname'}).fill('Jamie');
  await page.getByRole('button',{name:'Continue',exact:true}).click();
  await expect(page.getByRole('button',{name:'Jamie',exact:true})).toBeVisible();
- const after=await page.evaluate(async()=>{const a=(window as any).__lumen.api();return {lessons:await a.lessonsList('tl'),terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20})};});
- expect(after.lessons.length).toBe(1);expect(after.terms.items.map((t:any)=>t.term)).toContain('bahay');
- await expect.poll(()=>saved?.new_data?.terms?.['tl|bahay']?.status,{timeout:10000}).toBe(4);
+ const lessons=await page.evaluate(async()=>(await (window as any).__lumen.api().lessonsList('tl')).length);
+ expect(lessons).toBe(1);expect(await known(page)).toContain('bahay');
+ // the account now holds each piece of learning as its own record
+ await expect.poll(()=>(account.records.get('term:tl|bahay')?.data as any)?.status,{timeout:10000}).toBe(4);
+ await expect.poll(()=>account.records.get('setting:user_name')?.data,{timeout:10000}).toBe('Jamie');
+ expect([...account.records.keys()].some(k=>/key|token|secret|password/i.test(k))).toBe(false);
+});
+
+test('two devices on one account stay in step, item by item',async({browser})=>{
+ const account=fakeAccount();
+ const laptop=await (await browser.newContext()).newPage();await account.attach(laptop);
+ await laptop.goto('/');await completeWelcome(laptop);
+ await laptop.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await signIn(laptop);
+ await laptop.getByRole('button',{name:'Later',exact:true}).click();
+ await laptop.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
+ await expect.poll(()=>account.records.has('term:tl|bahay'),{timeout:10000}).toBe(true);
+
+ // a second browser signs in from the welcome and goes straight to its learning
+ const phone=await (await browser.newContext()).newPage();await account.attach(phone);
+ await phone.goto('/');
+ await phone.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
+ await signIn(phone);
+ await expect(phone.getByRole('button',{name:'Library',exact:true})).toBeVisible({timeout:15000});
+ await expect(phone.getByRole('button',{name:'Get started',exact:true})).toHaveCount(0);
+ expect(await known(phone)).toContain('bahay');
+
+ // a word learnt on the phone reaches the laptop
+ await phone.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'araw',status:4,translation:'day'})});
+ await expect.poll(()=>account.records.has('term:tl|araw'),{timeout:10000}).toBe(true);
+ await syncNow(laptop);
+ await expect.poll(()=>known(laptop),{timeout:10000}).toContain('araw');
+ // the later of two changes to the same setting wins on both
+ await laptop.evaluate(()=>(window as any).__lumen.useApp.getState().setSetting('daily_goal','15'));
+ await expect.poll(()=>account.records.get('setting:daily_goal')?.data,{timeout:10000}).toBe('15');
+ await phone.evaluate(()=>(window as any).__lumen.useApp.getState().setSetting('daily_goal','30'));
+ await expect.poll(()=>account.records.get('setting:daily_goal')?.data,{timeout:10000}).toBe('30');
+ await syncNow(laptop);
+ await expect.poll(()=>laptop.evaluate(()=>(window as any).__lumen.useApp.getState().settings.daily_goal),{timeout:10000}).toBe('30');
+});
+
+test('an account saved the old way becomes records the first time it signs in',async({page})=>{
+ const account=fakeAccount();
+ account.setLegacy({settings:{lang:'tl',langs:'tl',ui_lang:'en',onboarded:'1',user_name:'Jamie',daily_goal:'20'},lessons:[{id:1,lang:'tl',title:'Lumang aralin',text:'May bahay sa tabi ng dagat.',collection:'',kind:'text',source:'',media_path:null,timings:null,video_path:null,hue:40,word_count:6,page:0,completed:false,position:0,anchor:0,duration:0,cover_path:null,timing_v:0,created_at:1}],terms:{'tl|dagat':{term:'dagat',status:4,translation:'sea',note:'',lemma:'',context:'',updated_at:1}},activity:{},nextId:2,installed:[]});
+ await account.attach(page);
+ await page.goto('/');
+ await page.getByRole('button',{name:/I've used Wikang Tagalog before/}).click();
+ await signIn(page);
+ await expect(page.getByRole('button',{name:'Jamie',exact:true})).toBeVisible({timeout:15000});
+ expect(await known(page)).toContain('dagat');
+ await expect.poll(()=>account.records.get('lesson:1')?.data && (account.records.get('lesson:1')!.data as any).title,{timeout:10000}).toBe('Lumang aralin');
+ expect(account.records.get('setting:daily_goal')?.data).toBe('20');
 });
