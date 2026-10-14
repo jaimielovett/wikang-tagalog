@@ -35,6 +35,10 @@ The website starts without external credentials: guest reading, the bundled Taga
 
 Supabase row-level security isolates each account's learning data. Cloud saves compare revisions so two devices cannot silently overwrite one another. A conflict keeps the local copy and stops writes; export it in Settings, then sign in on a clean browser to obtain the cloud copy. Exported guest backups can be restored into a signed-in account. Desktop learning remains local; desktop accounts currently provide catalogue access and admin publication, while web learning syncs across web devices.
 
+## Branded account email
+
+The confirmation email template and Supabase setup instructions are in [supabase/templates/README.md](supabase/templates/README.md). Apply it in the Auth dashboard; website deployment alone does not change Supabase email templates. A custom SMTP provider and verified sender address are needed to replace the default Supabase sender.
+
 ## Online features
 
 Set optional **server-only** variables on Vercel:
