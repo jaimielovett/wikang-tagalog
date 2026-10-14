@@ -125,7 +125,7 @@ pub fn js_runtime_arg(data_dir: &Path) -> Option<String> {
 
 async fn fetch(url: &str, dest: &Path, mut on_progress: impl FnMut(u64, u64)) -> Result<()> {
     let client = reqwest::Client::builder()
-        .user_agent("Lumen/0.1")
+        .user_agent("WikangTagalog/0.1")
         .connect_timeout(Duration::from_secs(20))
         .build()?;
     let resp = client.get(url).send().await?;

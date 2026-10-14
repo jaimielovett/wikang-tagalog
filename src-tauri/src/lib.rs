@@ -156,7 +156,7 @@ pub fn run() {
             commands::text_stats,
         ])
         .build(tauri::generate_context!())
-        .expect("Lumen couldn't start")
+        .expect("Wikang Tagalog couldn't start")
         .run(|app, event| {
             // dernière sauvegarde en quittant, si la progression a changé
             if let tauri::RunEvent::Exit = event {

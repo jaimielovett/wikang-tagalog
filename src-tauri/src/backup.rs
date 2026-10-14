@@ -524,13 +524,13 @@ pub fn place_dir(path: &str) -> Result<String, String> {
     let mut dirs: Vec<String> = fs::read_dir(p)
         .map_err(|e| match e.kind() {
             io::ErrorKind::PermissionDenied if cfg!(windows) => crate::i18n::t(
-                "Lumen n'a pas accès à Google Drive. Ouvrez Google Drive, vérifiez que vous êtes connecté, puis réessayez.",
-                "Lumen has no access to Google Drive. Open Google Drive, check that you're signed in, then try again.",
+                "Wikang Tagalog n'a pas accès à Google Drive. Ouvrez Google Drive, vérifiez que vous êtes connecté, puis réessayez.",
+                "Wikang Tagalog has no access to Google Drive. Open Google Drive, check that you're signed in, then try again.",
             )
             .into(),
             io::ErrorKind::PermissionDenied => crate::i18n::t(
-                "Lumen n'a pas accès à Google Drive. Autorisez-le dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, puis réessayez.",
-                "Lumen has no access to Google Drive. Allow it in System Settings › Privacy & Security › Files and Folders, then try again.",
+                "Wikang Tagalog n'a pas accès à Google Drive. Autorisez-le dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, puis réessayez.",
+                "Wikang Tagalog has no access to Google Drive. Allow it in System Settings › Privacy & Security › Files and Folders, then try again.",
             )
             .into(),
             _ => not_ready(),
@@ -1090,7 +1090,7 @@ pub fn restore(live: &Mutex<Connection>, data_dir: &Path, root: &Path, key: &str
     ensure_local(&mf, Duration::from_secs(30))?;
     let manifest = read_manifest(&mf).ok_or_else(|| anyhow!(crate::i18n::t("Les informations de cette sauvegarde sont illisibles.", "The details of this backup are unreadable.")))?;
     if manifest.format > FORMAT {
-        bail!(crate::i18n::t("Cette sauvegarde vient d'une version plus récente de Lumen. Mettez Lumen à jour, puis réessayez.", "This backup comes from a newer version of Lumen. Update Lumen, then try again."));
+        bail!(crate::i18n::t("Cette sauvegarde vient d'une version plus récente de Wikang Tagalog. Mettez Wikang Tagalog à jour, puis réessayez.", "This backup comes from a newer version of Wikang Tagalog. Update Wikang Tagalog, then try again."));
     }
     ensure_local(&snap, Duration::from_secs(600))?;
     let scratch = data_dir.join("restauration.tmp");
@@ -1285,14 +1285,14 @@ fn io_message(io: &io::Error, place: &Place) -> Option<String> {
     let name = &place.name;
     match io.kind() {
         io::ErrorKind::PermissionDenied if cloud && cfg!(windows) => Some(crate::tr!(
-            "Lumen n'a pas accès à {name}. Ouvrez {name}, vérifiez que vous êtes connecté, puis réessayez.",
-            "Lumen has no access to {name}. Open {name}, check that you're signed in, then try again."
+            "Wikang Tagalog n'a pas accès à {name}. Ouvrez {name}, vérifiez que vous êtes connecté, puis réessayez.",
+            "Wikang Tagalog has no access to {name}. Open {name}, check that you're signed in, then try again."
         )),
         io::ErrorKind::PermissionDenied if cloud => Some(crate::tr!(
-            "Lumen n'a pas accès à {name}. Autorisez-le dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, puis réessayez.",
-            "Lumen has no access to {name}. Allow it in System Settings › Privacy & Security › Files and Folders, then try again."
+            "Wikang Tagalog n'a pas accès à {name}. Autorisez-le dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, puis réessayez.",
+            "Wikang Tagalog has no access to {name}. Allow it in System Settings › Privacy & Security › Files and Folders, then try again."
         )),
-        io::ErrorKind::PermissionDenied => Some(crate::i18n::t("Lumen ne peut pas écrire dans ce dossier. Choisissez-en un autre.", "Lumen can't write to this folder. Choose another one.").into()),
+        io::ErrorKind::PermissionDenied => Some(crate::i18n::t("Wikang Tagalog ne peut pas écrire dans ce dossier. Choisissez-en un autre.", "Wikang Tagalog can't write to this folder. Choose another one.").into()),
         // iCloud Drive absent : `no_place` le dit déjà
         io::ErrorKind::NotFound if place.kind == "icloud" => None,
         io::ErrorKind::NotFound if cloud && cfg!(windows) => Some(crate::tr!(

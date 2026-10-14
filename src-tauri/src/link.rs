@@ -162,8 +162,8 @@ fn live_response(resp: &reqwest::Response) -> bool {
 
 fn live_error() -> anyhow::Error {
     anyhow!(t(
-        "C'est une radio en direct : Lumen n'importe que des enregistrements (épisodes, vidéos, fichiers).",
-        "This is a live radio: Lumen only imports recordings (episodes, videos, files)."
+        "C'est une radio en direct : Wikang Tagalog n'importe que des enregistrements (épisodes, vidéos, fichiers).",
+        "This is a live radio: Wikang Tagalog only imports recordings (episodes, videos, files)."
     ))
 }
 
@@ -433,7 +433,7 @@ fn thumb_of(v: &Value) -> String {
 fn friendly_ytdlp_error(e: &str) -> String {
     let l = e.to_lowercase();
     if l.contains("unsupported url") {
-        t("Lumen ne trouve pas de vidéo à cette adresse.", "Lumen can't find a video at this address.").into()
+        t("Wikang Tagalog ne trouve pas de vidéo à cette adresse.", "Wikang Tagalog can't find a video at this address.").into()
     } else if l.contains("private") || l.contains("unavailable") || l.contains("not available") || l.contains("removed") || l.contains("terminated") {
         t(
             "Cette vidéo n'est pas disponible (privée, supprimée ou bloquée dans votre pays).",
@@ -1375,8 +1375,8 @@ async fn spotify(c: &reqwest::Client, url: &Url) -> Result<LinkInfo> {
             let date = ymd(e.pointer("/releaseDate/isoString").and_then(Value::as_str).unwrap_or(""));
             let Some(mut item) = find_episode(c, &show, &name, num(&e, "duration") / 1000.0, &date).await else {
                 return Err(anyhow!(t(
-                    "Cet épisode n'existe que sur Spotify, qui protège ses fichiers contre la copie. Lumen ne l'a trouvé dans aucun flux public de podcast.",
-                    "This episode only exists on Spotify, which protects its files against copying. Lumen didn't find it in any public podcast feed."
+                    "Cet épisode n'existe que sur Spotify, qui protège ses fichiers contre la copie. Wikang Tagalog ne l'a trouvé dans aucun flux public de podcast.",
+                    "This episode only exists on Spotify, which protects its files against copying. Wikang Tagalog didn't find it in any public podcast feed."
                 )));
             };
             item.page = page.clone();
@@ -1392,8 +1392,8 @@ async fn spotify(c: &reqwest::Client, url: &Url) -> Result<LinkInfo> {
             let show = if str_of(&e, "type") == "episode" && !sub.is_empty() { sub } else { name };
             let Some(mut f) = find_feed(c, &show).await else {
                 return Err(anyhow!(t(
-                    "Ce podcast n'existe que sur Spotify, qui protège ses fichiers contre la copie. Lumen ne l'a trouvé dans aucun flux public.",
-                    "This podcast only exists on Spotify, which protects its files against copying. Lumen didn't find it in any public feed."
+                    "Ce podcast n'existe que sur Spotify, qui protège ses fichiers contre la copie. Wikang Tagalog ne l'a trouvé dans aucun flux public.",
+                    "This podcast only exists on Spotify, which protects its files against copying. Wikang Tagalog didn't find it in any public feed."
                 )));
             };
             f.url = page;

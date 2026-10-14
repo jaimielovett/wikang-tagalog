@@ -59,7 +59,7 @@ impl Client {
             bail!(crate::i18n::t("Collez d'abord votre clé API LingQ.", "Paste your LingQ API key first."));
         }
         let http = reqwest::Client::builder()
-            .user_agent("Lumen (lecteur pour apprendre les langues)")
+            .user_agent("WikangTagalog (Tagalog reader)")
             .connect_timeout(Duration::from_secs(20))
             .timeout(Duration::from_secs(90))
             .build()?;

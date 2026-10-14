@@ -238,7 +238,7 @@ pub async fn fetch_resumable(
     let mut start: u64 = tokio::fs::metadata(part).await.map(|md| md.len()).unwrap_or(0);
 
     let client = reqwest::Client::builder()
-        .user_agent("Lumen/0.1 (+language reader)")
+        .user_agent("WikangTagalog/0.1 (+language reader)")
         .connect_timeout(Duration::from_secs(20))
         .build()?;
     let mut req = client.get(url);

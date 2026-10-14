@@ -497,7 +497,7 @@ pub async fn song_url(data_dir: &Path, artist: &str, title: &str) -> Result<Stri
             break;
         }
     }
-    let url = found.ok_or_else(|| anyhow!(t("Lumen ne trouve pas cette chanson sur YouTube.", "Lumen can't find this song on YouTube.")))?;
+    let url = found.ok_or_else(|| anyhow!(t("Wikang Tagalog ne trouve pas cette chanson sur YouTube.", "Wikang Tagalog can't find this song on YouTube.")))?;
     cache.lock().insert(key, url.clone());
     Ok(url)
 }
@@ -768,7 +768,7 @@ pub async fn stream(data_dir: &Path, url: &str, audio_only: bool, browser: Optio
         .map_err(|_| anyhow!(t("Le site ne répond pas.", "The site isn't responding.")))??;
     let s = stream_of(&v);
     if s.video.is_empty() && s.audio.is_empty() {
-        return Err(anyhow!(t("Lumen ne trouve rien à lire à cette adresse.", "Lumen can't find anything to play at this address.")));
+        return Err(anyhow!(t("Wikang Tagalog ne trouve rien à lire à cette adresse.", "Wikang Tagalog can't find anything to play at this address.")));
     }
     let mut map = cache.lock();
     map.retain(|_, (at, _)| at.elapsed() < Duration::from_secs(40 * 60));

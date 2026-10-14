@@ -600,7 +600,7 @@ pub fn lang_name_en(code: &str) -> &'static str {
 }
 
 #[allow(dead_code)]
-pub const SYSTEM: &str = "Tu es le moteur de traduction de Lumen, une application d'apprentissage des langues. Tu réponds toujours en français, brièvement et avec exactitude, sans formule de politesse ni commentaire superflu.";
+pub const SYSTEM: &str = "Tu es le moteur de traduction de Wikang Tagalog, une application d'apprentissage des langues. Tu réponds toujours en français, brièvement et avec exactitude, sans formule de politesse ni commentaire superflu.";
 
 // Les consignes existent pour un apprenant francophone (`native` = "fr") et
 // anglophone ("en") ; les versions françaises sont celles qui ont été éprouvées.
@@ -715,7 +715,7 @@ pub fn simplify_messages(native: &str, lang: &str, level: &str, text: &str) -> V
 
 // ---------- chat ----------
 
-const CHAT_SYSTEM: &str = "Tu es Lumen, un professeur de langues expert, patient et chaleureux, intégré à une application qui aide à apprendre les langues en lisant et en écoutant. Tu maîtrises la grammaire, la conjugaison, le vocabulaire, la prononciation, les expressions idiomatiques, les registres de langue et la culture des pays concernés, et tu sais rendre tout cela simple.
+const CHAT_SYSTEM: &str = "Tu es Wikang Tagalog, un professeur de langues expert, patient et chaleureux, intégré à une application qui aide à apprendre les langues en lisant et en écoutant. Tu maîtrises la grammaire, la conjugaison, le vocabulaire, la prononciation, les expressions idiomatiques, les registres de langue et la culture des pays concernés, et tu sais rendre tout cela simple.
 
 Règles :
 - C'est l'apprenant qui mène la conversation. Réponds à ce qu'il demande, et seulement à cela : pas d'exercice, de quiz, de liste de mots ni de nouveau sujet qu'il n'a pas demandés.
@@ -732,7 +732,7 @@ Règles :
 /// juste avant de répondre que la même règle perdue en tête des consignes.
 const CHAT_LEAD: &str = "(Réponds seulement à ce que je demande, sans rien me proposer à la fin.)";
 
-const CHAT_SYSTEM_EN: &str = "You are Lumen, an expert, patient and warm language teacher, built into an app that helps people learn languages by reading and listening. You master grammar, conjugation, vocabulary, pronunciation, idioms, registers and the culture of the countries concerned, and you know how to make all of it simple.
+const CHAT_SYSTEM_EN: &str = "You are Wikang Tagalog, an expert, patient and warm language teacher, built into an app that helps people learn languages by reading and listening. You master grammar, conjugation, vocabulary, pronunciation, idioms, registers and the culture of the countries concerned, and you know how to make all of it simple.
 
 Rules:
 - The learner leads the conversation. Answer what they ask, and only that: no exercises, quizzes, word lists or new topics they didn't ask for.
@@ -1297,7 +1297,7 @@ mod tests {
     fn chat_prompt_english() {
         let lesson = LessonContext { title: "Il faro", text: "Marta sale le scale.", partial: true };
         let m = chat_messages("en", "it", &Learner::knows(1200), Some(&lesson), &[], "What does « sale » mean here?", &["sale: third-person singular present indicative of salire".into()]);
-        assert!(m[0].1.starts_with("You are Lumen") && m[0].1.contains("already know about 1200 words") && m[0].1.contains("Italian"));
+        assert!(m[0].1.starts_with("You are Wikang Tagalog") && m[0].1.contains("already know about 1200 words") && m[0].1.contains("Italian"));
         assert!(m[0].1.contains("\"Il faro\"") && m[0].1.contains("<lesson>\nMarta sale le scale.\n</lesson>") && m[0].1.contains("only an excerpt"));
         assert!(!m[1].1.contains("practising") && m[1].1.ends_with(&format!("salire)\n\n{CHAT_LEAD_EN}")));
         let m = chat_messages("en", "it", &Learner::knows(10), None, &[], "Ciao! Io sono andato al mare ieri, e tu?", &[]);

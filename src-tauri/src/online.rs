@@ -298,7 +298,7 @@ fn request(c: &reqwest::Client, cfg: &Config, method: reqwest::Method, path: &st
         // la liste des modèles de Claude ne connaît que cet en-tête
         Dialect::Anthropic => r.header("x-api-key", &cfg.key).header("anthropic-version", "2023-06-01"),
         // présentation facultative demandée par OpenRouter
-        Dialect::OpenRouter => r.header("HTTP-Referer", "https://github.com/LivingTwice/lumen").header("X-Title", "Lumen"),
+        Dialect::OpenRouter => r.header("HTTP-Referer", "https://github.com/jaimielovett/wikang-tagalog").header("X-Title", "Wikang Tagalog"),
         _ => r,
     }
 }

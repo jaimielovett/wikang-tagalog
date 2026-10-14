@@ -828,8 +828,8 @@ async fn run_with_fallback(
         Err(e) if needs_cookies(&e) => match browser {
             Some(b) => run_ytdlp(data_dir, ytdlp, args, Some(b), on_progress).await,
             None => Err(anyhow!(crate::tr!(
-                "Le site demande de se connecter pour cette vidéo. Choisissez votre navigateur dans Réglages › Vidéos en ligne pour que Lumen utilise votre session. ({e})",
-                "The site asks you to sign in for this video. Choose your browser in Settings › Online videos so that Lumen can use your session. ({e})"
+                "Le site demande de se connecter pour cette vidéo. Choisissez votre navigateur dans Réglages › Vidéos en ligne pour que Wikang Tagalog utilise votre session. ({e})",
+                "The site asks you to sign in for this video. Choose your browser in Settings › Online videos so that Wikang Tagalog can use your session. ({e})"
             ))),
         },
         Err(e) => Err(e),

@@ -14,7 +14,7 @@ use crate::{link, text};
 
 const API: &str = "https://lrclib.net/api";
 /// LRCLIB demande qu'on se présente.
-const UA: &str = "Lumen (https://github.com/LivingTwice/lumen)";
+const UA: &str = "WikangTagalog (https://github.com/jaimielovett/wikang-tagalog)";
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct Lyrics {

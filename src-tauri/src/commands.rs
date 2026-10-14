@@ -682,7 +682,7 @@ pub async fn chat_send(
     {
         let mut dl = state.downloads.lock();
         if dl.contains_key(&key) {
-            return Err(t("Lumen répond déjà dans cette conversation.", "Lumen is already answering in this conversation.").into());
+            return Err(t("Wikang Tagalog répond déjà dans cette conversation.", "Wikang Tagalog is already answering in this conversation.").into());
         }
         dl.insert(key.clone(), cancel.clone());
     }
@@ -1744,8 +1744,8 @@ pub async fn import_song(state: State<'_, AppState>, lang: String, song: SongIte
         }
     };
     let words = found.as_ref().ok_or(t(
-        "Lumen n'a pas trouvé les paroles de cette chanson. Vous pouvez l'importer comme une vidéo : elle sera transcrite.",
-        "Lumen couldn't find the lyrics of this song. You can import it as a video: it will be transcribed.",
+        "Wikang Tagalog n'a pas trouvé les paroles de cette chanson. Vous pouvez l'importer comme une vidéo : elle sera transcrite.",
+        "Wikang Tagalog couldn't find the lyrics of this song. You can import it as a video: it will be transcribed.",
     ))?;
     let (text, lrc) = lyrics::layout(words, &lang, song.duration);
     if crate::text::word_keys(&text, &lang).len() < 8 {
