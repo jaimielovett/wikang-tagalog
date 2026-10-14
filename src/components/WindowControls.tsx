@@ -45,7 +45,7 @@ export function WindowControls() {
     };
   }, []);
 
-  if (!isWindows || full) return null;
+  if (!isTauri || !isWindows || full) return null;
   const run = (act: (w: Win) => Promise<void>) => () => void current().then((w) => w && act(w));
 
   return (

@@ -5,7 +5,7 @@ import { createLocalApi } from './local';
 import { initAccount, cloudRequest } from './cloud';
 import { openDb, persistence } from './storage';
 import { dictionary, lookup } from './dictionary';
-import { listPublished, toDiscover, withCatalogue } from './catalogue';
+import { listPublished, mediaUrl, toDiscover, withCatalogue } from './catalogue';
 import { tokenize } from '../tokenize';
 import { roughEstimate } from '../level';
 export async function createBrowserApi():Promise<Api> {
@@ -81,7 +81,7 @@ export async function createBrowserApi():Promise<Api> {
       const rows=Object.entries(db.terms).filter(([k])=>k.startsWith(lang+'|')).map(([,v])=>v);
       download('tagalog-vocabulary.csv','term,status,translation,note\n'+rows.map(r=>[r.term,r.status,r.translation,r.note].map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv');
     },
-    async discoverList() {const rows=await listPublished();return {items:rows.filter(r=>!db.settings[`hidden_${r.id}`]).map(r=>toDiscover(r,Number(db.settings[`catalogue_${r.id}`])||null)),refreshed_at:Date.now()/1000,refreshing:false,sources:rows.length?1:0};},
+    async discoverList() {const rows=(await listPublished()).filter(r=>!db.settings[`hidden_${r.id}`]);const covers=await Promise.all(rows.map(r=>mediaUrl(r.cover_path).catch(()=>null)));return {items:rows.map((r,i)=>({...toDiscover(r,Number(db.settings[`catalogue_${r.id}`])||null),image:covers[i] ?? ''})),refreshed_at:Date.now()/1000,refreshing:false,sources:rows.length?1:0};},
     async discoverRefresh() {const rows=await listPublished();return {added:rows.length,sources:rows.length?1:0,failed:[],skipped:false};},
     async discoverMark(id,lesson) {await local.settingsSet(`catalogue_${id}`,String(lesson));},
     async discoverHide(id) {await local.settingsSet(`hidden_${id}`,'1');},
@@ -95,6 +95,7 @@ export async function createBrowserApi():Promise<Api> {
     async searchOnline(_lang,_platform,query) {const rows=await listPublished();return {hits:rows.filter(r=>(r.title+' '+r.collection).toLowerCase().includes(query.toLowerCase())).map(r=>({id:r.id,platform:'youtube' as const,kind:r.kind,title:r.title,url:r.source_url,page:r.source_url,image:'',author:r.collection,summary:r.text.slice(0,160),duration:r.duration,published:Date.parse(r.published_at??r.created_at)/1000,count:0,lo:r.lo,hi:r.hi,in_lang:true,other_lang:'',album:'',sample:'',lyrics:null,words:tokenize(r.text,'tl').filter(t=>t.w).length})),more:false};},
     async backupListen() {return () => {};},async backupPlaces() {return [];},
     async podcastCreate(_lang,request,onEvent) {onEvent({type:'stage',stage:'script'});const result=await online('podcast',{request});const id=await local.lessonCreate({lang:'tl',title:'Tagalog podcast',text:result.text,collection:'My podcasts'});await supported.lessonVoice!(id,onEvent);return id;},
+    async linkProbe(url) {const page=await cloudRequest<{url:string;html:string}>('article',{url});return {url:page.url,title:'',site:'',image:'',html:page.html,media:[],list:false,via:'',note:''};},
     importMedia:unavailable,importLink:unavailable,lessonFetchVideo:unavailable,lessonResync:unavailable,
   };
   const base=new Proxy(supported,{get(target,key) {if(key === "then") return undefined; return Reflect.get(target,key) ?? unavailable;}}) as Api;
