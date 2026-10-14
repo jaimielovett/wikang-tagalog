@@ -26,6 +26,15 @@ export function allowDesktop(req,res) {
  if(req.method==='OPTIONS') {res.status(204).end();return true;}
  return false;
 }
+/**
+ * The chat request for the configured model. OpenAI's reasoning models (GPT-5 family, o-series) take
+ * max_completion_tokens, which also covers their thinking, and only their default temperature;
+ * other OpenAI-compatible models keep max_tokens and a steady temperature.
+ */
+export function completionRequest(model,messages) {
+ const reasoning=/^(gpt-5|o\d)/i.test(model.replace(/^.*\//,''));
+ return reasoning?{model,messages,max_completion_tokens:6000}:{model,messages,max_tokens:2000,temperature:0.4};
+}
 export function fail(res,error) {res.status(error.status||500).json({error:error.status?error.message:'The online service could not complete this request. Please retry.'});}
 export function inputText(value,max=12000) {if(typeof value!=='string'||!value.trim()||value.length>max)throw Object.assign(new Error('Please enter shorter, non-empty text.'),{status:400});return value;}
 export function buildMessages(task,input,ui) {

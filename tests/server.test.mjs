@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseBody,buildMessages,authenticate,inputText,allowDesktop} from '../server/services.mjs';
+import {parseBody,buildMessages,authenticate,inputText,allowDesktop,completionRequest} from '../server/services.mjs';
 import ai from '../api/ai.mjs';
 import voice from '../api/voice.mjs';
 const response=()=>({code:0,value:null,headers:{},status(n){this.code=n;return this;},json(v){this.value=v;return this;},setHeader(k,v){this.headers[k]=v;}});
@@ -42,4 +42,10 @@ test('only the desktop app\'s own page gets CORS, and preflights are answered',(
  for(const origin of ['tauri://localhost','http://tauri.localhost']){const r=res();assert.equal(allowDesktop({method:'OPTIONS',headers:{origin}},r),true);assert.equal(r.code,204);assert.equal(r.headers['Access-Control-Allow-Origin'],origin);}
  const other=res();assert.equal(allowDesktop({method:'POST',headers:{origin:'https://evil.example'}},other),false);assert.equal(other.headers['Access-Control-Allow-Origin'],undefined);
  const plain=res();assert.equal(allowDesktop({method:'POST',headers:{}},plain),false);
+});
+
+test('GPT-5 models get the parameters they accept; other models keep theirs',()=>{
+ const m=[{role:'user',content:'hi'}];
+ for(const model of ['gpt-5.4-mini','GPT-5.4','openai/gpt-5.4-nano','o4-mini']){const r=completionRequest(model,m);assert.equal(r.max_tokens,undefined,model);assert.equal(r.temperature,undefined,model);assert.ok(r.max_completion_tokens>=2000,model);}
+ for(const model of ['gpt-4.1-mini','llama-3.3-70b','gemini-2.5-flash']){const r=completionRequest(model,m);assert.equal(r.max_tokens,2000,model);assert.equal(r.temperature,0.4,model);assert.equal(r.max_completion_tokens,undefined,model);}
 });
