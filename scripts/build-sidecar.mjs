@@ -16,7 +16,8 @@ execSync(`cargo build -p lumen-whisper ${profile === "release" ? "--release" : "
   cwd: tauriDir,
   stdio: "inherit",
 });
-const built = join(tauriDir, "target", profile, `lumen-whisper${ext}`);
+// CARGO_TARGET_DIR moves the build (CI on Windows builds in a short folder: paths stay under 260 characters)
+const built = join(process.env.CARGO_TARGET_DIR || join(tauriDir, "target"), profile, `lumen-whisper${ext}`);
 if (!existsSync(built)) throw new Error(`binaire introuvable : ${built}`);
 mkdirSync(join(tauriDir, "binaries"), { recursive: true });
 const dest = join(tauriDir, "binaries", `lumen-whisper-${triple}${ext}`);

@@ -55,6 +55,9 @@ jobs:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       # Ninja orders the Vulkan shader generator's build correctly.
       CMAKE_GENERATOR: Ninja
+      # The checkout path (D:/a/wikang-tagalog/wikang-tagalog/src-tauri/target) pushes Whisper's Vulkan build past
+      # Windows' 260-character paths (error C1041): build in a short folder instead.
+      CARGO_TARGET_DIR: C:/t
     steps:
       - uses: actions/checkout@v4
 
@@ -74,7 +77,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            src-tauri/target
+            C:/t
           key: release-windows-vulkan-1.4.357.0-${{ hashFiles('src-tauri/Cargo.lock') }}
           restore-keys: release-windows-vulkan-1.4.357.0-
 
