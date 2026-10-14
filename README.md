@@ -22,7 +22,7 @@ The website starts without external credentials: guest reading, the bundled Taga
 ## Connect Supabase
 
 1. Create a new project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas.
+2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)).
 3. Copy `.env.example` to `.env`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the project URL and public publishable/anon key. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the same values for server functions.
 4. Configure the site's URL and allowed redirect URLs under Authentication. Password sign-in and email-confirmed sign-up are implemented. For local development allow `http://localhost:1430`.
 5. Create your account in the app. Copy its UUID from Authentication → Users and grant admin membership in the trusted SQL editor:
@@ -48,6 +48,23 @@ Set optional **server-only** variables on Vercel:
 - `GOOGLE_TTS_API_KEY`: Google Cloud Text-to-Speech key for `fil-PH` natural voice.
 
 These enable contextual translation, chat, simplification, custom Tagalog podcasts, pronunciation and generated lesson audio. Device speech synthesis also works with installed Filipino/Tagalog voices. Generated browser audio uses estimated word timings; precise Whisper alignment runs on desktop. Private provider keys never go into `VITE_` variables or learner backups. Online endpoints require a verified Supabase session and enforce a daily request budget.
+
+## Discover sources
+
+Discover draws on default sources that admins choose: YouTube channels, podcasts and article feeds. The server reads them into a shared cache of titles, summaries, images and links. An article's full text is fetched only when a learner turns it into a lesson, and only Tagalog articles are kept. Learners can switch any source off for themselves under Discover → Sources; published lessons appear there as "Wikang Tagalog lessons". On the web, videos and audio play from their source, and the desktop app turns them into transcribed lessons.
+
+To enable refreshing:
+
+1. Generate a long random secret (for example `openssl rand -hex 32`).
+2. Store its hash in the Supabase SQL editor:
+
+   ```sql
+   update public.discover_refresh set secret_hash=encode(sha256(convert_to('YOUR_SECRET','UTF8')),'hex');
+   ```
+
+3. Set the same value as the server-only `DISCOVER_SECRET` on Vercel, and set `CRON_SECRET` to another random value so the scheduled refresh is recognised.
+
+The cache refreshes every three hours (a Vercel cron job; Vercel Pro or above), and whenever someone opens Discover after it is three hours old; it never runs twice at once. Admins manage sources under Account → Discover sources: add, edit, switch off for everyone, or retire, and see each source's item count and last error. **Refresh now** reads them immediately. Retired sources are hidden, never deleted, so learners' settings stay valid.
 
 ## Publish a lesson
 

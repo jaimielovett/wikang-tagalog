@@ -408,6 +408,8 @@ export interface DiscoverItem {
   fetched_at: number;
   /** leçon déjà créée à partir de cet élément */
   lesson_id: number | null;
+  /** web: from a source the learner switched off, so shown only in search */
+  muted?: boolean;
   /** chanson : artiste et titre (ses paroles existent, dans la langue étudiée) */
   artist: string;
   track: string;

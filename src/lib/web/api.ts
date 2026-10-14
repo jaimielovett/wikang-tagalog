@@ -2,10 +2,11 @@ import type { Api } from '../api';
 import type { ChatMessage, ChatSummary, Lesson, Term, LangCode } from '../types';
 import pkg from '../../../package.json';
 import { createLocalApi } from './local';
-import { initAccount, cloudRequest } from './cloud';
+import { initAccount, cloudRequest, cloud } from './cloud';
 import { openDb, persistence } from './storage';
 import { dictionary, lookup } from './dictionary';
 import { listPublished, mediaUrl, toDiscover, withCatalogue } from './catalogue';
+import { PUBLISHED_SOURCE, isStale, listItems, requestRefresh } from './discover';
 import { tokenize } from '../tokenize';
 import { roughEstimate } from '../level';
 export async function createBrowserApi():Promise<Api> {
@@ -13,6 +14,7 @@ export async function createBrowserApi():Promise<Api> {
   const {snapshot,key}=await openDb();const db=snapshot.data;
   const {commit}=persistence(key,snapshot);const local=createLocalApi(db,commit);
   const stops=new Map<number,AbortController>();
+  const discoverListeners=new Set<(lang:string)=>void>();let refreshAsked=0;
   const unavailable=async () => {throw new Error('Use the desktop app to import, transcribe, and prepare media.');};
   const online=async (task:string,input:Record<string,unknown>,signal?:AbortSignal) => cloudRequest<{text:string}>('ai',{task,input,ui:db.settings.ui_lang || 'en'},signal);
   const chatSummary=(c:NonNullable<typeof db.chats>[number]):ChatSummary => {
@@ -81,11 +83,30 @@ export async function createBrowserApi():Promise<Api> {
       const rows=Object.entries(db.terms).filter(([k])=>k.startsWith(lang+'|')).map(([,v])=>v);
       download('tagalog-vocabulary.csv','term,status,translation,note\n'+rows.map(r=>[r.term,r.status,r.translation,r.note].map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv');
     },
-    async discoverList() {const rows=(await listPublished()).filter(r=>!db.settings[`hidden_${r.id}`]);const covers=await Promise.all(rows.map(r=>mediaUrl(r.cover_path).catch(()=>null)));return {items:rows.map((r,i)=>({...toDiscover(r,Number(db.settings[`catalogue_${r.id}`])||null),image:covers[i] ?? ''})),refreshed_at:Date.now()/1000,refreshing:false,sources:rows.length?1:0};},
-    async discoverRefresh() {const rows=await listPublished();return {added:rows.length,sources:rows.length?1:0,failed:[],skipped:false};},
+    async discoverList() {
+      const [rows,feed]=await Promise.all([listPublished(),listItems()]);
+      const off=(id:string)=>db.settings[`source_off_${id}`]==='1';
+      const lessonOf=(id:string)=>Number(db.settings[`catalogue_${id}`])||null;
+      // the first visit sets the baseline for sources marked "New"
+      if(!db.settings.sources_seen_at) void local.settingsSet('sources_seen_at',String(Math.floor(Date.now()/1000)));
+      const shown=rows.filter(r=>!db.settings[`hidden_${r.id}`]);
+      const covers=await Promise.all(shown.map(r=>mediaUrl(r.cover_path).catch(()=>null)));
+      // published lessons stay searchable when their source is off ("muted"), and replace the same video from a source
+      const published=shown.map((r,i)=>({...toDiscover(r,lessonOf(r.id)),source:PUBLISHED_SOURCE,image:covers[i] ?? '',muted:off(PUBLISHED_SOURCE)}));
+      const prepared=new Set(rows.map(r=>r.source_url).filter(Boolean));
+      const found=feed.items.filter(it=>!off(it.source)&&!db.settings[`hidden_${it.id}`]&&!prepared.has(it.url)).map(it=>({...it,lesson_id:lessonOf(it.id)}));
+      // a stale cache refreshes itself; the view reloads when the server is done
+      let refreshing=feed.refreshing;
+      if(cloud&&!refreshing&&isStale(feed.refreshedAt)&&Date.now()-refreshAsked>10*60_000) {
+        refreshAsked=Date.now();refreshing=true;
+        void requestRefresh().then(r=>{if(r.refreshed)discoverListeners.forEach(f=>f('tl'));}).catch(()=>{});
+      }
+      return {items:[...published,...found],refreshed_at:feed.refreshedAt,refreshing,sources:new Set(feed.items.map(it=>it.source)).size+1};
+    },
+    async discoverRefresh() {const r=await requestRefresh();return {added:0,sources:r.sources,failed:r.failed,skipped:!r.refreshed};},
     async discoverMark(id,lesson) {await local.settingsSet(`catalogue_${id}`,String(lesson));},
     async discoverHide(id) {await local.settingsSet(`hidden_${id}`,'1');},
-    async discoverListen() {return () => {};},
+    async discoverListen(onChange) {discoverListeners.add(onChange);return () => {discoverListeners.delete(onChange);};},
     async levelEstimate(lang) {const forms=Object.entries(db.terms).filter(([k,t])=>k.startsWith(lang+'|')&&t.status===4&&!t.term.includes(' ')).length;return roughEstimate(lang,forms);},
     async textStats(lang,text) {const words=tokenize(text,lang).filter(t=>t.w);const unique=new Set(words.map(t=>t.k));const fresh=[...unique].filter(k=>!db.terms[`${lang}|${k}`]).length;return {words:words.length,unique:unique.size,new_words:fresh,new_pct:unique.size?Math.round(100*fresh/unique.size):0,known_pct:unique.size?Math.round(100*(unique.size-fresh)/unique.size):100};},
     async mediaCodecs() {},

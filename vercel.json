@@ -11,6 +11,9 @@
     },
     "api/article.mjs": {
       "maxDuration": 60
+    },
+    "api/discover-refresh.mjs": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -36,6 +39,12 @@
           "value": "camera=(), microphone=()"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/discover-refresh",
+      "schedule": "0 */3 * * *"
     }
   ]
 }

@@ -152,6 +152,9 @@ async function run(job: Job): Promise<number[]> {
     const info = await api().linkProbe(spec.articleFrom, () => {});
     if (!info.html) throw new Error(t("Aucun article lisible n'a été trouvé sur cette page.", "No readable article was found on this page."));
     const a = extractArticle(info.html, info.url);
+    // a paywall or a teaser leaves a few lines: not worth a lesson
+    if (wordCount(a.text) < 60)
+      throw new Error(t("Cette page ne montre qu'un court extrait. Lisez-la plutôt sur le site.", "This page only shows a short excerpt. Read it on the site instead."));
     article = { title: spec.title || a.title, text: a.text, source: info.url, collection: "" };
   }
   if (article) {

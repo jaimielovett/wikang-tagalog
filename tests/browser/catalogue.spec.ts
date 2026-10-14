@@ -9,6 +9,9 @@ test('public prepared video opens without transcription and private learning sta
   if(url.pathname.includes('/published_lessons'))return route.fulfill({json:url.searchParams.get('id')?row:[row],headers:{'Access-Control-Allow-Origin':'*','Content-Type':route.request().headers()['accept']?.includes('object')?'application/vnd.pgrst.object+json':'application/json'}});
   if(url.pathname.includes('/storage/v1/object/sign/')&&route.request().method()==='POST')return route.fulfill({json:{signedURL:`/object/sign/lesson-media/${id}/video.mp4?token=test`}});
   if(url.pathname.includes('/object/sign/lesson-media/'))return route.fulfill({path:'tests/fixtures/prepared-video.mp4',contentType:'video/mp4'});
+  // Discover's source cache: empty, and freshly refreshed so no refresh is requested
+  if(url.pathname.endsWith('/discover_items')||url.pathname.endsWith('/discover_sources'))return route.fulfill({json:[],headers:{'Access-Control-Allow-Origin':'*'}});
+  if(url.pathname.endsWith('/rpc/discover_status'))return route.fulfill({json:{last_refresh_at:new Date().toISOString(),refreshing:false},headers:{'Access-Control-Allow-Origin':'*'}});
   invokedTranscription=true;return route.fulfill({json:[],status:200});
  });
  await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();

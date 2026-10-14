@@ -2,7 +2,14 @@
 
 Agreed decisions, in build order. Each phase ships on its own.
 
-## Phase 1: Default sources for everyone (web)
+## Phase 1: Default sources for everyone (web) — built
+
+Differences from the plan below:
+- The scheduled refresh runs every three hours (Vercel Pro); opening Discover also refreshes a cache older than three hours.
+- Seeded with Lumen's nine Tagalog YouTube channels and Bandera. Inquirer's main feed is mostly English, so the language check would leave it empty; Philstar's feed no longer answers.
+- YouTube's public channel feeds give no durations, so Shorts can't be filtered out yet.
+- YouTube @handles aren't accepted in the admin form yet (channel IDs and /channel/ links are); feed discovery comes with phase 2.
+
 
 - New table `discover_sources`: id, name, feed or channel URL, type (news, podcast, youtube), shelf (learn, news, culture, music), enabled, created_at, retired_at.
   Everyone can read it; only admins (`public.admins`) can write it.

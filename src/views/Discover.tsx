@@ -4,9 +4,8 @@ import { CoverArt } from "../components/Cover";
 import { Icon, type IconName } from "../components/Icon";
 import { prefetchStream } from "../components/Preview";
 import { Menu, Orb, ScrollTop, Segmented, useGlow } from "../components/ui";
-import { api, errorText, isTauri } from "../lib/api";
+import { isTauri } from "../lib/api";
 import { formatWhen } from "../lib/backup";
-import { adoptPublished } from "../lib/web/catalogue";
 import { grainTexture, youtubeId } from "../lib/covers";
 import { LEVELS, ago, cleanTitle, fits, isNew, levelName, levelRange, markSeen, openSource, seenAt, unitsLabel, useDiscover, useLevel } from "../lib/discover";
 import { t } from "../lib/i18n";
@@ -17,6 +16,8 @@ import { useSearch } from "../lib/search";
 import { formatDuration, useApp } from "../lib/store";
 import type { DiscoverItem, LangCode } from "../lib/types";
 import { JobBadge, SearchBar, SearchResults, seedOf } from "./discover/Search";
+import { SourcesButton, WebItemSheet, openOnWeb } from "./discover/WebDiscover";
+import { PUBLISHED_SOURCE } from "../lib/web/discover";
 
 type Kind = "all" | "video" | "audio" | "text";
 
@@ -44,23 +45,11 @@ function sourceLabel(it: DiscoverItem): string {
 /** Ce que devient l'élément une fois choisi, dit simplement. */
 function whatHappens(it: DiscoverItem): string {
   if (it.lesson_id) return t("Déjà dans votre bibliothèque : reprenez là où vous en étiez.", "Already in your library: pick up where you left off.");
-  if (!isTauri) return t("Une leçon préparée et vérifiée : ouvrez-la et commencez tout de suite.", "A prepared, reviewed lesson: open it and start right away.");
+  if (!isTauri && it.source === PUBLISHED_SOURCE) return t("Une leçon préparée et vérifiée : ouvrez-la et commencez tout de suite.", "A prepared, reviewed lesson: open it and start right away.");
+  if (!isTauri && it.kind !== "text") return t("Regardez ou écoutez ici ; l'application de bureau en fait une leçon, transcrite mot à mot.", "Watch or listen here; the desktop app turns it into a lesson, transcribed word by word.");
   if (it.kind === "text") return t("L'article devient une leçon de lecture. Trop riche ? Le bouton « Simplifier » le réécrit à votre niveau.", "The article becomes a reading lesson. Too rich? The “Simplify” button rewrites it at your level.");
   if (it.page_text) return t("Le son et le texte publié par la source : la lanterne suit la voix, mot à mot.", "The sound and the text published by the source: the lantern follows the voice, word by word.");
   return t("Regardez ou écoutez d'abord ; si ça vous plaît, Wikang Tagalog en fait une leçon pendant que vous continuez d'explorer.", "Watch or listen first; if you like it, Wikang Tagalog turns it into a lesson while you keep exploring.");
-}
-
-/** On the web, Discover lists published lessons: adding one copies it into the private library. */
-async function adopt(it: DiscoverItem, lang: LangCode): Promise<number | null> {
-  try {
-    const id = await adoptPublished(api(), it.id);
-    await useDiscover.getState().mark(lang, it.id, id);
-    useApp.getState().bumpLibrary();
-    return id;
-  } catch (e) {
-    useApp.getState().toast(errorText(e), "error");
-    return null;
-  }
 }
 
 /** Toucher un élément : la leçon s'il en est déjà une, sinon l'aperçu (regarder, écouter, lire). */
@@ -70,17 +59,17 @@ function useOpenItem() {
   const lang = useApp((s) => s.lang)();
   return (it: DiscoverItem) => {
     if (it.lesson_id) openLesson(it.lesson_id);
-    else if (!isTauri) void adopt(it, lang).then((id) => id && openLesson(id));
+    else if (!isTauri) openOnWeb(it, lang);
     else open(fromItem(it));
   };
 }
 
-/** « En faire une leçon » : la file d'importation sur le bureau, la copie publiée sur le web. */
+/** « En faire une leçon » : la file d'importation sur le bureau ; sur le web, ce que le navigateur peut faire. */
 function useMakeLesson() {
   const enqueue = useImports((s) => s.enqueue);
   return (it: DiscoverItem, lang: LangCode) => {
     if (isTauri) enqueue(jobOf(fromItem(it), lang));
-    else void adopt(it, lang).then((id) => id && useApp.getState().toast(t("Ajoutée à la bibliothèque", "Added to your library"), "light"));
+    else openOnWeb(it, lang, true);
   };
 }
 
@@ -396,7 +385,8 @@ export function Discover({ lang }: { lang: LangCode }) {
   // une lecture d'arrière-plan sans rien à relire ne s'affiche pas
   const working = (!!busy && busy.stage !== "") || !!feed?.refreshing;
   const autoOn = useApp((s) => s.settings.discover_auto) !== "0";
-  const shown = useMemo(() => (feed?.items ?? []).filter((it) => kind === "all" || it.kind === kind || (kind === "audio" && it.shelf === "music")), [feed, kind]);
+  // a switched-off source still answers searches (web), but stays off the shelves
+  const shown = useMemo(() => (feed?.items ?? []).filter((it) => !it.muted && (kind === "all" || it.kind === kind || (kind === "audio" && it.shelf === "music"))), [feed, kind]);
   const atLevel = useMemo(() => shown.filter((it) => it.shelf !== "music" && (allLevels || fits(it, level))), [shown, level, allLevels]);
   // trouvailles qui répondent à la recherche en ligne
   const q = query.trim().toLowerCase();
@@ -446,7 +436,7 @@ export function Discover({ lang }: { lang: LangCode }) {
     ].filter((s) => s.items.length > 0);
   }, [atLevel, shown, hero, level, allLevels]);
 
-  const sourceNames = useMemo(() => [...new Set((feed?.items ?? []).map((it) => it.source_name))], [feed]);
+  const sourceNames = useMemo(() => [...new Set((feed?.items ?? []).filter((it) => !it.muted).map((it) => it.source_name))], [feed]);
   const first = !feed || (feed.refreshed_at === 0 && feed.items.length === 0);
 
   const renderLocal = (items: DiscoverItem[]) => (
@@ -476,6 +466,7 @@ export function Discover({ lang }: { lang: LangCode }) {
                   ? t(`Mis à jour ${formatWhen(feed.refreshed_at)}`, `Updated ${formatWhen(feed.refreshed_at)}`)
                   : t("Pas encore mis à jour", "Not updated yet")}
             </span>
+            {!isTauri && <SourcesButton />}
             <button className="btn soft sm" disabled={working} onClick={() => void refresh(lang)}>
               <span className={`disc-refresh-icon ${working ? "turning" : ""}`}>
                 <Icon name="refresh" size={14} />
@@ -634,6 +625,7 @@ export function DiscoverView() {
         </div>
       </div>
       <ScrollTop target={scroller} />
+      {!isTauri && <WebItemSheet />}
     </>
   );
 }
