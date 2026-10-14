@@ -9,7 +9,7 @@ Open [Authentication → Emails → Confirm sign up](https://supabase.com/dashbo
 - Subject: **Confirm your Wikang Tagalog account**
 - Body: paste all of `confirmation.html` into the source editor, preserving `{{ .ConfirmationURL }}` in both links and the fallback text.
 - Save the template. A website deployment does not apply Supabase email settings.
-- Confirm that Authentication → URL Configuration uses `https://wikang-tagalog.vercel.app` as the Site URL. Keep any existing required redirect allowlist entries.
+- Confirm that Authentication → URL Configuration uses `https://www.wikangtagalog.com` as the Site URL. Keep any existing required redirect allowlist entries.
 
 The browser client already handles Supabase confirmation sessions on return to the website. The desktop uses the same shared Auth project; confirmation should return to the website.
 

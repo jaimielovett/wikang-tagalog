@@ -36,7 +36,8 @@ import { useUser } from "../lib/user";
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 /** Dépôt public du code de Wikang Tagalog (GPL-3.0). */
-const SOURCE_URL = "https://wikang-tagalog.vercel.app/wikang-tagalog-source.zip";
+/** The public repository; each release is tagged v<version>, so the source of this exact build is one click away. */
+const SOURCE_URL = "https://github.com/jaimielovett/wikang-tagalog";
 
 interface Tab {
   id: SettingsTab;
@@ -1485,7 +1486,7 @@ function AboutPane() {
               <strong>{t("Code source", "Source code")}</strong>
               <span>{t("Wikang Tagalog est un logiciel libre, sous licence GPL-3.0 : son code est public, chacun peut le lire et vérifier ce qui reste sur ce Mac.", "Wikang Tagalog is free software, under the GPL-3.0 licence: its code is public, anyone can read it and check what stays on this Mac.")}</span>
             </div>
-            <button className="btn sm soft" onClick={() => void openSource(SOURCE_URL)}>
+            <button className="btn sm soft" onClick={() => { const v = useApp.getState().info?.version; void openSource(v ? `${SOURCE_URL}/tree/v${v}` : SOURCE_URL); }}>
               {t("Voir sur GitHub", "View on GitHub")}
             </button>
           </div>

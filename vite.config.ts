@@ -1,11 +1,10 @@
 import { defineConfig } from "vite";
-import { rmSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
-  plugins: [react(), {name: "desktop-package", closeBundle() { if (process.env.TAURI_ENV_PLATFORM) rmSync("dist/wikang-tagalog-source.zip", {force:true}); }}],
+  plugins: [react()],
   clearScreen: false,
   server: {
     port: 1430,
