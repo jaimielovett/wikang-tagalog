@@ -40,6 +40,7 @@ test('Discover shows the sources, plays a video in place, and a learner can swit
  // switching Bandera off removes its article
  await page.getByRole('button',{name:'Sources',exact:true}).click();
  await expect(page.getByRole('dialog').getByText('Wikang Tagalog lessons')).toBeVisible();
+ await expect(page.getByRole('dialog').getByText('Add your own sources')).toBeVisible();
  await page.getByRole('switch',{name:'Bandera'}).click();
  await page.keyboard.press('Escape');
  await expect(page.getByRole('heading',{name:'Arnold Clavio kinasuhan ng cyber libel'})).toHaveCount(0);
@@ -76,4 +77,41 @@ test('admins see every source with its health, and add sources from the Account 
  await page.getByRole('button',{name:'Save source'}).click();
  await expect.poll(()=>inserted?.id).toBe('tl-bombo-radyo');
  expect(inserted.url).toBe('UCRzEyp4XtyTpGhdEuriB9iQ');expect(inserted.kind).toBe('youtube');
+});
+
+test('signed-in learners add their own sources; a default source is recognised, and removing one clears its items',async({page})=>{
+ await mockCloud(page);
+ const b64=(o:object)=>Buffer.from(JSON.stringify(o)).toString('base64url');const exp=Math.floor(Date.now()/1000)+3600;
+ const user={id:'77777777-7777-7777-7777-777777777777',aud:'authenticated',role:'authenticated',email:'learner@example.org',app_metadata:{},user_metadata:{},created_at:now};
+ const token=`${b64({alg:'HS256',typ:'JWT'})}.${b64({sub:user.id,exp,aud:'authenticated',role:'authenticated'})}.sig`;
+ await page.route('https://wikang-test.supabase.co/**',async route=>{const url=new URL(route.request().url());const cors={'Access-Control-Allow-Origin':'*'};
+  if(url.pathname==='/auth/v1/token')return route.fulfill({json:{access_token:token,token_type:'bearer',expires_in:3600,expires_at:exp,refresh_token:'r',user},headers:cors});
+  if(url.pathname==='/auth/v1/user')return route.fulfill({json:user,headers:cors});
+  return route.fallback();
+ });
+ const reads:any[]=[];
+ await page.route('**/api/discover-source',async route=>{const body=route.request().postDataJSON();
+  if(body.action==='find')return route.fulfill({json:/bandera/.test(body.url)?{kind:'articles',url:'https://bandera.inquirer.net/feed',name:'Bandera'}:{kind:'youtube',url:'UCvQrjgLj841wiQAKDgtKFOw',name:'Ninong Ry'}});
+  reads.push(body);
+  return route.fulfill({json:{results:body.sources.map((s:any)=>({id:s.id,items:[{id:'c'.repeat(32),kind:'video',title:'Adobong manok ni Ninong',url:'https://www.youtube.com/watch?v=ninongry001',page:'https://www.youtube.com/watch?v=ninongry001',image:'',summary:'',duration:0,published:Math.floor(Date.now()/1000),lo:1,hi:3}]}))}});
+ });
+ await page.goto('/');await completeWelcome(page);
+ await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await page.getByLabel('Email').fill('learner@example.org');await page.getByLabel('Password').fill('correct horse');
+ await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);
+ await page.getByRole('button',{name:'Later',exact:true}).click();
+ await page.getByRole('button',{name:'Discover',exact:true}).click();
+ await page.getByRole('button',{name:/^Sources/}).click();
+ const sheet=page.getByRole('dialog');
+ await sheet.getByLabel('Source address').fill('bandera.inquirer.net');await sheet.getByRole('button',{name:'Add',exact:true}).click();
+ await expect(sheet.getByText("“Bandera” is already one of Discover's sources.")).toBeVisible();
+ await sheet.getByLabel('Source address').fill('https://www.youtube.com/@ninongry');await sheet.getByRole('button',{name:'Add',exact:true}).click();
+ await expect(sheet.getByText('YouTube channel · 1 item')).toBeVisible();
+ expect(reads[0].sources[0]).toMatchObject({kind:'youtube',url:'UCvQrjgLj841wiQAKDgtKFOw',lo:2,hi:4,grade_titles:true});expect(reads[0].sources[0].id).toMatch(/^mine-/);
+ await page.keyboard.press('Escape');
+ await expect(page.getByRole('heading',{name:'Adobong manok ni Ninong'})).toBeVisible();
+ await page.getByRole('button',{name:/^Sources/}).click();
+ await sheet.getByRole('button',{name:'Remove Ninong Ry'}).click();
+ await page.keyboard.press('Escape');
+ await expect(page.getByRole('heading',{name:'Adobong manok ni Ninong'})).toHaveCount(0);
 });

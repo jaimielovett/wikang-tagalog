@@ -31,7 +31,13 @@ Differences from the plan below:
 - Videos and audio: watch through the source's own player. "Make it a lesson" asks for the desktop app,
   or on a phone says to open it on a computer.
 
-## Phase 2: Sources users add themselves
+## Phase 2: Sources users add themselves — built
+
+Differences from the plan below:
+- Own sources live one per setting (`my_source_<id>`) in the learner's synced data; their items are cached on each device and read again after three hours, or when the learner presses Refresh.
+- Each learner can follow up to 30 own sources; a request reads at most ten and uses one unit of the daily budget.
+- Adding one of the default sources says so, and switches it back on if the learner had switched it off.
+
 
 - Signed-in users only (fetching goes through the server). Guests can still switch defaults off.
 - The app finds the feed behind a homepage or YouTube channel URL (port Lumen's desktop logic).

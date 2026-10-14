@@ -161,3 +161,69 @@ export async function refreshDiscover({rpc,force=false,fetcher=fetchPublic}) {
  await rpc('discover_finish',{results});
  return {refreshed:true,sources:sources.length,failed:results.filter(r=>r.error).map(r=>r.source_id)};
 }
+
+// ---------- sources learners add themselves ----------
+
+const FEED_ACCEPT='application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.8';
+const isFeed=(body)=>/<(rss|feed|rdf:RDF)\b/i.test(body.slice(0,4000));
+const feedTitle=(body)=>{const head=body.slice(0,body.search(/<(item|entry)\b/i)>0?body.search(/<(item|entry)\b/i):body.length);return (text(head,'title')??'').slice(0,120);};
+const fetchFeed=(url,fetcher)=>fetcher(url,{accept:FEED_ACCEPT,maxBytes:3000000,tooLarge:'This page is too large.',agent:'discover'});
+
+/** A pasted address as an HTTPS URL (a bare "example.com" or http:// is upgraded). */
+export function pastedUrl(value) {
+ const v=value.trim();
+ try{const url=new URL(/^[a-z][a-z0-9+.-]*:/i.test(v)?v:`https://${v}`);if(url.protocol==='http:')url.protocol='https:';if(url.protocol!=='https:')throw new Error();return url;}
+ catch{throw Object.assign(new Error('Paste the address of a website, podcast or YouTube channel.'),{status:400});}
+}
+
+async function youtubeSource(url,fetcher) {
+ let id=/^\/channel\/(UC[\w-]{22})/.exec(url.pathname)?.[1];
+ if(!id) {
+  // a handle, /c/ or /user/ page names its channel in its canonical link
+  const page=await fetcher(url.href,{accept:'text/html',maxBytes:3000000,tooLarge:'This page is too large.',agent:'discover'});
+  id=/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/.exec(page.body)?.[1]??/"externalId":"(UC[\w-]{22})"/.exec(page.body)?.[1];
+  if(!id)throw Object.assign(new Error('No YouTube channel was found at this address.'),{status:422});
+ }
+ const feed=await fetchFeed(feedUrl({kind:'youtube',url:id}),fetcher);
+ if(feed.status!==200||!isFeed(feed.body))throw Object.assign(new Error('This YouTube channel could not be read.'),{status:422});
+ return {kind:'youtube',url:id,name:feedTitle(feed.body)||'YouTube channel',body:feed.body,feedUrl:feed.url};
+}
+
+/** The feed behind what a learner pasted: a feed, a page that links to one, or a YouTube channel. */
+export async function findSource(value,fetcher=fetchPublic) {
+ const url=pastedUrl(value);
+ const host=url.hostname.replace(/^(www|m)\./,'');
+ let found;
+ if(host==='youtube.com')found=await youtubeSource(url,fetcher);
+ else {
+  const tried=[];
+  const asFeed=async(address)=>{tried.push(address);const r=await fetchFeed(address,fetcher).catch(()=>null);return r?.status===200&&isFeed(r.body)?r:null;};
+  let feed=null;
+  const page=await fetchFeed(url.href,fetcher).catch(()=>null);
+  if(page?.status===200&&isFeed(page.body))feed=page;
+  else if(page?.status===200) {
+   // <link rel="alternate" type="application/rss+xml" href="…">
+   const link=[...page.body.matchAll(/<link\b[^>]*>/gi)].map(m=>attrs(m[0])).find(a=>a.rel?.toLowerCase()==='alternate'&&/application\/(rss|atom)\+xml/i.test(a.type??'')&&a.href);
+   if(link)feed=await asFeed(secure(link.href,page.url));
+  }
+  // sites that hide their pages from robots still publish feeds at the usual addresses
+  for(const path of ['/feed','/rss.xml','/feed.xml'])if(!feed)feed=await asFeed(new URL(path,url.origin).href);
+  if(!feed)throw Object.assign(new Error('No feed was found at this address. Paste the feed’s own address if the site has one.'),{status:422});
+  const episodes=parseFeed(feed.body,feed.url,'podcast');
+  const kind=episodes.length&&episodes.length>=parseFeed(feed.body,feed.url,'articles').length/2?'podcast':'articles';
+  found={kind,url:feed.url,name:feedTitle(feed.body)||url.hostname,body:feed.body,feedUrl:feed.url};
+ }
+ return {kind:found.kind,url:found.url,name:plain(found.name,120)};
+}
+
+/** The sources a learner sends to be read: their own, at most ten per request. */
+export function learnerSources(value) {
+ if(!Array.isArray(value)||!value.length||value.length>10)throw Object.assign(new Error('Send between one and ten sources.'),{status:400});
+ return value.map(s=>{
+  const ok=s&&typeof s==='object'&&/^mine-[a-z0-9]{6,40}$/.test(s.id)&&['youtube','podcast','articles'].includes(s.kind)
+   &&(s.kind==='youtube'?/^UC[\w-]{22}$/.test(s.url):typeof s.url==='string'&&s.url.length<=2000&&s.url.startsWith('https://'))
+   &&Number.isInteger(s.lo)&&Number.isInteger(s.hi)&&s.lo>=1&&s.hi<=5&&s.lo<=s.hi;
+  if(!ok)throw Object.assign(new Error('Invalid source.'),{status:400});
+  return {id:s.id,kind:s.kind,url:s.url,lo:s.lo,hi:s.hi,grade_titles:s.grade_titles===true};
+ });
+}

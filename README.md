@@ -51,7 +51,7 @@ These enable contextual translation, chat, simplification, custom Tagalog podcas
 
 ## Discover sources
 
-Discover draws on default sources that admins choose: YouTube channels, podcasts and article feeds. The server reads them into a shared cache of titles, summaries, images and links. An article's full text is fetched only when a learner turns it into a lesson, and only Tagalog articles are kept. Learners can switch any source off for themselves under Discover → Sources; published lessons appear there as "Wikang Tagalog lessons". On the web, videos and audio play from their source, and the desktop app turns them into transcribed lessons.
+Discover draws on default sources that admins choose: YouTube channels, podcasts and article feeds. The server reads them into a shared cache of titles, summaries, images and links. An article's full text is fetched only when a learner turns it into a lesson, and only Tagalog articles are kept. Learners can switch any source off for themselves under Discover → Sources; published lessons appear there as "Wikang Tagalog lessons". Signed-in learners can also add their own sources there by pasting a site, feed, podcast or YouTube channel link (handles included); the server finds the feed, reads it on request within the learner's daily budget (ten sources per request, up to 30 sources each), and the items stay on their device rather than in the shared cache. On the web, videos and audio play from their source, and the desktop app turns them into transcribed lessons.
 
 To enable refreshing:
 

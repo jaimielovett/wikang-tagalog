@@ -16,6 +16,7 @@ import type { DiscoverItem, LangCode } from "../../lib/types";
 import { adoptPublished } from "../../lib/web/catalogue";
 import { useAccount } from "../../lib/web/cloud";
 import { PUBLISHED_SOURCE, listSources, type DiscoverSource } from "../../lib/web/discover";
+import { MAX_OWN_SOURCES, findSource, mineStatus, mySources, newSource, readCache, readMine, sameSource, settingKey, type MySource } from "../../lib/web/mysources";
 
 /** Where the desktop app is downloaded. */
 export const DESKTOP_APP_URL = "https://github.com/jaimielovett/wikang-tagalog/releases/latest";
@@ -177,8 +178,8 @@ const kindOf: Record<string, [IconName, () => string]> = {
   articles: ["text", () => "Articles"],
 };
 
-type Row = Pick<DiscoverSource, "id" | "name" | "shelf" | "created_at"> & { kind: string };
-const lessonsRow = (): Row => ({ id: PUBLISHED_SOURCE, name: t("Leçons Wikang Tagalog", "Wikang Tagalog lessons"), kind: "lessons", shelf: "learn", created_at: "" });
+type Row = Pick<DiscoverSource, "id" | "name" | "shelf" | "created_at" | "url"> & { kind: string };
+const lessonsRow = (): Row => ({ id: PUBLISHED_SOURCE, name: t("Leçons Wikang Tagalog", "Wikang Tagalog lessons"), kind: "lessons", shelf: "learn", created_at: "", url: "" });
 
 /** The sources a learner follows: all of them unless switched off. New ones are marked until seen. */
 function useSources(open: boolean) {
@@ -225,6 +226,58 @@ function SourcesSheet({ open, sources, seen, onClose }: { open: boolean; sources
     await setSetting(`source_off_${id}`, on ? "" : "1");
     void useDiscover.getState().load(lang);
   };
+
+  // sources the learner adds: found by the server, kept in their settings, read on request
+  const signedIn = useAccount((s) => !!s.session);
+  const go = useApp((s) => s.go);
+  const toast = useApp((s) => s.toast);
+  const mine = mySources(settings);
+  const [cache, setCache] = useState<Awaited<ReturnType<typeof readCache>>>({});
+  const [address, setAddress] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  useEffect(() => {
+    if (open) void readCache().then(setCache);
+  }, [open, settings]);
+  const add = async () => {
+    setMessage(null);
+    setAdding(true);
+    try {
+      if (mine.length >= MAX_OWN_SOURCES) throw new Error(t(`Vous pouvez suivre jusqu'à ${MAX_OWN_SOURCES} sources à vous.`, `You can follow up to ${MAX_OWN_SOURCES} sources of your own.`));
+      const found = await findSource(address);
+      const twin = sources?.find((s) => s.kind !== "lessons" && sameSource(s as Pick<DiscoverSource, "kind" | "url">, found));
+      if (twin) {
+        const wasOff = settings[`source_off_${twin.id}`] === "1";
+        if (wasOff) await toggle(twin.id, true);
+        setAddress("");
+        setMessage({
+          text: wasOff
+            ? t(`« ${twin.name} » fait déjà partie des sources de Découvrir : elle est rallumée.`, `“${twin.name}” is already one of Discover's sources, so it's switched back on.`)
+            : t(`« ${twin.name} » fait déjà partie des sources de Découvrir.`, `“${twin.name}” is already one of Discover's sources.`),
+          error: false,
+        });
+        return;
+      }
+      const own = mine.find((s) => sameSource(s, found));
+      if (own) throw new Error(t(`Vous suivez déjà « ${own.name} ».`, `You already follow “${own.name}”.`));
+      const source = newSource(found);
+      await setSetting(settingKey(source.id), JSON.stringify(source));
+      setAddress("");
+      toast(t(`« ${source.name} » ajoutée`, `Added “${source.name}”`), "light");
+      const read = await readMine([source]).catch(() => null);
+      if (read) setCache(read);
+      void useDiscover.getState().load(lang);
+    } catch (e) {
+      setMessage({ text: errorText(e), error: true });
+    } finally {
+      setAdding(false);
+    }
+  };
+  const remove = async (s: MySource) => {
+    await setSetting(settingKey(s.id), "");
+    await setSetting(`source_off_${s.id}`, "");
+    void useDiscover.getState().load(lang);
+  };
   return (
     <Sheet open={open} onClose={close} title={t("Vos sources", "Your sources")}>
       <p className="sources-lead">
@@ -264,6 +317,66 @@ function SourcesSheet({ open, sources, seen, onClose }: { open: boolean; sources
           );
         })
       )}
+      <section className="sources-group">
+        <h4>{t("Ajoutées par vous", "Added by you")}</h4>
+        {mine.map((s) => {
+          const [icon, hint] = kindOf[s.kind] ?? kindOf.articles;
+          const on = settings[`source_off_${s.id}`] !== "1";
+          return (
+            <div key={s.id} className={`source-row ${on ? "" : "off"}`}>
+              <Icon name={icon} size={17} />
+              <span className="source-meta">
+                <strong>{s.name}</strong>
+                <span>
+                  {hint()} · {mineStatus(s, cache)}
+                </span>
+              </span>
+              <button className="icon-btn" onClick={() => void remove(s)} aria-label={t(`Retirer ${s.name}`, `Remove ${s.name}`)} title={t("Retirer", "Remove")}>
+                <Icon name="trash" size={15} />
+              </button>
+              <Switch on={on} onChange={(v) => void toggle(s.id, v)} label={s.name} />
+            </div>
+          );
+        })}
+        {signedIn ? (
+          <form
+            className="source-add"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void add();
+            }}
+          >
+            <input
+              className="input"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={t("Collez un site, un podcast ou une chaîne YouTube", "Paste a website, podcast or YouTube channel")}
+              aria-label={t("Adresse de la source", "Source address")}
+              disabled={adding}
+            />
+            <button className="btn primary sm" disabled={adding || !address.trim()}>
+              {adding ? t("Recherche…", "Looking…") : t("Ajouter", "Add")}
+            </button>
+          </form>
+        ) : (
+          <div className="web-item-note">
+            <Icon name="user" size={18} />
+            <span>
+              <strong>{t("Ajoutez vos propres sources", "Add your own sources")}</strong>
+              {t("Connectez-vous pour suivre les sites, podcasts et chaînes de votre choix.", "Sign in to follow the sites, podcasts and channels you like.")}
+            </span>
+            <button className="btn soft sm" onClick={() => (close(), go("account"))}>
+              {t("Se connecter", "Sign in")}
+            </button>
+          </div>
+        )}
+        {message && (
+          <p className={message.error ? "source-message error" : "source-message"} role={message.error ? "alert" : "status"}>
+            {message.text}
+          </p>
+        )}
+        {signedIn && <p className="source-hint">{t("Seuls les articles écrits en tagalog apparaissent.", "Only articles written in Tagalog appear.")}</p>}
+      </section>
     </Sheet>
   );
 }

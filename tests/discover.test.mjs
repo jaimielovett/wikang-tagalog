@@ -57,3 +57,31 @@ test('a refresh reads every source, keeps going past a dead feed, and reports it
  assert.deepEqual(await refreshDiscover({rpc:async()=>null,fetcher}),{refreshed:false,sources:0,failed:[]});
  await assert.rejects(readSource({id:'x',kind:'articles',url:'https://example.org/page',lo:1,hi:5},async(url)=>({status:200,url,body:'<html>not a feed</html>'})),/not a feed/);
 });
+
+test('a pasted address leads to its feed: the feed itself, a page linking to it, a usual path, or a YouTube channel',async()=>{
+ const {findSource,learnerSources,pastedUrl}=await import('../server/discover.mjs');
+ const pages={
+  'https://news.example.org/feed':{status:200,body:rss},
+  'https://blog.example.org/':{status:200,body:'<html><head><link rel="alternate" type="application/rss+xml" title="Feed" href="/rss/"></head></html>'},
+  'https://blog.example.org/rss/':{status:200,body:rss},
+  'https://guarded.example.org/':{status:403,body:'Forbidden'},
+  'https://guarded.example.org/feed':{status:200,body:rss},
+  'https://pod.example.org/show':{status:200,body:podcast},
+  'https://www.youtube.com/@ninongry':{status:200,body:'<link rel="canonical" href="https://www.youtube.com/channel/UCvQrjgLj841wiQAKDgtKFOw">'},
+  'https://www.youtube.com/feeds/videos.xml?channel_id=UCvQrjgLj841wiQAKDgtKFOw':{status:200,body:youtube},
+  'https://nofeed.example.org/':{status:200,body:'<html>No feed here</html>'},
+ };
+ const fetcher=async(url)=>{const page=pages[url];if(!page)return {status:404,url,body:''};return {...page,url};};
+ assert.deepEqual(await findSource('https://news.example.org/feed',fetcher),{kind:'articles',url:'https://news.example.org/feed',name:'Bandera'});
+ assert.equal((await findSource('http://blog.example.org/',fetcher)).url,'https://blog.example.org/rss/','follows the page\'s feed link, over HTTPS');
+ assert.equal((await findSource('guarded.example.org',fetcher)).url,'https://guarded.example.org/feed','tries the usual feed path');
+ assert.equal((await findSource('https://pod.example.org/show',fetcher)).kind,'podcast');
+ assert.deepEqual(await findSource('https://www.youtube.com/@ninongry',fetcher),{kind:'youtube',url:'UCvQrjgLj841wiQAKDgtKFOw',name:'Language Crush Tagalog'});
+ await assert.rejects(findSource('https://nofeed.example.org/',fetcher),/No feed was found/);
+ assert.throws(()=>pastedUrl('javascript:alert(1)'),/Paste the address/);
+ // what learners send to be read is checked before it costs anything
+ const ok={id:'mine-abc123',kind:'articles',url:'https://news.example.org/feed',lo:3,hi:5,grade_titles:false};
+ assert.equal(learnerSources([ok]).length,1);
+ assert.throws(()=>learnerSources(Array(11).fill(ok)),/between one and ten/);
+ for(const bad of [{...ok,id:'tl-bandera'},{...ok,url:'http://news.example.org/feed'},{...ok,kind:'youtube',url:'https://youtube.com/@x'},{...ok,lo:4,hi:2}])assert.throws(()=>learnerSources([bad]),/Invalid source/);
+});
