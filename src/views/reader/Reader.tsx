@@ -1378,7 +1378,7 @@ export function Reader() {
         <div className="reader-top drag" data-tauri-drag-region>
           {!cinema && (
             <button
-              className="icon-btn no-drag"
+              className="icon-btn no-drag side-btn"
               onClick={() => setSetting("reader_sidebar", sideHidden ? "1" : "0")}
               aria-label={sideHidden ? t("Afficher la barre latérale", "Show the sidebar") : t("Masquer la barre latérale", "Hide the sidebar")}
               title={sideHidden ? t("Afficher la barre latérale", "Show the sidebar") : t("Masquer la barre latérale pour lire plus au large", "Hide the sidebar to read with more room")}

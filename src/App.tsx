@@ -26,6 +26,7 @@ import { Account } from "./views/Account";
 import { WebSettings } from "./views/WebSettings";
 import { Library } from "./views/Library";
 import { Onboarding } from "./views/Onboarding";
+import { PhoneNav } from "./components/PhoneNav";
 import { Playlists } from "./views/Playlists";
 import { Progress } from "./views/Progress";
 import { Settings } from "./views/Settings";
@@ -177,7 +178,7 @@ export function App() {
 
   // changer de langue remonte toute l'interface : chaque texte se recalcule
   return (
-    <div key={ui} className={`app ${sideHidden ? "side-hidden" : ""}`}>
+    <div key={ui} className={`app view-${view} ${sideHidden ? "side-hidden" : ""}`}>
       <div className={`sidebar-shell ${sideHidden || sliding ? "clip" : ""}`} inert={sideHidden}>
         <Sidebar />
       </div>
@@ -203,6 +204,7 @@ export function App() {
           </motion.div>
         </AnimatePresence>
       </main>
+      <PhoneNav />
       <ImportSheet />
       <Preview />
       <Guide />

@@ -14,6 +14,7 @@ import "./styles/preview.css";
 import "./styles/news.css";
 import "./styles/tagalog.css";
 import "./styles/tour.css";
+import "./styles/mobile.css";
 
 import React from "react";
 import ReactDOM from "react-dom/client";

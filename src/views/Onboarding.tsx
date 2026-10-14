@@ -300,7 +300,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
       <div className="ob-top drag" data-tauri-drag-region />
 
 
-      <div className="ob-stage" ref={stageRef}>
+      <div className="ob-stage" ref={stageRef} style={{ ["--horizon" as string]: `${horizonY}px` }}>
         {/* l'astre se lève derrière l'horizon : on le découpe à la ligne d'horizon */}
         <div style={{ position: "absolute", left: 0, right: 0, top: -CLIP_PAD, height: horizonY + CLIP_PAD, overflow: "hidden", pointerEvents: "none", zIndex: 2 }}>
           <motion.div
@@ -344,7 +344,8 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                     transition={{ duration: 1.1, delay: 1.5 + i * 0.09, ease: EASE }}
                   >
-                    {c}
+                    {/* a space alone in its span would collapse: the two words would run together */}
+                    {c === " " ? " " : c}
                   </motion.span>
                 ))}
                 <span className="sheen" aria-hidden="true">
@@ -580,7 +581,7 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
                   <Switch on={saveCloud} onChange={setSaveCloud} label={t("Sauvegarder ma progression", "Back up my progress")} />
                 </motion.label>
               )}
-              {!isTauri && <p className="ob-sub">Start without an account and save your learning in this browser. Sign in to sync your private learning data through Supabase. The guided tour will show you how to read, listen and track new words.</p>}
+              {!isTauri && !signedIn && <p className="ob-sub">As a guest, your learning stays in this browser. Sign in any time to keep it with you on every device.</p>}
               {finishError && <p className="ob-error" role="alert">{finishError}</p>}
               <button className="ob-cta" onClick={() => void finish()} disabled={!!bloom || !langs.length}>
                 {t("Ouvrir ma première lecture", "Open my first reading")} <Icon name="book" size={16} />

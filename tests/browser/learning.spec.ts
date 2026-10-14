@@ -112,3 +112,26 @@ test('a lesson made from YouTube on the desktop plays on the web through YouTube
  await page.locator('.play-btn').click();await expect(page.locator('.play-btn.playing')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
+test('on a phone, a bar at the foot of the screen leads everywhere, and no view scrolls sideways',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await completeWelcome(page);
+ const wide=()=>page.evaluate(()=>Math.max(...[...document.querySelectorAll('.main *')].map(e=>e.scrollWidth>e.clientWidth&&getComputedStyle(e).overflowX==='visible'?e.getBoundingClientRect().right:0),document.documentElement.scrollWidth));
+ // reading takes the whole screen: no bar, no sidebar
+ await expect(page.locator('.phone-nav')).toBeHidden();await expect(page.locator('.sidebar')).toBeHidden();
+ await page.getByRole('button',{name:'Back to the library'}).click();
+ const bar=page.getByRole('navigation',{name:'Navigation'});await expect(bar).toBeVisible();
+ for(const [tab,heading] of [['Discover','Discover'],['Words','Vocabulary'],['Progress','Progress'],['Library',null]] as const){
+  await bar.getByRole('button',{name:tab,exact:true}).click();
+  if(heading)await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();
+  expect(await wide()).toBeLessThanOrEqual(391);
+ }
+ // the rest, under More
+ for(const [item,check] of [['Chat','New conversation'],['Playlists','Create a playlist'],['Settings','Appearance']] as const){
+  await bar.getByRole('button',{name:'More'}).click();
+  await page.getByRole('menuitem',{name:item}).click();
+  await expect(page.getByText(check).locator('visible=true').first()).toBeVisible();
+  expect(await wide()).toBeLessThanOrEqual(391);
+ }
+ await bar.getByRole('button',{name:'More'}).click();await page.getByRole('menuitem',{name:'Now reading'}).click();await expect(page.locator('.reader')).toBeVisible();
+ expect(errors).toEqual([]);
+});

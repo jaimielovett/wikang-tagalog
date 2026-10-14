@@ -34,6 +34,8 @@ export function Chat() {
   const rename = useChat((s) => s.rename);
   const [lessonNow, setLessonNow] = useState<LessonRef | null>(null);
   const [editing, setEditing] = useState(false);
+  // on a phone, one pane at a time: the conversations, or the one open
+  const [listing, setListing] = useState(false);
 
   useEffect(() => {
     void load(lang);
@@ -51,7 +53,10 @@ export function Chat() {
       .catch(() => {});
   }, [lessonId, lang]);
 
-  useEffect(() => setEditing(false), [thread?.chat.id]);
+  useEffect(() => {
+    setEditing(false);
+    setListing(false);
+  }, [thread?.chat.id]);
 
   const del = async (c: ChatSummary) => {
     const name = c.title || t("cette conversation", "this conversation");
@@ -68,7 +73,7 @@ export function Chat() {
   return (
     <>
       <div className="titlebar drag" data-tauri-drag-region />
-      <div className="chat-view">
+      <div className={`chat-view ${listing ? "listing" : ""}`}>
         <aside className="chat-side" aria-label={t("Conversations", "Conversations")}>
           <div className="chat-side-head">
             <h1>Chat</h1>
@@ -80,7 +85,7 @@ export function Chat() {
             {!isTauri ? "Your Tagalog tutor, online" : t(`Un professeur de ${langInfo(lang).name.toLowerCase()} sur votre Mac`, `Your ${langInfo(lang).name} teacher, on your Mac`)}
           </p>
           <div className="chat-list">
-            <button className={`chat-item new ${!thread ? "on" : ""}`} onClick={() => fresh(null)}>
+            <button className={`chat-item new ${!thread ? "on" : ""}`} onClick={() => (fresh(null), setListing(false))}>
               {!thread && <motion.span layoutId="chat-pill" className="chat-pill" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
               <span className="chat-item-icon">
                 <Icon name="plus" size={14} stroke={2} />
@@ -94,7 +99,7 @@ export function Chat() {
                 const on = thread?.chat.id === c.id;
                 return (
                   <motion.div key={c.id} layout="position" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="chat-item-row">
-                    <button className={`chat-item ${on ? "on" : ""}`} onClick={() => !on && void open(c.id)}>
+                    <button className={`chat-item ${on ? "on" : ""}`} onClick={() => (on ? setListing(false) : void open(c.id))}>
                       {on && <motion.span layoutId="chat-pill" className="chat-pill" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
                       <span className="chat-item-icon">{pending?.chatId === c.id ? <span className="ember" /> : <Icon name={c.lesson_id ? "book" : "chat"} size={14} />}</span>
                       <span className="chat-item-text">
@@ -117,6 +122,9 @@ export function Chat() {
 
         <section className="chat-main">
           <header className="chat-head">
+            <button className="icon-btn chat-list-btn" onClick={() => setListing(true)} aria-label={t("Conversations", "Conversations")}>
+              <Icon name="left" size={18} />
+            </button>
             {editing && thread ? (
               <input
                 className="chat-title-input"
