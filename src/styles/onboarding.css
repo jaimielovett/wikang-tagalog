@@ -969,11 +969,13 @@
 
 /* Keep the original welcome scenes usable at browser and phone sizes. */
 .ob { overflow-y: auto; overflow-x: hidden; }
-.ob-stage { min-height: 680px; }
+/* the sky and its glowing blobs reach past the window on purpose: pinned to it, they never make the page scroll */
+.ob-sky { position: fixed; }
+.ob-stage { min-height: 0; }
 .ob-step { position: relative; top: auto !important; padding-bottom: 36px; width: 100%; align-self: flex-start; }
-.ob-step.welcome { margin-top: clamp(300px, 48vh, 460px); }
+.ob-step.welcome { margin-top: clamp(250px, 43vh, 440px); padding-bottom: 20px; }
 .ob-step.form { margin-top: 124px; }
-.ob-step.ready { margin-top: clamp(260px, 43vh, 400px); }
+.ob-step.ready { margin-top: clamp(230px, 38vh, 380px); }
 .ob-word { font-size: clamp(40px, 7vw, 96px); }
 .ob-web-explain { height: auto; max-width: 620px; margin-top: 20px; }
 .ob-web-explain p { display: flex; align-items: flex-start; gap: 12px; }
@@ -993,4 +995,86 @@
   .ob-grid.profiles .pdesc { min-height: 0; }
   .ob-actions { flex-wrap: wrap; }
   .ob-me-styles, .ob-me-hues { flex-wrap: wrap; justify-content: center; }
+}
+
+/* ---------- the Philippine flag ----------
+   Only its rough outline, in Lumen's drifting light: a faint wash of blue over red, the glows
+   blue above and red below, a blurred white triangle at the hoist that sways with them, and
+   three gold stars at its corners. The rising sun stays gold, like the flag's own. */
+.ob {
+  --flag-blue: rgba(0, 56, 168, 0.12);
+  --flag-red: rgba(206, 17, 38, 0.1);
+  --flag-white: rgba(255, 255, 255, 0.95);
+  --flag-gold: #e9b10c;
+  --b1: #8fb0f2;
+  --b2: #a9c2f5;
+  --b3: #f3929e;
+  --b4: #ef8a97;
+  --b5: #f6a7b1;
+  --blob-opacity: 0.5;
+}
+:root[data-theme="dark"] .ob {
+  --flag-blue: rgba(0, 56, 168, 0.22);
+  --flag-red: rgba(206, 17, 38, 0.18);
+  --flag-white: rgba(255, 250, 240, 0.26);
+  --flag-gold: #fcd116;
+  --b1: #1747b0;
+  --b2: #1f58c8;
+  --b3: #b3182e;
+  --b4: #9c1428;
+  --b5: #c92234;
+  --blob-opacity: 0.46;
+}
+.ob-flag {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  /* blue over red in halves, blended across a wide band: a hint, not stripes */
+  background: linear-gradient(180deg, var(--flag-blue) 0%, var(--flag-blue) 32%, var(--flag-red) 68%, var(--flag-red) 100%);
+}
+/* the white triangle, blurred to a glow and drifting with the light */
+.ob-flag-tri {
+  position: absolute;
+  left: -40px;
+  top: -40px;
+  bottom: -40px;
+  width: calc(min(24vw, 340px) + 40px);
+  filter: blur(34px);
+  animation: tri-drift 24s ease-in-out infinite alternate;
+}
+.ob-flag-tri::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  background: linear-gradient(90deg, var(--flag-white) 35%, transparent 100%);
+}
+@keyframes tri-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(1.5vw, -2vh) scale(1.04); }
+  100% { transform: translate(-1vw, 2vh) scale(0.98); }
+}
+.ob-flag-star {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--flag-gold);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 6px var(--flag-gold));
+  animation: star-twinkle 5s ease-in-out infinite;
+}
+.ob-flag-star.s1 { left: 18px; top: 26px; }
+.ob-flag-star.s2 { left: 18px; bottom: 26px; animation-delay: -1.7s; }
+.ob-flag-star.s3 { left: calc(min(24vw, 340px) - 56px); top: calc(50% - 6px); animation-delay: -3.3s; }
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ob-flag-tri, .ob-flag-star { animation: none; }
+}
+/* on narrow screens the triangle's tip reaches the title: its star would read as punctuation */
+@media (max-width: 700px) {
+  .ob-flag-star.s3 { display: none; }
 }

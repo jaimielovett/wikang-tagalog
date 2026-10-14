@@ -135,9 +135,10 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   );
 
   // géométrie de l'astre selon l'étape
-  const orbCenter = n === 0 ? H * 0.32 : n === 4 ? H * 0.3 : 58;
+  // a little higher than Lumen's (0.32): the welcome then fits a 720-pixel window without scrolling
+  const orbCenter = n === 0 ? H * 0.27 : n === 4 ? H * 0.25 : 58;
   const orbSize = n === 0 ? 132 : n === 4 ? 104 : 46;
-  const horizonY = H * 0.32 + 92;
+  const horizonY = H * 0.27 + 92;
   const showHorizon = n === 0 || n === 4;
 
   const startDownload = () => {
@@ -276,6 +277,13 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
         <div className="ob-blob b4" />
         <div className="ob-blob b5" />
       </motion.div>
+      {/* the Philippine flag behind the sunrise: blue over red, a white triangle at the hoist with its three stars */}
+      <div className="ob-flag" aria-hidden="true">
+        <div className="ob-flag-tri" />
+        <i className="ob-flag-star s1" />
+        <i className="ob-flag-star s2" />
+        <i className="ob-flag-star s3" />
+      </div>
       <div className="ob-grain" />
       <div className="ob-motes">
         {motes.map((d, i) => (
