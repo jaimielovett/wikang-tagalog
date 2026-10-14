@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Fond de la fenêtre du DMG (src-tauri/dmg/background.png), rendu par `node scripts/design.mjs`.
+<!-- Fond de la fenêtre du DMG (src-tauri/dmg/background.png), rendered by `node scripts/brand.mjs` (or `node scripts/design.mjs` on a Mac).
      660 × 420 points (rendu en 2x) : c'est la zone sous la barre de titre (fenêtre de 660 × 448 dans tauri.conf.json).
      Icônes de 128 points centrées en (170, 200) et (490, 200) ; Finder écrit leur nom en noir dessous, vers y = 280. -->
 <html><head><meta charset="utf-8">
@@ -9,13 +9,17 @@
 html,body{margin:0;width:660px;height:420px;overflow:hidden}
 body{background:#fbf7f1;position:relative;font-family:G,-apple-system,sans-serif;color:#1d1a17;-webkit-font-smoothing:antialiased}
 
-/* ciel d'aube, comme l'accueil */
+/* the welcome's dawn over the Philippine flag: blue above, red below, a white haze at the hoist */
 .sky{position:absolute;inset:0;overflow:hidden}
 .b{position:absolute;border-radius:50%;filter:blur(70px)}
-.b1{width:360px;height:300px;left:-90px;top:-150px;background:#ffc56b;opacity:.5}
-.b2{width:340px;height:300px;right:-110px;top:-120px;background:#ff9f6e;opacity:.36}
-.b3{width:300px;height:220px;left:-120px;top:250px;background:#ffe2a0;opacity:.55}
-.b4{width:300px;height:220px;right:-120px;top:240px;background:#f6a3b4;opacity:.3}
+.b1{width:380px;height:300px;left:-60px;top:-160px;background:#8fb0f2;opacity:.5}
+.b2{width:360px;height:300px;right:-110px;top:-130px;background:#a9c2f5;opacity:.45}
+.b3{width:320px;height:220px;left:120px;top:300px;background:#f3929e;opacity:.32}
+.b4{width:320px;height:240px;right:-120px;top:240px;background:#ef8a97;opacity:.34}
+.hoist{position:absolute;left:-30px;top:-30px;bottom:-30px;width:190px;clip-path:polygon(0 0,100% 50%,0 100%);
+  background:linear-gradient(90deg,rgba(255,255,255,.95),rgba(255,255,255,0));filter:blur(18px)}
+.star{position:absolute;width:9px;height:9px;background:#e9b10c;opacity:.8;
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
 /* l'astre qui se lève derrière l'horizon */
 .sun{position:absolute;left:50%;top:318px;width:520px;height:300px;transform:translateX(-50%);border-radius:50%;
   background:radial-gradient(closest-side,rgba(255,200,130,.9),rgba(255,178,100,.4) 45%,rgba(255,182,104,0) 100%)}
@@ -59,14 +63,16 @@ body{background:#fbf7f1;position:relative;font-family:G,-apple-system,sans-serif
 <div class="sky">
   <div class="b b1"></div><div class="b b2"></div><div class="b b3"></div><div class="b b4"></div>
   <div class="sun"></div>
+  <div class="hoist"></div>
+  <i class="star" style="left:12px;top:14px"></i><i class="star" style="left:12px;bottom:14px"></i>
 </div>
 <div class="horizon"></div>
 <div class="pool app"></div><div class="pool dest"></div>
 
-<div class="brand"><div class="orb"></div><div class="word">Lumen</div></div>
-<div class="sub">Glissez Lumen dans le dossier Applications<span>Drag Lumen into the Applications folder</span></div>
+<div class="brand"><div class="orb"></div><div class="word">Wikang Tagalog</div></div>
+<div class="sub">Drag Wikang Tagalog into the Applications folder<span lang="tl">I-drag ang Wikang Tagalog sa folder na Applications</span></div>
 
-<!-- un trait de lumière qui mène de Lumen à Applications -->
+<!-- a trail of light from the app to Applications -->
 <svg class="arrow" width="660" height="420" viewBox="0 0 660 420">
   <defs>
     <linearGradient id="trail" x1="256" y1="0" x2="404" y2="0" gradientUnits="userSpaceOnUse">
@@ -97,8 +103,7 @@ body{background:#fbf7f1;position:relative;font-family:G,-apple-system,sans-serif
     <path d="M8.6 11 L10.3 12.7 L13.5 9.4" fill="none" stroke="#a65a1c" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <div>
-    <p>Premier lancement bloqué ? <b>Réglages Système › Confidentialité et sécurité › Ouvrir quand même</b></p>
-    <p class="en">Blocked on first launch? <b>System Settings › Privacy &amp; Security › Open Anyway</b></p>
+    <p>Blocked on first launch? <b>System Settings › Privacy &amp; Security › Open Anyway</b></p>
   </div>
 </div>
 <div class="grain"></div>
