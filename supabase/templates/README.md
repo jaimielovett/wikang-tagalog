@@ -1,6 +1,6 @@
 # Wikang Tagalog confirmation email
 
-The copy-ready HTML is `confirmation.html`. It uses email-compatible presentation tables and inline styles, with the warm orb and serif wordmark from Wikang Tagalog. There are no remote images, fonts, or tracking pixels. Supabase supplies and escapes the real confirmation URL at send time.
+The copy-ready HTML is `confirmation.html`. It uses email-compatible presentation tables and inline styles, with the Philippine flag's blue-over-red stripe, the gold sun mark and the serif wordmark from Wikang Tagalog. There are no remote images, fonts, or tracking pixels. Supabase supplies and escapes the real confirmation URL at send time.
 
 ## Apply to the hosted project
 

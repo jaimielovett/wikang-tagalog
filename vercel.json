@@ -21,7 +21,7 @@
   },
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|tagalog-dictionary|sw.js).*)",
+      "source": "/((?!api/|assets/|tagalog-dictionary|sw.js|favicon|apple-touch-icon|icon-512|og\\.png).*)",
       "destination": "/index.html"
     }
   ],

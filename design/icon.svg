@@ -1,4 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs><clipPath id="sq"><path d="M627.36 100 c103.83 0 155.75 0 195.41 20.21 a185.4 185.4 0 0 1 81.02 81.02 c20.21 39.66 20.21 91.58 20.21 195.41 L924 627.36 c0 103.83 0 155.75 -20.21 195.41 a185.4 185.4 0 0 1 -81.02 81.02 c-39.66 20.21 -91.58 20.21 -195.41 20.21 L396.64 924 c-103.83 0 -155.75 0 -195.41 -20.21 a185.4 185.4 0 0 1 -81.02 -81.02 c-20.21 -39.66 -20.21 -91.58 -20.21 -195.41 L100 396.64 c0 -103.83 0 -155.75 20.21 -195.41 a185.4 185.4 0 0 1 81.02 -81.02 c39.66 -20.21 91.58 -20.21 195.41 -20.21 Z"/></clipPath></defs>
-  <image href="icon-source.png" x="100" y="100" width="824" height="824" preserveAspectRatio="xMidYMid slice" clip-path="url(#sq)"/>
+  <g clip-path="url(#sq)"><g transform="translate(100 100) scale(0.8)">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a3290"/>
+      <stop offset="0.48" stop-color="#1c4db6"/>
+      <stop offset="0.64" stop-color="#b8192f"/>
+      <stop offset="1" stop-color="#8a1022"/>
+    </linearGradient>
+    <linearGradient id="tri" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.78"/>
+      <stop offset="0.75" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="540" cy="400" r="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd86e" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#ffc24a" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffc24a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="beam" cx="540" cy="400" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0.4" stop-color="#ffe08a" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffe08a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sun" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.35" stop-color="#ffdc63"/>
+      <stop offset="0.8" stop-color="#f7a928"/>
+      <stop offset="1" stop-color="#e88c14"/>
+    </radialGradient>
+    <linearGradient id="page-l" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f6dca0"/><stop offset="1" stop-color="#fff7e0"/>
+    </linearGradient>
+    <linearGradient id="page-r" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff2d0"/><stop offset="1" stop-color="#f3d38e"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6ad3b"/><stop offset="1" stop-color="#df8318"/>
+    </linearGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <polygon points="-160,-160 500,512 -160,1184" fill="url(#tri)" filter="url(#soft)"/>
+  <circle cx="540" cy="400" r="380" fill="url(#glow)"/>
+  <path d="M566 228 L540 -20 L514 228 Z M680.01 296.76 L836.98 103.02 L643.24 259.99 Z M712 426 L960 400 L712 374 Z M643.24 540.01 L836.98 696.98 L680.01 503.24 Z M514 572 L540 820 L566 572 Z M399.99 503.24 L243.02 696.98 L436.76 540.01 Z M368 374 L120 400 L368 426 Z M436.76 259.99 L243.02 103.02 L399.99 296.76 Z" fill="url(#beam)"/>
+  <path d="M616.91 245.68 L662.46 104.36 L594.73 236.5 Z M703.5 345.27 L835.64 277.54 L694.32 323.09 Z M694.32 476.91 L835.64 522.46 L703.5 454.73 Z M594.73 563.5 L662.46 695.64 L616.91 554.32 Z M463.09 554.32 L417.54 695.64 L485.27 563.5 Z M376.5 454.73 L244.36 522.46 L385.68 476.91 Z M385.68 323.09 L244.36 277.54 L376.5 345.27 Z M485.27 236.5 L417.54 104.36 L463.09 245.68 Z" fill="url(#beam)" fill-opacity="0.6"/>
+  <circle cx="540" cy="400" r="178" fill="url(#sun)"/>
+  <polygon points="170,140 177.41,159.81 198.53,160.73 181.98,173.89 187.63,194.27 170,182.6 152.37,194.27 158.02,173.89 141.47,160.73 162.59,159.81" fill="#ffd34d"/>
+  <polygon points="158,594 164.91,612.49 184.63,613.35 169.18,625.63 174.46,644.65 158,633.76 141.54,644.65 146.82,625.63 131.37,613.35 151.09,612.49" fill="#ffd34d"/>
+  <polygon points="318,496 323.92,511.85 340.83,512.58 327.59,523.11 332.11,539.42 318,530.08 303.89,539.42 308.41,523.11 295.17,512.58 312.08,511.85" fill="#ffd34d"/>
+  <path d="M0 790 C 190 752, 410 760, 512 850 C 614 760, 834 752, 1024 790 L 1024 1024 L 0 1024 Z" fill="url(#edge)"/>
+  <path d="M512 744 C 410 650, 210 636, 30 690 L 30 806 C 210 760, 410 768, 512 852 Z" fill="url(#page-l)"/>
+  <path d="M512 744 C 614 650, 814 636, 994 690 L 994 806 C 814 760, 614 768, 512 852 Z" fill="url(#page-r)"/>
+  <path d="M470 722 C 380 668, 230 660, 90 694 M470 752 C 380 700, 230 692, 90 726 M554 722 C 644 668, 794 660, 934 694 M554 752 C 644 700, 794 692, 934 726" fill="none" stroke="#e7c27a" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/>
+  <path d="M512 744 L 512 852" stroke="#dcaa55" stroke-width="5" stroke-linecap="round"/>
+</g></g>
 </svg>
