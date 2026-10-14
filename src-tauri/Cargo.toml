@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Lumen : apprendre les langues en lisant et en écoutant"
 authors = ["Ulysse Rives"]
 license = "GPL-3.0-or-later"
-repository = "https://github.com/jaimielovett/lumen"
+repository = "https://github.com/jaimielovett/wikang-tagalog"
 edition = "2021"
 rust-version = "1.80"
 
