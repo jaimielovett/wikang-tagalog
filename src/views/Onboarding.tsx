@@ -278,7 +278,9 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
         <div className="ob-blob b5" />
       </motion.div>
       {/* the Philippine flag behind the sunrise: blue over red, a white triangle at the hoist with its three stars */}
-      <div className="ob-flag" aria-hidden="true">
+      <div className="ob-flag" aria-hidden="true" />
+      {/* the white triangle lies over the colours, as on the flag: above the drifting glows */}
+      <div className="ob-hoist" aria-hidden="true">
         <div className="ob-flag-tri" />
         <i className="ob-flag-star s1" />
         <i className="ob-flag-star s2" />

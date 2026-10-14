@@ -1016,7 +1016,7 @@
 :root[data-theme="dark"] .ob {
   --flag-blue: rgba(0, 56, 168, 0.22);
   --flag-red: rgba(206, 17, 38, 0.18);
-  --flag-white: rgba(255, 250, 240, 0.26);
+  --flag-white: rgba(236, 232, 226, 0.46);
   --flag-gold: #fcd116;
   --b1: #1747b0;
   --b2: #1f58c8;
@@ -1032,6 +1032,17 @@
   pointer-events: none;
   /* blue over red in halves, blended across a wide band: a hint, not stripes */
   background: linear-gradient(180deg, var(--flag-blue) 0%, var(--flag-blue) 32%, var(--flag-red) 68%, var(--flag-red) 100%);
+}
+/* the white triangle and its stars sit above the glows (z-index -2), so no red shows through */
+.ob-hoist {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* the red glow that drifts in the bottom-left corner moves out from under the triangle */
+.ob-blob.b4 {
+  left: 24%;
 }
 /* the white triangle, blurred to a glow and drifting with the light */
 .ob-flag-tri {
