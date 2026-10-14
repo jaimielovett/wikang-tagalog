@@ -18,7 +18,9 @@ export default async function handler(req,res) {
     // Supabase's own short answer (never a key or the secret) makes a setup problem findable
     throw Object.assign(new Error(`Discover could not be refreshed: Supabase answered ${response.status}${reason?` (${reason.slice(0,160)})`:''}.`),{status:502});
    }
-   return response.json();
+   // a function that returns nothing answers with an empty body
+   const text=await response.text();
+   return text?JSON.parse(text):null;
   };
   const authorization=req.headers.authorization||'';
   // the scheduled job and admins skip the "refreshed recently" window (never the lock)
