@@ -6,11 +6,17 @@ import {refreshDiscover} from '../server/discover.mjs';
 export default async function handler(req,res) {
  if(!['GET','POST'].includes(req.method))return res.status(405).json({error:'GET or POST required.'});
  try {
-  const url=process.env.SUPABASE_URL;const key=process.env.SUPABASE_ANON_KEY;const secret=process.env.DISCOVER_SECRET;
+  const url=process.env.SUPABASE_URL;const key=process.env.SUPABASE_ANON_KEY;const secret=process.env.DISCOVER_SECRET?.trim();
   if(!url||!key||!secret)throw Object.assign(new Error('Discover refresh is not configured yet.'),{status:503});
   const call=async(name,body,authorization=`Bearer ${key}`)=>{
    const response=await fetch(`${url}/rest/v1/rpc/${name}`,{method:'POST',headers:{apikey:key,Authorization:authorization,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
-   if(!response.ok)throw Object.assign(new Error('Discover could not be refreshed. Please retry.'),{status:502});
+   if(!response.ok) {
+    // say what is wrong with the setup; nothing here reveals the secret itself
+    const reason=String((await response.json().catch(()=>({}))).message??'');
+    if(reason.includes('refresh_not_allowed'))throw Object.assign(new Error('Discover refresh is not set up: DISCOVER_SECRET (at least 24 characters) must match the hash stored in public.discover_refresh. See the README.'),{status:503});
+    if(reason.includes('Could not find the function'))throw Object.assign(new Error('Discover refresh is not set up: run supabase/migrations/202610140001_discover_sources.sql.'),{status:503});
+    throw Object.assign(new Error('Discover could not be refreshed. Please retry.'),{status:502});
+   }
    return response.json();
   };
   const authorization=req.headers.authorization||'';

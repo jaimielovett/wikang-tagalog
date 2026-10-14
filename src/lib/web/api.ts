@@ -110,7 +110,8 @@ export async function createBrowserApi():Promise<Api> {
       let refreshing=feed.refreshing;
       if(cloud&&!refreshing&&isStale(feed.refreshedAt)&&Date.now()-refreshAsked>10*60_000) {
         refreshAsked=Date.now();refreshing=true;
-        void requestRefresh().then(r=>{if(r.refreshed)discoverListeners.forEach(f=>f('tl'));}).catch(()=>{});
+        // done or failed, the view reloads: it never waits on a refresh that is not coming
+        void requestRefresh().catch(()=>{}).finally(()=>discoverListeners.forEach(f=>f('tl')));
       }
       return {items:[...published,...found,...own],refreshed_at:feed.refreshedAt,refreshing,sources:new Set(feed.items.map(it=>it.source)).size+1+mine.length};
     },
