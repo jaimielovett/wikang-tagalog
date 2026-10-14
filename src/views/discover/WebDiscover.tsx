@@ -16,10 +16,9 @@ import type { DiscoverItem, LangCode } from "../../lib/types";
 import { adoptPublished } from "../../lib/web/catalogue";
 import { useAccount } from "../../lib/web/cloud";
 import { PUBLISHED_SOURCE, listSources, type DiscoverSource } from "../../lib/web/discover";
+import { DESKTOP_APP_URL } from "../../lib/updater";
 import { MAX_OWN_SOURCES, findSource, mineStatus, mySources, newSource, readCache, readMine, sameSource, settingKey, type MySource } from "../../lib/web/mysources";
 
-/** Where the desktop app is downloaded. */
-export const DESKTOP_APP_URL = "https://github.com/jaimielovett/wikang-tagalog/releases/latest";
 
 const onPhone = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 900);
 

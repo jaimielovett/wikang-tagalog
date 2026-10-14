@@ -1,0 +1,152 @@
+# Desktop releases of Wikang Tagalog. Push a version tag (git tag v0.2.0 && git push origin v0.2.0)
+# and this builds the Windows and macOS apps, signs their update packages with this fork's own
+# updater key (secrets TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD), and
+# attaches everything, with latest.json, to a DRAFT GitHub release. Nothing reaches anyone until
+# the draft is published: then installed apps offer the update, and the download link serves it.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # the app reports the version in tauri.conf.json: the tag must say the same
+      - name: Version matches the tag
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::src-tauri/tauri.conf.json says $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Wikang Tagalog ${tag.slice(1)}`,
+              body: 'Review the changes, then publish this release to send the update to everyone.',
+              draft: true,
+            });
+            core.setOutput('id', data.id);
+
+  windows:
+    needs: draft
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      # Ninja orders the Vulkan shader generator's build correctly.
+      CMAKE_GENERATOR: Ninja
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: release-windows-vulkan-1.4.357.0-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: release-windows-vulkan-1.4.357.0-
+
+      # Vulkan (AI on the graphics card): the SDK's headers, glslc and SPIR-V. Its vulkan-1.lib is
+      # replaced by an import-free library: the app opens vulkan-1.dll only when it exists
+      # (src-tauri/src/vulkan.rs). Same steps as windows.yml.
+      - name: Vulkan
+        env:
+          VULKAN_VERSION: 1.4.357.0
+        run: |
+          curl.exe -o $env:RUNNER_TEMP/VulkanSDK-Installer.exe -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkansdk-windows-X64-${env:VULKAN_VERSION}.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          $sdk = "C:\VulkanSDK\${env:VULKAN_VERSION}"
+          $stub = Join-Path $env:RUNNER_TEMP 'lumen-vulkan-stub'
+          'void lumen_vulkan_link_placeholder(void) {}' | Set-Content -Encoding ascii "$stub.c"
+          cl.exe /nologo /c /Zl "/Fo$stub.obj" "$stub.c"
+          if ($LASTEXITCODE -ne 0) { throw 'Vulkan stub compilation failed.' }
+          lib.exe /nologo "/OUT:$sdk\Lib\vulkan-1.lib" "$stub.obj"
+          if ($LASTEXITCODE -ne 0) { throw 'Vulkan stub library creation failed.' }
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=$sdk"
+          Add-Content $env:GITHUB_PATH "$sdk\bin"
+
+      - run: npm ci
+
+      - name: Transcription component
+        run: node scripts/build-sidecar.mjs
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+          includeUpdaterJson: true
+          args: --bundles nsis
+
+  macos:
+    needs: draft
+    runs-on: macos-latest
+    timeout-minutes: 120
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: release-macos-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: release-macos-
+
+      - run: npm ci
+
+      - name: Transcription component
+        run: node scripts/build-sidecar.mjs
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+          includeUpdaterJson: true
+          args: --bundles app,dmg

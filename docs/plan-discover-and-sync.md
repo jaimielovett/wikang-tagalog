@@ -62,7 +62,13 @@ Differences from the plan below:
 - Existing accounts are migrated from their document on first load; the guest-to-account merge keeps its current rules.
 - Every synced row carries a format version.
 
-## Phase 4: Desktop updater
+## Phase 4: Desktop updater — built
+
+Differences from the plan below:
+- Releases are built by GitHub Actions on a version tag into a draft release; publishing the draft is the release switch.
+- `app_requirements` holds both minimums: the record format the server accepts (outdated web tabs are asked to reload) and the oldest desktop version (it shows an update card that cannot be dismissed).
+- The macOS job is untested in CI; builds are not Apple- or Microsoft-signed yet.
+
 
 - Tauri's built-in updater with this fork's **own** signing key and release feed (e.g. GitHub Releases). Never Lumen's.
 - The server tracks a minimum supported version; an older desktop app is asked to update instead of writing old-format data.

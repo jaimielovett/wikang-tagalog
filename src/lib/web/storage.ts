@@ -33,6 +33,15 @@ function replaceDb(target: Db, source: Db) {
   Object.assign(target, emptyDb(), structuredClone(source));
 }
 const setSync = (sync: string) => useAccount.setState({sync});
+/** Fired when the server no longer accepts this version's data: the app asks for a reload. */
+export const UPDATE_REQUIRED = 'wikang:update-required';
+/** What a failed sync tells the learner. */
+function syncFailed(e: unknown) {
+  const message = String((e as Error)?.message ?? e);
+  if (message.includes('update_required')) {setSync('A newer version of Wikang Tagalog is needed to sync');window.dispatchEvent(new Event(UPDATE_REQUIRED));}
+  else if (message.includes('storage_full')) setSync('Storage full — remove some lessons to keep syncing');
+  else setSync('Offline — saved on this device');
+}
 
 function remoteFor(userId: string): Remote {
   return {
@@ -115,7 +124,7 @@ export async function openDb() {
       else await syncOnce(snapshot.data,snapshot.sync,snapshot.device,remoteFor(user.id));
       setSync('Synced');
     } catch (e) {
-      setSync(String((e as Error)?.message).includes('storage_full') ? 'Storage full — remove some lessons to keep syncing' : 'Offline — saved on this device');
+      syncFailed(e);
     }
   }
   return {snapshot,key};
@@ -141,7 +150,7 @@ export function persistence(key: string, snapshot: Snapshot) {
       setSync('Synced');
       if (changed) window.dispatchEvent(new Event(REMOTE_CHANGE));
     } catch (e) {
-      setSync(String((e as Error)?.message).includes('storage_full') ? 'Storage full — remove some lessons to keep syncing' : 'Offline — saved on this device');
+      syncFailed(e);
       clearTimeout(timer);timer = setTimeout(() => void cycle(),15000);
     } finally {
       running = false;

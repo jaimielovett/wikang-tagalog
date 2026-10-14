@@ -2,6 +2,11 @@
 // la télécharge (paquet signé) puis redémarre sur la nouvelle version.
 import { create } from "zustand";
 import { api, isTauri } from "./api";
+import { cloud } from "./web/cloud";
+import { older } from "./version";
+
+/** Where the desktop app is downloaded: this fork's published GitHub releases. */
+export const DESKTOP_APP_URL = "https://github.com/jaimielovett/wikang-tagalog/releases/latest";
 
 type Phase = "idle" | "checking" | "available" | "downloading" | "ready" | "uptodate" | "error";
 
@@ -12,7 +17,10 @@ interface UpdateState {
   progress: number; // 0 à 1
   error: string;
   dismissed: boolean;
+  /** this version is older than the server accepts: updating is the only way on */
+  required: boolean;
   check(manual?: boolean): Promise<void>;
+  checkRequired(): Promise<void>;
   install(): Promise<void>;
   restart(): Promise<void>;
   dismiss(): void;
@@ -29,6 +37,20 @@ export const useUpdate = create<UpdateState>((set, get) => ({
   progress: 0,
   error: "",
   dismissed: false,
+  required: false,
+
+  async checkRequired() {
+    if (!isTauri || !cloud) return;
+    try {
+      const [{ data }, info] = await Promise.all([cloud.from("app_requirements").select("min_desktop_version").maybeSingle(), api().appInfo()]);
+      if (data && older(info.version, data.min_desktop_version)) {
+        set({ required: true, dismissed: false });
+        await get().check(true);
+      }
+    } catch {
+      // offline: the next check will tell
+    }
+  },
 
   async check(manual = false) {
     if (!isTauri) {
@@ -76,13 +98,18 @@ export const useUpdate = create<UpdateState>((set, get) => ({
   },
 
   dismiss() {
-    set({ dismissed: true });
+    if (!get().required) set({ dismissed: true });
   },
 }));
 
-/** Vérifie au démarrage puis toutes les six heures. */
+/** Vérifie au démarrage puis toutes les six heures (this fork's own releases, never Lumen's). */
 export function startUpdateChecks() {
   if (!isTauri) return;
-  window.setTimeout(() => void useUpdate.getState().check(), 8000);
+  window.setTimeout(() => {
+    const u = useUpdate.getState();
+    void u.checkRequired().then(() => {
+      if (!useUpdate.getState().required) void u.check();
+    });
+  }, 8000);
   window.setInterval(() => void useUpdate.getState().check(), 6 * 3600 * 1000);
 }

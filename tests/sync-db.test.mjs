@@ -14,7 +14,7 @@ test('learning records: newest change wins per record, accounts stay private, ol
  grant usage on schema public,auth,storage to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;
  alter default privileges in schema public grant select,insert,update,delete on tables to anon,authenticated;
  insert into auth.users values('${learner}'),('${other}');`);
- for(const f of ['202610120001_wikang_tagalog','202610140001_discover_sources','202610140002_learner_records'])await db.exec(await readFile(`supabase/migrations/${f}.sql`,'utf8'));
+ for(const f of ['202610120001_wikang_tagalog','202610140001_discover_sources','202610140002_learner_records','202610140003_app_requirements'])await db.exec(await readFile(`supabase/migrations/${f}.sql`,'utf8'));
  const as=async(role,id='')=>db.exec(`reset role;set role ${role};select set_config('request.jwt.claim.sub','${id}',false);`);
  const push=(rows)=>db.query('select public.push_learner_records($1) as n',[JSON.stringify(rows)]).then(r=>r.rows[0].n);
  const row=async(key)=>(await db.query('select data,updated_at from public.learner_records where key=$1',[key])).rows[0];
@@ -35,6 +35,14 @@ test('learning records: newest change wins per record, accounts stay private, ol
  await assert.rejects(push([{key:'term:x',data:'x'.repeat(10000001),updated_at:'2026-10-14T12:00:00Z'}]),/record_too_large/);
  await assert.rejects(db.query(`insert into public.learner_records(user_id,key,data,updated_at) values('${learner}','term:x','1',now())`),/permission denied/);
  await assert.rejects(db.query(`select public.save_learner_state(1,'{"terms":{}}')`),/sync_conflict/,'old apps are turned away once records exist');
+ // raising the minimum format turns older apps away, and everyone can read the requirements
+ await db.exec('reset role');await db.exec("update public.app_requirements set min_record_version=2,min_desktop_version='0.2.0'");
+ await as('authenticated',learner);
+ await assert.rejects(push([{key:'setting:font',data:'serif',updated_at:'2026-10-14T13:00:00Z',version:1}]),/update_required/);
+ assert.equal(await push([{key:'setting:font',data:'serif',updated_at:'2026-10-14T13:00:00Z',version:2}]),1);
+ await as('anon');assert.equal((await db.query('select min_desktop_version from public.app_requirements')).rows[0].min_desktop_version,'0.2.0');
+ await assert.rejects(db.query("update public.app_requirements set min_record_version=1"),/permission denied/);
+ await as('authenticated',learner);
  await db.exec('reset role');const used=(await db.query(`select bytes from public.learner_usage where user_id='${learner}'`)).rows[0].bytes;
  assert.ok(Number(used)>0);
 

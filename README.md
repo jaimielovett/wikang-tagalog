@@ -22,7 +22,7 @@ The website starts without external credentials: guest reading, the bundled Taga
 ## Connect Supabase
 
 1. Create a new project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), and [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync.
+2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync, and [supabase/migrations/202610140003_app_requirements.sql](supabase/migrations/202610140003_app_requirements.sql) for the oldest app versions allowed to sync.
 3. Copy `.env.example` to `.env`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the project URL and public publishable/anon key. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the same values for server functions.
 4. Configure the site's URL and allowed redirect URLs under Authentication. Password sign-in and email-confirmed sign-up are implemented. For local development allow `http://localhost:1430`.
 5. Create your account in the app. Copy its UUID from Authentication → Users and grant admin membership in the trusted SQL editor:
@@ -90,6 +90,37 @@ cd src-tauri && cargo check --locked --lib
 ```
 
 `npm run dev` serves the frontend. For local testing of configured server endpoints, use `vercel dev` with the same environment variables. The browser checks need Google Chrome installed; the database tests use PGlite, not a live account.
+
+## Desktop releases and updates
+
+The desktop app updates itself from this repository's published GitHub releases, signed with this fork's own updater key; it never uses Lumen's. Installed apps check at launch and every six hours.
+
+One-time setup:
+
+1. Generate the updater key once, outside the repository, and keep the key file and its password backed up: losing either means installed apps can no longer be updated.
+
+   ```bash
+   npx tauri signer generate -w ~/.tauri/wikang-tagalog-updater.key
+   ```
+
+   Its public key goes in `plugins.updater.pubkey` in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json).
+2. In GitHub → Settings → Secrets and variables → Actions, add the secrets `TAURI_SIGNING_PRIVATE_KEY` (the key file's contents) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and the variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (the public values).
+
+To release:
+
+1. Set the new version in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) (and `package.json`), commit, and push a matching tag, e.g. `git tag v0.2.0` then `git push origin v0.2.0`.
+2. [.github/workflows/release.yml](.github/workflows/release.yml) builds the Windows and macOS apps, signs their update packages and attaches them, with `latest.json`, to a **draft** release.
+3. Review the draft and publish it. Only then do installed apps offer the update, and Discover's "Get the desktop app" link serves it.
+
+Local `npm run app:build` also signs update packages: set `TAURI_SIGNING_PRIVATE_KEY` to the key file's path and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` first, or build with `--config '{"bundle":{"createUpdaterArtifacts":false}}'`.
+
+When a release changes how learning is stored, raise the minimums in Supabase so older apps are asked to update instead of syncing data in the old format:
+
+```sql
+update public.app_requirements set min_record_version=2, min_desktop_version='0.2.0';
+```
+
+Outdated web tabs are asked to reload; an outdated desktop app shows an update card that cannot be dismissed. Builds are not code-signed with an Apple or Microsoft certificate yet, so first installs show a macOS Gatekeeper or Windows SmartScreen warning.
 
 ## Source layout
 

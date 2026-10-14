@@ -12,6 +12,7 @@ import { api, isTauri } from "./lib/api";
 import { useAccount } from "./lib/web/cloud";
 import { MEDIA_EXT, TEXT_EXT, extOf } from "./lib/importers";
 import { startBackupEvents } from "./lib/backup";
+import { startUpdateChecks } from "./lib/updater";
 import { setUiLang, t, type UiLang } from "./lib/i18n";
 import { useAppMenu, useWindowsKeys } from "./lib/menu";
 import { playableCodecs } from "./lib/platform";
@@ -119,7 +120,8 @@ export function App() {
       .catch(() => {});
     init()
       .then(() => {
-        // Updates belong to this fork; never use Lumen’s release feed.
+        // this fork's own signed releases (src-tauri/tauri.conf.json), never Lumen's
+        startUpdateChecks();
         startBackupEvents();
       })
       .catch((e) => setFailed(String(e)));

@@ -282,6 +282,16 @@ export const useApp = create<AppStore>((set, get) => ({
             void get().refreshKnown();
           });
       });
+      // the server no longer accepts this version's data: a reload brings the new one
+      let asked = false;
+      window.addEventListener("wikang:update-required", () => {
+        if (asked) return;
+        asked = true;
+        get().toast(t("Une nouvelle version de Wikang Tagalog est prête. Rechargez pour continuer à synchroniser.", "A new version of Wikang Tagalog is ready. Reload to keep syncing."), "info", {
+          label: t("Recharger", "Reload"),
+          run: () => location.reload(),
+        });
+      });
     }
     await get().refreshModels();
     await get().refreshKnown();

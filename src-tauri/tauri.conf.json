@@ -90,7 +90,17 @@
         }
       }
     },
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": true
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzQjc1NTczQTU0NzNBNjYKUldSbU9rZWxjMVczZzFIQ2YzSUZqRHhIZldSN04zVlBSMHNFVTlZVjNYTzg0djJ3b3czaEVQTEsK",
+      "endpoints": [
+        "https://github.com/jaimielovett/wikang-tagalog/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }
