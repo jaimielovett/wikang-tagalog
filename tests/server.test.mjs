@@ -62,7 +62,7 @@ test('the download link sends each computer straight to its installer, from publ
  const ok={ok:true,json:async()=>({assets})};
  let r=await run({platform:'mac'},'',ok);assert.equal(r.code,302);assert.equal(r.to,'https://x/app.dmg');assert.match(r.headers['Cache-Control'],/s-maxage/);
  r=await run({},'Mozilla/5.0 (Windows NT 10.0)',ok);assert.equal(r.to,'https://x/setup.exe');assert.equal(r.headers['Cache-Control'],'no-store');
- // no published release yet, or no build for this computer: the releases page
- r=await run({platform:'windows'},'',{ok:false,json:async()=>({})});assert.equal(r.to,'https://github.com/jaimielovett/wikang-tagalog/releases/latest');
- r=await run({},'Mozilla/5.0 (X11; Linux x86_64)',ok);assert.equal(r.to,'https://github.com/jaimielovett/wikang-tagalog/releases/latest');
+ // nothing published yet, or no build for this computer: back to the site, which says so
+ r=await run({platform:'windows'},'',{ok:false,json:async()=>({})});assert.equal(r.to,'/?unavailable=windows');assert.equal(r.headers['Cache-Control'],'no-store');
+ r=await run({},'Mozilla/5.0 (X11; Linux x86_64)',ok);assert.equal(r.to,'/?unavailable=computer');
 });

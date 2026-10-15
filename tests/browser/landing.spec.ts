@@ -19,3 +19,9 @@ test('arriving from a sign-up confirmation email says so, and the sign-in tokens
  await expect(page.getByText('Your email is confirmed. Open Wikang Tagalog on your computer and sign in.')).toBeVisible();
  expect(new URL(page.url()).hash).toBe('');
 });
+
+test('a download that isn\'t published yet comes back here with a note, not to GitHub',async({page})=>{
+ await page.goto('/?unavailable=windows');
+ await expect(page.getByText("The Windows download isn't available just yet. Please check back soon.")).toBeVisible();
+ expect(new URL(page.url()).search).toBe('');
+});

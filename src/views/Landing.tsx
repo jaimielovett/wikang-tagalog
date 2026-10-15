@@ -13,6 +13,14 @@ function confirmedEmail(): boolean {
   return confirmed;
 }
 
+/** Sent back by the download link (api/download.mjs): nothing published yet for this computer. */
+function unavailable(): string | null {
+  const params = new URLSearchParams(location.search);
+  const which = params.get("unavailable");
+  if (which !== null) history.replaceState(null, "", location.pathname);
+  return which === null ? null : which === "mac" ? "Mac" : which === "windows" ? "Windows" : "";
+}
+
 const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: "book", title: "Read and listen to what you love", body: "Books, articles, YouTube videos, podcasts and songs become lessons. Long books stay whole; their pages turn in the reader." },
   { icon: "sparkle", title: "Every word lights up", body: "Tap any word for its meaning in that sentence. New words glow blue, words you're learning amber, and known words fade into the page." },
@@ -23,12 +31,18 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
 /** wikangtagalog.com: Wikang Tagalog is a desktop app; the website is where you download it. */
 export function Landing() {
   const [confirmed] = useState(confirmedEmail);
+  const [missing] = useState(unavailable);
   return (
     <div className="landing">
       <main className="landing-main">
         {confirmed && (
           <div className="landing-note" role="status">
             <Icon name="check" size={16} stroke={2} /> Your email is confirmed. Open Wikang Tagalog on your computer and sign in.
+          </div>
+        )}
+        {missing !== null && (
+          <div className="landing-note soon" role="status">
+            <Icon name="clock" size={16} /> {missing ? `The ${missing} download isn't available just yet. Please check back soon.` : "Wikang Tagalog is available for Windows and Mac."}
           </div>
         )}
         <section className="landing-hero">
