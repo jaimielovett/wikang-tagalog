@@ -656,18 +656,18 @@
       ]
     },
     {
-      "version": "0.1.2",
+      "version": "0.1.3",
       "date": "2026-10-15",
-      "title": { "fr": "L'application de bureau devient votre compagnon d'import", "en": "The desktop app becomes your import companion" },
+      "title": { "fr": "Votre apprentissage sur tous vos ordinateurs", "en": "Your learning on all your computers" },
       "items": [
         {
-          "icon": "import",
-          "title": { "fr": "Importer depuis le bureau, lire sur le site", "en": "Import on the desktop, read on the website" },
+          "icon": "cloud",
+          "title": { "fr": "Un compte, tous vos ordinateurs", "en": "One account, all your computers" },
           "body": {
-            "fr": "Connectez-vous dans l'application de bureau, collez un lien YouTube ou de podcast, ou choisissez un enregistrement : la leçon est transcrite mot à mot, puis rejoint votre bibliothèque ici.",
-            "en": "Sign in to the desktop app, paste a YouTube or podcast link, or choose a recording: the lesson is transcribed word by word, then joins your library here."
+            "fr": "Connectez-vous : vos leçons, vos mots, vos playlists et vos progrès vous suivent de votre PC à votre Mac. Une leçon faite sur l'un retrouve son son sur l'autre.",
+            "en": "Sign in and your lessons, words, playlists and progress follow you from your PC to your Mac. A lesson made on one gets its sound on the other."
           },
-          "action": "view:library"
+          "action": "view:account"
         },
         {
           "icon": "book",
