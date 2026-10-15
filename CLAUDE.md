@@ -3,15 +3,16 @@
 This is a separate Tagalog-only fork of Lumen. All edits belong in this repository.
 Never edit, commit, deploy, or publish from /Users/jam/Projects/lumen.
 
-- Shared React interface; browser backend in src/lib/web, desktop backend in src-tauri.
+- Wikang Tagalog is a desktop app for Windows and Mac (Tauri, backend in src-tauri). The first screen offers Create an account, Sign in, or Continue as a guest, then the welcome.
+- AI is local first (models downloaded to the computer). An online model is used only with the learner's own API key; the app never uses a server-side AI key.
+- Signed in, learning syncs item by item with the account (src/lib/desktop-sync.ts, src-tauri/src/sync.rs) between the learner's computers. Guests keep everything on one computer.
+- Long texts and books are never split into several lessons: one text or one EPUB is one lesson, whose pages turn in the reader.
+- wikangtagalog.com is only a download page (src/views/Landing.tsx, api/download.mjs). The browser backend in src/lib/web stays for its account sync engine, Discover and the browser tests (/?app, development only).
+- Discover uses the admin-managed sources in Supabase (read by the Vercel functions) plus each learner's own sources. Publishing prepared lessons to Discover is paused.
 - Studied language is always tl. Keep native language types for reusable tokenizer code, but expose no study-language switching.
-- Web: Vite frontend and Vercel functions in api. Supabase auth, private learner_state, published_lessons and lesson-media storage.
-- The desktop app is a companion to the website (src/views/Companion.tsx, src/lib/companion.ts): sign in only (no sign-up, no welcome), then import. It transcribes locally and sends each lesson to the learner's account, then deletes its own copy; it mirrors none of the site's learning.
-- A learner's own recording (a file from their computer) keeps its sound in the private learner-media bucket, under their user id, readable only by them. YouTube and podcast lessons play from their source and upload nothing.
-- Only server-authorized admins can prepare/upload/publish media for the shared catalogue (lesson-media).
 - Admin membership is in public.admins, assigned through trusted Supabase administration. Never use user-editable metadata for roles.
 - Keep uploaded drafts private until complete, reviewed and published. Published transcripts/timings are immutable.
 - Do not introduce Lumen updater endpoints or signing identity into this fork. Desktop data lives under app.wikangtagalog.reader.
-- Keep service keys server-only. Neither app needs a service-role key.
+- Keep service keys server-only. Neither the app nor the site needs a service-role key.
 - Keep attribution and GPL licence. Dictionary remains Wiktionary-derived.
 - Check npm run build, npm test, npm run test:browser, and cargo check --locked --lib from src-tauri.

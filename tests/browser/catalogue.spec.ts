@@ -14,7 +14,7 @@ test('public prepared video opens without transcription and private learning sta
   if(url.pathname.endsWith('/rpc/discover_status'))return route.fulfill({json:{last_refresh_at:new Date().toISOString(),refreshing:false},headers:{'Access-Control-Allow-Origin':'*'}});
   invokedTranscription=true;return route.fulfill({json:[],status:200});
  });
- await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
+ await page.goto('/?app');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
  await page.getByRole('button',{name:'Discover',exact:true}).click();await expect(page.getByRole('heading',{name:'Magandang araw',exact:true})).toBeVisible();
  await page.locator('.find-hero').getByRole('button',{name:'Watch'}).click();await expect(page.locator('.reader')).toBeVisible();await expect(page.locator('video').first()).toBeVisible();
  const result=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const opened=await api().lessonOpen(useApp.getState().lessonId);await api().termsMarkKnown('tl',['araw'],0);return {opened,terms:await api().termsList({lang:'tl',filter:'known',limit:20,offset:0})};});

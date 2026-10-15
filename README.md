@@ -1,6 +1,6 @@
 # Wikang Tagalog
 
-A Tagalog-only learning website with a desktop companion, forked from [Lumen by Ulysse Rives](https://github.com/LivingTwice/lumen). Reading, vocabulary, playlists and progress happen on the website. The desktop app is only a companion for importing: you sign in (accounts are made on the website), paste a YouTube or podcast link or choose an audio or video file, and it transcribes the lesson word by word on your computer and sends it to your library on the website. The studied language is fixed to `tl`.
+A Tagalog-only desktop learning app for Windows and Mac, forked from [Lumen by Ulysse Rives](https://github.com/LivingTwice/lumen). Read and listen to books, articles, YouTube videos, podcasts and songs; tap any word for its meaning; build your vocabulary. AI runs on your computer, or online with your own API key. Learn as a guest, or create an account to keep your learning in step between your computers. [wikangtagalog.com](https://www.wikangtagalog.com) is the download page. The studied language is fixed to `tl`.
 
 This is an independent repository. The original Lumen checkout and its data are unchanged. Desktop data uses `app.wikangtagalog.reader`; Lumen's release feed and signing keys are not used.
 
@@ -35,21 +35,17 @@ The website starts without external credentials: guest reading, the bundled Taga
 
 Supabase row-level security isolates each account's learning data. Signed-in learning syncs item by item: each setting, lesson, word, playlist and chat is its own record, and the newest change to a record wins, so two browsers can be used side by side and offline changes keep the time they were made. Each device's daily activity is its own record and the totals add up. Browsers sync on every change, every minute while open, and when they come back into view. Accounts saved the earlier way (one document) become records the first time they sign in, and older copies of the app can no longer overwrite them. Learning done as a guest joins the account automatically the first time you sign in on that browser. Restoring a backup while signed in replaces your learning on all your devices.
 
-The desktop companion keeps no learning of its own. Each lesson it imports goes to the account as soon as it is transcribed, then leaves the computer with its files; one it can't send yet (offline) waits and is sent later. A YouTube or podcast lesson plays from its source on the website and uploads nothing. A recording from the learner's own computer keeps its compressed sound in the private `learner-media` storage bucket, in a folder only that learner can read (150 MB a file, 2 GB each); deleting the lesson on the website deletes the recording.
+The desktop app syncs the same way once signed in: its learning joins the account the first time, then each change travels both ways, so two computers stay in step. Settings that belong to one computer (its AI models, backup folder, last lesson) stay on it. Lesson audio and video files stay on the computer that made them; a YouTube or podcast lesson plays from its source on the others.
 
 ## Branded account email
 
 The confirmation email template and Supabase setup instructions are in [supabase/templates/README.md](supabase/templates/README.md). Apply it in the Auth dashboard; website deployment alone does not change Supabase email templates. A custom SMTP provider and verified sender address are needed to replace the default Supabase sender.
 
-## Online features
+## AI
 
-Set optional **server-only** variables on Vercel:
+AI runs on the learner's computer: translation in context, chat, simplification and transcription use models the app downloads (Settings → AI). To use an online model instead, the learner adds their own provider and API key in Settings; it is kept on that computer. The app never uses a server-side AI key.
 
-- `AI_API_URL`: an HTTPS OpenAI-compatible endpoint, default `https://api.openai.com/v1`.
-- `AI_MODEL` and `AI_API_KEY`: the configured model and private provider key.
-- `GOOGLE_TTS_API_KEY`: Google Cloud Text-to-Speech key for `fil-PH` natural voice.
-
-These enable contextual translation, chat, simplification, custom Tagalog podcasts, pronunciation and generated lesson audio. Device speech synthesis also works with installed Filipino/Tagalog voices. Generated browser audio uses estimated word timings; precise Whisper alignment runs on desktop. Private provider keys never go into `VITE_` variables or learner backups. Online endpoints require a verified Supabase session and enforce a daily request budget.
+The website's former AI and voice functions (`api/ai.mjs`, `api/voice.mjs`, and the `AI_*` and `GOOGLE_TTS_API_KEY` variables) are not used by the desktop app.
 
 ## Discover sources
 
@@ -70,7 +66,7 @@ The cache refreshes every three hours (a Vercel cron job; Vercel Pro or above), 
 
 ## Publish a lesson
 
-Publishing is paused: the steps below were done from the desktop app, which is now a companion for learners' own imports. Drafts already prepared can still be reviewed and published on the website.
+Publishing is paused for now: everyone makes their own lessons. The steps below describe how it worked.
 
 1. In the desktop app, import a Tagalog video/audio file or supported source link. Lumen's existing downloader and local Whisper pipeline produce the transcript and timings.
 2. Sign in as an admin, open Account → Publishing studio, choose the lesson and select **Prepare for review**.
@@ -82,7 +78,7 @@ Web learners open the prepared lesson from Discover; no downloading/transcriptio
 
 If preparation fails, the draft and any completed uploads remain in the review queue. Delete that unpublished draft before retrying. This avoids orphaned media and half-published lessons. Signed media links are resolved when a lesson opens and last 24 hours.
 
-## Deploy the web app to Vercel
+## Deploy the website to Vercel
 
 Import this repository as a Vite project and set the variables above. `vercel.json` supplies the build, API routes and SPA fallback. Vercel builds only the web app; it does not compile the Rust desktop app. Rebuild after changing `VITE_` values.
 
@@ -131,8 +127,9 @@ Outdated web tabs are asked to reload; an outdated desktop app shows an update c
 - `src/`: shared React screens and reader.
 - `src/lib/web/`: real browser learning backend, IndexedDB, account sync, dictionary, catalogue and publishing.
 - `api/`: authenticated Vercel AI, voice and article-import endpoints.
-- `src/views/Companion.tsx`, `src/lib/companion.ts`: the desktop companion (sign in, import, send to the account).
-- `src-tauri/`: the desktop's downloaders, Whisper transcription and the outbox of lessons waiting to be sent.
+- `src/views/Landing.tsx`, `api/download.mjs`: the website (the download page) and its link to the latest installer.
+- `src/lib/desktop-sync.ts`, `src-tauri/src/sync.rs`: the desktop app's sync with the account.
+- `src-tauri/`: desktop SQLite, local AI, Whisper, downloaders.
 - `supabase/migrations/`: schema, RLS, storage permissions and publication validation.
 - `scripts/export-tagalog-dictionary.py`: reproducible export from the bundled dictionary.
 
@@ -142,4 +139,4 @@ App code is **GPL-3.0-or-later**, inherited from Lumen; see [LICENSE](LICENSE). 
 
 Dictionary entries/forms are Wiktionary-derived data exported via [kaikki.org](https://kaikki.org/dictionary/Tagalog/), under **CC BY-SA 4.0**. Both `src-tauri/resources/dicts/tl.db.gz` and `public/tagalog-dictionary.json.gz` retain that licence. Changes to this export are described in `scripts/export-tagalog-dictionary.py`. Other inherited assets and dependencies retain their own licences.
 
-Live Supabase connection, provider credentials, desktop distribution signing and production deployment must be configured before public launch. Browser imports support text, articles, PDF, EPUB, HTML and subtitle documents; transcribing audio and video belongs to the desktop companion.
+Live Supabase connection, provider credentials, desktop distribution signing and production deployment must be configured before public launch. In development, `npm run dev` serves the download page; `http://localhost:1430/?app` opens the app's interface in the browser with its browser backend, which the browser tests use.

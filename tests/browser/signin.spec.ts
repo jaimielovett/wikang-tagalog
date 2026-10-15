@@ -13,7 +13,7 @@ const syncNow=(page:Page)=>page.evaluate(()=>document.dispatchEvent(new Event('v
 
 test('signing in after learning as a guest keeps that learning and skips the welcome',async({page})=>{
  const account=fakeAccount();await account.attach(page);
- await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
+ await page.goto('/?app');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
  await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
  await signIn(page);
@@ -35,7 +35,7 @@ test('signing in after learning as a guest keeps that learning and skips the wel
 test('two devices on one account stay in step, item by item',async({browser})=>{
  const account=fakeAccount();
  const laptop=await (await browser.newContext()).newPage();await account.attach(laptop);
- await laptop.goto('/');await completeWelcome(laptop);
+ await laptop.goto('/?app');await completeWelcome(laptop);
  await laptop.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
  await signIn(laptop);
  await laptop.getByRole('button',{name:'Later',exact:true}).click();
@@ -44,7 +44,7 @@ test('two devices on one account stay in step, item by item',async({browser})=>{
 
  // a second browser signs in from the welcome and goes straight to its learning
  const phone=await (await browser.newContext()).newPage();await account.attach(phone);
- await phone.goto('/');
+ await phone.goto('/?app');
  await phone.getByRole('button',{name:'Sign in',exact:true}).click();
  await signIn(phone);
  await expect(phone.getByRole('button',{name:'Library',exact:true})).toBeVisible({timeout:15000});
@@ -69,7 +69,7 @@ test('an account saved the old way becomes records the first time it signs in',a
  const account=fakeAccount();
  account.setLegacy({settings:{lang:'tl',langs:'tl',ui_lang:'en',onboarded:'1',user_name:'Jamie',daily_goal:'20'},lessons:[{id:1,lang:'tl',title:'Lumang aralin',text:'May bahay sa tabi ng dagat.',collection:'',kind:'text',source:'',media_path:null,timings:null,video_path:null,hue:40,word_count:6,page:0,completed:false,position:0,anchor:0,duration:0,cover_path:null,timing_v:0,created_at:1}],terms:{'tl|dagat':{term:'dagat',status:4,translation:'sea',note:'',lemma:'',context:'',updated_at:1}},activity:{},nextId:2,installed:[]});
  await account.attach(page);
- await page.goto('/');
+ await page.goto('/?app');
  await page.getByRole('button',{name:'Sign in',exact:true}).click();
  await signIn(page);
  await expect(page.getByRole('button',{name:'Jamie',exact:true})).toBeVisible({timeout:15000});

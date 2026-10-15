@@ -9,6 +9,8 @@ import { useAccount, cloud } from "../../lib/web/cloud";
 import { stopPronunciation } from "../../lib/pronounce";
 import { playbackRates } from "../../lib/reading";
 import { remoteMedia, YouTubeMedia } from "../../lib/remote-media";
+import { soundFrom, type SoundFrom } from "../../lib/lesson-media";
+import { MEASURED, stageText } from "../../lib/imports";
 import { formatDuration, useApp } from "../../lib/store";
 import { RUN_ON_WORDS, longestRun, type PageRange } from "../../lib/tokenize";
 import { loadVoices, speak, ttsAvailable, voicesFor, type SpeakHandle } from "../../lib/tts";
@@ -60,6 +62,67 @@ const VOICE_MODEL = "supertonic-3";
  * « Créer l'audio » : la voix naturelle lit toute la leçon, la lanterne suit.
  * Sans voix installée, le premier clic lance son téléchargement.
  */
+/**
+ * A lesson made on the learner's other computer arrives without its sound: it is fetched here
+ * (again from YouTube or the episode, or from their private storage for a recording), then the
+ * lesson plays like any other. The word timings made there still fit.
+ */
+function FetchSound({ lesson, from, onFetched }: { lesson: Lesson; from: NonNullable<SoundFrom>; onFetched?(v: VoicedLesson): void }) {
+  const [stage, setStage] = useState("");
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setError("");
+    setStage("");
+    setProgress(null);
+    void (async () => {
+      let url: string;
+      let direct: boolean;
+      if ("private" in from) {
+        if (!cloud) throw new Error("Sign in to get this lesson's recording.");
+        const { data, error } = await cloud.storage.from("learner-media").createSignedUrl(from.private, 3600);
+        if (!data?.signedUrl) throw new Error(error?.message ?? "This recording couldn't be found.");
+        url = data.signedUrl;
+        direct = true;
+      } else ({ url, direct } = from);
+      const path = await api().lessonFetchMedia(lesson.id, url, direct, (e) => {
+        if (!alive) return;
+        if (e.type === "stage") {
+          setStage(e.stage);
+          setProgress(MEASURED.includes(e.stage) ? 0 : null);
+        } else setProgress(e.value);
+      });
+      if (alive) onFetched?.({ media_path: path, timings: lesson.timings ?? "", timing_v: lesson.timing_v, duration: lesson.duration });
+    })().catch((e) => alive && setError(errorText(e)));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id, attempt]);
+  const where = "private" in from ? t("depuis votre autre ordinateur", "from your other computer") : /youtu/.test(from.url) ? t("depuis YouTube", "from YouTube") : t("depuis sa source", "from its source");
+  return error ? (
+    <div className="player-fetch error" role="alert">
+      <Icon name="ban" size={16} />
+      <span>{t(`Le son n'a pas pu être récupéré : ${error}`, `The sound couldn't be fetched: ${error}`)}</span>
+      <button className="btn sm soft" onClick={() => setAttempt((a) => a + 1)}>
+        {t("Réessayer", "Try again")}
+      </button>
+    </div>
+  ) : (
+    <div className="player-fetch" role="status">
+      <span className="orb" style={{ width: 22, height: 22, ["--s" as string]: "22px" }} />
+      <span>
+        {stage && stage !== "download" ? stageText(stage) : t(`Récupération du son ${where}`, `Getting the sound ${where}`)}…
+      </span>
+      <div className="bar live">
+        <i style={{ width: `${progress ?? 30}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function MakeAudio({ lesson, again, onVoiced }: { lesson: Lesson; again?: boolean; onVoiced?(v: VoicedLesson): void }) {
   const session = useAccount(s => s.session);
   const webReady = !isTauri && !!cloud && !!session;
@@ -178,7 +241,10 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
   const setSetting = useApp((s) => s.setSetting);
   // lesson made on another device: its video plays from YouTube, its podcast from the episode's address
   const mediaUrl = (lesson as Lesson & { media_url?: string | null }).media_url;
-  const remote = useMemo(() => remoteMedia({ media_path: lesson.media_path, source: lesson.source, media_url: mediaUrl }), [lesson.media_path, lesson.source, mediaUrl]);
+  // (the desktop app fetches such a lesson's sound to the computer instead: FetchSound below)
+  const remote = useMemo(() => (isTauri ? null : remoteMedia({ media_path: lesson.media_path, source: lesson.source, media_url: mediaUrl })), [lesson.media_path, lesson.source, mediaUrl]);
+  // made on the learner's other computer: its sound comes here first
+  const fetchFrom = useMemo(() => (isTauri ? soundFrom({ media_path: lesson.media_path, source: lesson.source, media_url: mediaUrl, timings: lesson.timings }) : null), [lesson.media_path, lesson.source, mediaUrl, lesson.timings]);
   const youtube = remote?.kind === "youtube" ? remote.id : null;
   // a recording from the learner's computer: a short-lived address to their private copy
   const privatePath = remote?.kind === "private" ? remote.path : null;
@@ -718,6 +784,13 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
       onLoadedMetadata={single ? masterEvents.onLoadedMetadata : (e) => (e.currentTarget.currentTime = posRef.current)}
     />
   ) : null;
+
+  if (fetchFrom)
+    return (
+      <div className="player" data-tour="player">
+        <FetchSound lesson={lesson} from={fetchFrom} onFetched={onVoiced} />
+      </div>
+    );
 
   return (
     <>

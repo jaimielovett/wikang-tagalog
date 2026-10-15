@@ -2085,3 +2085,30 @@ span.player-voice .icon-btn {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* a lesson made on the learner's other computer: its sound on its way (Player › FetchSound) */
+.player-fetch {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.player-fetch > span:nth-child(2) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-fetch .bar {
+  flex: 1;
+  max-width: 260px;
+}
+.player-fetch.error {
+  color: var(--danger);
+}
+.player-fetch.error > span {
+  flex: 1;
+  white-space: normal;
+}

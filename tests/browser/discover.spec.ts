@@ -22,7 +22,7 @@ async function mockCloud(page:Page,{admin=false}={}) {
 }
 test('Discover shows the sources, plays a video in place, and a learner can switch a source off',async({page})=>{
  await mockCloud(page);
- await page.goto('/');await completeWelcome(page);
+ await page.goto('/?app');await completeWelcome(page);
  await page.getByRole('button',{name:'Discover',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Tagalog for Beginners: Greetings'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Arnold Clavio kinasuhan ng cyber libel'})).toBeVisible();
@@ -61,7 +61,7 @@ test('admins see every source with its health, and add sources from the Account 
   if(url.pathname.endsWith('/discover_sources')&&route.request().method()==='POST'){inserted=route.request().postDataJSON();return route.fulfill({status:201,body:'',headers:cors});}
   return route.fallback();
  });
- await page.goto('/');await completeWelcome(page);
+ await page.goto('/?app');await completeWelcome(page);
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
  await page.getByLabel('Email').fill('admin@example.org');await page.getByLabel('Password').fill('correct horse');
  await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);
@@ -96,7 +96,7 @@ test('signed-in learners add their own sources; a default source is recognised, 
   reads.push(body);
   return route.fulfill({json:{results:body.sources.map((s:any)=>({id:s.id,items:[{id:'c'.repeat(32),kind:'video',title:'Adobong manok ni Ninong',url:'https://www.youtube.com/watch?v=ninongry001',page:'https://www.youtube.com/watch?v=ninongry001',image:'',summary:'',duration:0,published:Math.floor(Date.now()/1000),lo:1,hi:3}]}))}});
  });
- await page.goto('/');await completeWelcome(page);
+ await page.goto('/?app');await completeWelcome(page);
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
  await page.getByLabel('Email').fill('learner@example.org');await page.getByLabel('Password').fill('correct horse');
  await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);

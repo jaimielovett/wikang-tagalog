@@ -1,6 +1,9 @@
 import { initAccount } from "./web/cloud";
+import { withCatalogue } from "./web/catalogue";
+import { cloud } from "./web/cloud";
+import { withSharedDiscover } from "./web/shared-discover";
 import { createBrowserApi } from "./web/api";
-import { sendingToAccount } from "./companion";
+import { startDesktopSync, syncAfterWrites } from "./desktop-sync";
 import type { AppInfo, BackupInfo, BackupPlace, BackupRestored, BackupStatus, ChatEvent, ChatOptions, ChatPatch, ChatReply, ChatSummary, ChatThread, DictResult, DictStatus, DiscoverFeed, DiscoverReport, DownloadEvent, GeminiModels, GoalReached, GpuInfo, ImportEvent, LangCode, LessonSummary, LevelEstimate, LightenProgress, LightenReport, LinkInfo, LinkMedia, LingqEvent, LingqLang, LingqPlan, LingqReport, Lyrics, MediaStream, MediaUsage, ModelRow, NewLesson, OnlineCheck, OpenedLesson, Playlist, PlaylistPatch, PodcastRequest, Resynced, SearchPage, SearchPlatform, SongItem, Stats, Term, TermQuery, TextStats, WordAnswer, VoicedLesson } from "./types";
 
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -93,6 +96,10 @@ export interface Api {
   importLink(lang: LangCode, item: LinkMedia, text: string | null, onEvent: (e: ImportEvent) => void): Promise<number>;
   /** télécharge l'image d'une vidéo ; `replace` : celle qui est là ne se lit pas sur cet ordinateur */
   lessonFetchVideo(id: number, onEvent: (e: ImportEvent) => void, replace?: boolean): Promise<string>;
+  /** the sound of a lesson made on the learner's other computer, fetched here (`direct`: a file's own address) */
+  lessonFetchMedia(id: number, url: string, direct: boolean, onEvent: (e: ImportEvent) => void): Promise<string>;
+  /** where the learner's other computers find this lesson's sound */
+  lessonSetRemote(id: number, url: string): Promise<void>;
   /** formats d'image que la fenêtre lit (« vp9 », « av1 ») : les vidéos en ligne arrivent dans le plus léger */
   mediaCodecs(codecs: string[]): Promise<void>;
   /** place occupée par les leçons, les modèles et les dictionnaires ; ce qui peut encore s'alléger */
@@ -217,6 +224,8 @@ async function createTauriApi(): Promise<Api> {
     linkProbe: (url, onEvent) => invoke("link_probe", { url, onEvent: ch<ImportEvent>(onEvent) }),
     importLink: (lang, item, text, onEvent) => invoke("import_link", { lang, item, text, onEvent: ch<ImportEvent>(onEvent) }),
     lessonFetchVideo: (id, onEvent, replace) => invoke("lesson_fetch_video", { id, replace: replace ?? false, onEvent: ch<ImportEvent>(onEvent) }),
+    lessonFetchMedia: (id, url, direct, onEvent) => invoke("lesson_fetch_media", { id, url, direct, onEvent: ch<ImportEvent>(onEvent) }),
+    lessonSetRemote: (id, url) => invoke("lesson_set_remote", { id, url }),
     mediaCodecs: (codecs) => invoke("media_codecs", { codecs }),
     mediaUsage: () => invoke("media_usage"),
     mediaLighten: (onEvent) => invoke("media_lighten", { onEvent: ch<LightenProgress>(onEvent) }),
@@ -264,8 +273,12 @@ export async function initApi(): Promise<Api> {
   if (instance) return instance;
   if (isTauri) {
     await initAccount();
-    // the desktop companion: what it imports goes to the learner's account (lib/companion.ts)
-    instance = sendingToAccount(await createTauriApi());
+    // Discover shows the shared catalogue (admins' sources, published lessons, the learner's own sources)
+    const desktop = syncAfterWrites(await createTauriApi());
+    instance = withCatalogue(cloud ? withSharedDiscover(desktop) : desktop);
+    // signed in: this computer's learning syncs with the account, as the web's does. The first
+    // round is awaited a little, so a computer joining an account opens on its learning, not the welcome.
+    await Promise.race([startDesktopSync(), new Promise((r) => setTimeout(r, 6000))]);
   } else {
     instance = await createBrowserApi();
   }

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Icon, type IconName } from "../components/Icon";
 import { Sheet } from "../components/ui";
 import { api, errorText, isTauri } from "../lib/api";
-import { DesktopDownload } from "../components/DesktopDownload";
 import { youtubeId } from "../lib/covers";
 import { pickFiles, pickWebFiles } from "../lib/dialogs";
 import { cleanTitle, useDiscover } from "../lib/discover";
@@ -112,10 +111,8 @@ function LinkThumb({ src, icon }: { src: string; icon: IconName }) {
   );
 }
 
-/** `embedded`: the desktop companion's page, always open; what it makes goes to the account (lib/companion.ts). */
-export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
-  const sheetOpen = useApp((s) => s.importOpen);
-  const open = sheetOpen || embedded;
+export function ImportSheet() {
+  const open = useApp((s) => s.importOpen);
   const files = useApp((s) => s.importFiles);
   const item = useApp((s) => s.importItem);
   const linkToOpen = useApp((s) => s.importUrl);
@@ -132,8 +129,7 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
   const openLesson = useApp((s) => s.openLesson);
   const go = useApp((s) => s.go);
 
-  // the companion is mostly for links (YouTube, podcasts)
-  const [tab, setTab] = useState<Tab>(embedded ? "link" : "text");
+  const [tab, setTab] = useState<Tab>("text");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
@@ -214,11 +210,6 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
   }, [open, files, item, linkToOpen, tabToOpen]);
 
   const finish = async (ids: number[], label: string) => {
-    // the companion: the lesson has left for the account (its own message says so); ready for the next
-    if (embedded) {
-      reset();
-      return;
-    }
     // la carte de Découvrir mène désormais à la leçon
     if (item && ids.length) void useDiscover.getState().mark(lang, item.id, ids[0]);
     if (playlistId && ids.length) {
@@ -521,8 +512,18 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
           <Icon name="sparkle" size={15} /> {t("Créer le podcast", "Create the podcast")}
         </button>
       );
-    // the website: the desktop companion transcribes, and its installer is one click away
-    if (tab === "media" && !isTauri) footer = <DesktopDownload />;
+    if (tab === "media" && !isTauri)
+      footer = (
+        <button
+          className="btn primary"
+          onClick={() => {
+            close();
+            go("discover");
+          }}
+        >
+          {t("Ouvrir Découvrir", "Open Discover")}
+        </button>
+      );
     if (tab === "media" && isTauri)
       footer = (
         <button className="btn primary" disabled={!mediaFiles.length || !asrReady} onClick={transcribeAll}>
@@ -531,8 +532,8 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
       );
   }
 
-  const body = (
-    <>
+  return (
+    <Sheet open={open} onClose={() => !busy && close()} title={t(`Importer ${inLang(lang)}`, `Import ${inLang(lang)}`)} footer={footer}>
       {targetPlaylist && (
         <div className="import-destination">
           <Icon name="playlist" size={16} />
@@ -542,9 +543,7 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
       )}
       {!busy && (
         <div className="import-tabs" role="tablist">
-          {tabs()
-            .filter((tb) => !(embedded && tb.id === "podcast"))
-            .map((tb) => (
+          {tabs().map((tb) => (
             <button
               key={tb.id}
               role="tab"
@@ -584,13 +583,7 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
                 <span className="muted num">{t(`${Math.round(progress)} %`, `${Math.round(progress)}%`)}</span>
               </>
             )}
-            {isTauri && (
-              <span className="import-hint">
-                {embedded
-                  ? t("La transcription se fait sur cet ordinateur ; la leçon rejoint ensuite votre bibliothèque.", "Transcribed on this computer, then the lesson joins your library.")
-                  : t("Tout se passe sur votre Mac. Rien n'est envoyé en ligne.", "Everything happens on your Mac. Nothing is sent online.")}
-              </span>
-            )}
+            {isTauri && <span className="import-hint">{t("Tout se passe sur votre Mac. Rien n'est envoyé en ligne.", "Everything happens on your Mac. Nothing is sent online.")}</span>}
           </motion.div>
         ) : (
           <motion.div key={tab + (preview ? "p" : "") + (book ? "b" : "") + (found ? "f" : "")} className="import-pane" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -749,14 +742,8 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
                 <strong style={{ color: "var(--text)" }}>{t("Préparé dans l'application de bureau", "Prepared in the desktop app")}</strong>
                 <span>
                   {t(
-                    "Les vidéos et les sons sont transcrits mot à mot dans l'application de bureau, puis rejoignent votre bibliothèque ici.",
-                    "Video and audio are transcribed word by word in the desktop app, then join your library here.",
-                  )}
-                </span>
-                <span className="import-hint">
-                  {t(
-                    "Installez-la, connectez-vous avec ce compte, puis collez un lien YouTube ou de podcast, ou choisissez un fichier.",
-                    "Install it, sign in with this account, then paste a YouTube or podcast link, or choose a file.",
+                    "Les vidéos et les sons sont transcrits mot à mot dans l'application de bureau. Les leçons publiées vous attendent dans Découvrir.",
+                    "Video and audio are transcribed word by word in the desktop app. Published lessons are waiting for you in Discover.",
                   )}
                 </span>
               </div>
@@ -789,18 +776,6 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
-  );
-  if (embedded)
-    return (
-      <section className="import-page" aria-label={t("Importer", "Import")}>
-        {body}
-        {footer && <div className="import-page-foot">{footer}</div>}
-      </section>
-    );
-  return (
-    <Sheet open={open} onClose={() => !busy && close()} title={t(`Importer ${inLang(lang)}`, `Import ${inLang(lang)}`)} footer={footer}>
-      {body}
     </Sheet>
   );
 }

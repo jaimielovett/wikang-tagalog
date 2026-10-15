@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {completeWelcome} from './welcome';
 test('Tagalog onboarding, dictionary, vocabulary, playlists, imports and persistence',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
+ await page.goto('/?app');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
  await completeWelcome(page,20);
  await expect(page.locator('.reader')).toBeVisible();
  const state=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const opened=await api().lessonOpen(useApp.getState().lessonId);return {goal:useApp.getState().settings.daily_goal,lang:useApp.getState().lang(),langs:useApp.getState().langs(),text:opened.lesson.text};});
@@ -21,7 +21,7 @@ test('Tagalog onboarding, dictionary, vocabulary, playlists, imports and persist
  await page.screenshot({path:'outputs/web-desktop.png',fullPage:true});expect(errors).toEqual([]);
 });
 test('mobile onboarding and navigation do not overflow',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await page.goto('/?app');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
  await page.screenshot({path:'outputs/web-mobile-welcome.png',fullPage:true});await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'outputs/web-mobile-reader.png',fullPage:true});
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('discover');});await expect(page.getByRole('heading',{name:'Discover',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'outputs/web-mobile.png',fullPage:true});
@@ -29,7 +29,7 @@ test('mobile onboarding and navigation do not overflow',async({page})=>{
 
 test('web guidance explains online services without desktop privacy or installation claims', async ({page}) => {
  await page.emulateMedia({reducedMotion:'reduce'});
- await page.goto('/');
+ await page.goto('/?app');
  await completeWelcome(page);
  await expect(page.locator('.reader')).toBeVisible();
  const dock=page.getByRole('button',{name:'Dock the word panel on the right'});
@@ -65,7 +65,7 @@ test('web guidance explains online services without desktop privacy or installat
 });
 
 test('welcome offers Supabase recovery and can be replayed without losing learning', async ({page}) => {
- await page.goto('/');
+ await page.goto('/?app');
  // the first screen: create an account, sign in, or continue as a guest
  await expect(page.getByRole('button',{name:/^Continue as a guest/})).toBeVisible();
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
@@ -98,7 +98,7 @@ test('a lesson made from YouTube on the desktop plays on the web through YouTube
    this.seekTo=(s)=>{t=s;at=performance.now();};this.getCurrentTime=now;this.getDuration=()=>4;this.setPlaybackRate=()=>{};this.destroy=()=>f.remove();
    setTimeout(()=>o.events.onReady(),50);}};
   setTimeout(()=>window.onYouTubeIframeAPIReady&&window.onYouTubeIframeAPIReady(),0);`}));
- await page.goto('/');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
+ await page.goto('/?app');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
  await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;
   const id=await api().lessonCreate({lang:'tl',title:'Adobong manok',kind:'video',source:'https://www.youtube.com/watch?v=ninongry001',text:'Magandang araw po. Luto tayo.',timings:JSON.stringify([[0,8,0,0.6],[9,13,0.6,1.2],[14,17,1.2,1.5],[19,23,1.6,2],[24,29,2,2.6]])});
   useApp.getState().openLesson(id);});
@@ -114,7 +114,7 @@ test('a lesson made from YouTube on the desktop plays on the web through YouTube
 });
 test('on a phone, a bar at the foot of the screen leads everywhere, and no view scrolls sideways',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.setViewportSize({width:390,height:844});await page.goto('/');await completeWelcome(page);
+ await page.setViewportSize({width:390,height:844});await page.goto('/?app');await completeWelcome(page);
  const wide=()=>page.evaluate(()=>Math.max(...[...document.querySelectorAll('.main *')].map(e=>e.scrollWidth>e.clientWidth&&getComputedStyle(e).overflowX==='visible'?e.getBoundingClientRect().right:0),document.documentElement.scrollWidth));
  // reading takes the whole screen: no bar, no sidebar
  await expect(page.locator('.phone-nav')).toBeHidden();await expect(page.locator('.sidebar')).toBeHidden();
@@ -143,7 +143,7 @@ test('on a phone, a bar at the foot of the screen leads everywhere, and no view 
  expect(errors).toEqual([]);
 });
 test('a long text, however long, becomes one lesson whose pages turn in the reader',async({page})=>{
- await page.goto('/');await completeWelcome(page);
+ await page.goto('/?app');await completeWelcome(page);
  await page.evaluate(()=>{(window as any).__lumen.useApp.getState().openImport();});
  const para='Ang bahay ay malaki at maganda sa tabi ng dagat kung saan naglalaro ang mga bata tuwing hapon. ';
  const text=Array.from({length:60},()=>para.repeat(6).trim()).join('\n\n');

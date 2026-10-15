@@ -181,10 +181,16 @@ pub async fn lesson_update(state: State<'_, AppState>, id: i64, patch: LessonPat
     db::lesson_update(&state.db.lock(), id, &patch).map_err(err)
 }
 
-/// Lessons waiting on this computer to reach the learner's account (src-tauri/src/outbox.rs).
+/// Everything that syncs with the learner's account, in the web's record shapes (src/lib/desktop-sync.ts).
 #[tauri::command]
-pub async fn outbox_lessons(state: State<'_, AppState>) -> R<Vec<serde_json::Value>> {
-    crate::outbox::lessons(&state.db.lock()).map_err(err)
+pub async fn sync_export(state: State<'_, AppState>) -> R<serde_json::Value> {
+    crate::sync::export(&state.db.lock()).map_err(err)
+}
+
+/// Applies the account's changes; returns the ids given to lessons, playlists and chats new to this computer.
+#[tauri::command]
+pub async fn sync_apply(state: State<'_, AppState>, changes: Vec<crate::sync::Change>) -> R<Vec<crate::sync::Created>> {
+    crate::sync::apply(&mut state.db.lock(), &changes).map_err(err)
 }
 
 #[tauri::command]
@@ -1331,6 +1337,57 @@ pub async fn lesson_fetch_video(state: State<'_, AppState>, id: i64, replace: Op
         let _ = std::fs::remove_file(old);
     }
     Ok(p)
+}
+
+/// The sound of a lesson made on the learner's other computer, fetched here so it plays like any
+/// lesson: again from YouTube or the episode (`direct`: a file's own address, such as a recording
+/// kept in the learner's private storage). The same source gives the same sound, so the word
+/// timings made there still fit. Returns the lesson's sound file.
+#[tauri::command]
+pub async fn lesson_fetch_media(state: State<'_, AppState>, id: i64, url: String, direct: bool, on_event: Channel<ImportEvent>) -> R<String> {
+    if !url.starts_with("http") {
+        return Err(t("Cette leçon n'a pas de son en ligne d'origine.", "This lesson has no original online sound.").into());
+    }
+    let data_dir = state.data_dir.clone();
+    let stem = media::new_stem();
+    let send = |stage: &str| {
+        let _ = on_event.send(ImportEvent::Stage { stage: stage.into() });
+    };
+    let mut prog = |p: f64| {
+        let _ = on_event.send(ImportEvent::Progress { value: p });
+    };
+    let audio = if direct {
+        send("download");
+        link::download(&data_dir, &url, &stem, false, &mut prog).await.map_err(err)?
+    } else {
+        let browser = db::setting(&state.db.lock(), "youtube_browser").filter(|b| !b.is_empty());
+        if crate::tools::find_ytdlp(&data_dir).is_none() {
+            send("tools");
+        }
+        let ytdlp = crate::tools::ensure_youtube_tools(&data_dir, &mut prog).await.map_err(err)?;
+        send("download");
+        media::yt_audio(&data_dir, &ytdlp, &url, &stem, browser.as_deref(), &mut prog).await.map_err(err)?.0
+    };
+    let level = compress::Level::of(&state.db.lock());
+    let audio = compress::audio_or_keep(audio, level).await;
+    let path = audio.display().to_string();
+    let conn = state.db.lock();
+    // fetched twice at once, or the lesson deleted meanwhile: this copy is not needed
+    let set = conn
+        .execute("UPDATE lessons SET media_path=?1 WHERE id=?2 AND media_path IS NULL", rusqlite::params![path, id])
+        .map_err(err)?;
+    if set == 0 {
+        let _ = std::fs::remove_file(&audio);
+        return db::lesson_media(&conn, id).map_err(err)?.2.ok_or_else(|| t("Leçon introuvable", "Lesson not found").into());
+    }
+    Ok(path)
+}
+
+/// Where the learner's other computers find this lesson's sound (a recording kept in their private storage).
+#[tauri::command]
+pub async fn lesson_set_remote(state: State<'_, AppState>, id: i64, url: String) -> R<()> {
+    state.db.lock().execute("UPDATE lessons SET remote_media=?1 WHERE id=?2", rusqlite::params![url, id]).map_err(err)?;
+    Ok(())
 }
 
 // ---------- stockage : vidéos et sons allégés ----------

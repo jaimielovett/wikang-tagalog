@@ -24,7 +24,7 @@ export function DesktopDownload() {
   if (!here)
     return (
       <span className="desktop-dl">
-        <span className="muted">The desktop app runs on a computer:</span>
+        <span className="muted desktop-dl-note">Wikang Tagalog runs on your computer:</span>
         <a className="btn sm soft" href={downloadUrl("windows")}>
           <Icon name="download" size={14} /> Windows
         </a>
@@ -36,11 +36,11 @@ export function DesktopDownload() {
   const other: DesktopPlatform = here === "mac" ? "windows" : "mac";
   return (
     <span className="desktop-dl">
-      <a className="link-btn" href={downloadUrl(other)}>
-        {NAMES[other]} instead
-      </a>
       <a className="btn primary" href={downloadUrl(here)}>
         <Icon name="download" size={15} /> Download for {NAMES[here]}
+      </a>
+      <a className="link-btn" href={downloadUrl(other)}>
+        {NAMES[other]} instead
       </a>
     </span>
   );

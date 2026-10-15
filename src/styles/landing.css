@@ -1,0 +1,150 @@
+/* wikangtagalog.com: the download page (views/Landing.tsx). The flag's blue above, its red below, softly. */
+.landing {
+  --flag-blue: rgba(0, 56, 168, 0.1);
+  --flag-red: rgba(206, 17, 38, 0.08);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  background:
+    radial-gradient(70% 45% at 50% 0%, var(--flag-blue), transparent 70%),
+    radial-gradient(70% 45% at 50% 100%, var(--flag-red), transparent 70%),
+    var(--bg);
+  overflow-x: hidden;
+}
+:root[data-theme="dark"] .landing {
+  --flag-blue: rgba(0, 56, 168, 0.22);
+  --flag-red: rgba(206, 17, 38, 0.16);
+}
+.landing-main {
+  flex: 1;
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding: 9vh 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+.landing-note {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: color-mix(in srgb, var(--ok, #2f8f5b) 14%, transparent);
+  color: var(--text);
+}
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+.landing-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8vw, 84px);
+  font-weight: 450;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-top: 8px;
+}
+.landing-lead {
+  max-width: 560px;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.landing-get {
+  margin-top: 14px;
+}
+.landing-get .desktop-dl {
+  justify-content: center;
+}
+.desktop-dl-note {
+  flex-basis: 100%;
+  text-align: center;
+}
+.landing-get .btn.primary {
+  padding: 14px 24px;
+  font-size: 16px;
+}
+.landing-small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.landing-feature {
+  padding: 22px;
+  border-radius: var(--radius-l);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.landing-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--light-soft);
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.landing-feature h2 {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.landing-feature p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.landing-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 24px;
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding: 22px 24px 30px;
+  font-size: 12.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+.landing-foot a {
+  color: inherit;
+}
+
+/* the download button (components/DesktopDownload.tsx) */
+.desktop-dl {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  font-size: 13px;
+}
+.desktop-dl a.btn {
+  text-decoration: none;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--light-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

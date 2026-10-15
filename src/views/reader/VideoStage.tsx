@@ -83,7 +83,8 @@ export function VideoStage({ lesson, tokens, terms, cursor, playing, onHost, onW
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [lesson.video_path]);
   // made on another device from YouTube: the player shows YouTube's picture
-  const youtube = remoteMedia(lesson)?.kind === "youtube";
+  // (on the desktop, the video is downloaded instead: the button below)
+  const youtube = !isTauri && remoteMedia(lesson)?.kind === "youtube";
   const hasVideo = youtube || (!!lesson.video_path && !broken);
   const canFetch = isTauri && !hasVideo && /^https?:\/\//.test(lesson.source);
 
