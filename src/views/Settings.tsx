@@ -207,7 +207,8 @@ const allGroups = (): { title: string | null; tabs: Tab[] }[] => [
     ],
   },
 ];
-const groups = () => allGroups().map(group => ({...group, tabs: group.tabs.filter(tab => tab.id !== "langs")}));
+// no language switching (Tagalog only), and no folder backup: an account keeps learning safe
+const groups = () => allGroups().map(group => ({...group, tabs: group.tabs.filter(tab => tab.id !== "langs" && tab.id !== "backup")}));
 
 /** Sans accents ni majuscules, pour la recherche. */
 function fold(s: string): string {

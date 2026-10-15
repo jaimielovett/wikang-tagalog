@@ -93,8 +93,8 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
   // nuages du Mac : sans iCloud Drive, la sauvegarde va dans le premier autre (Dropbox, Google Drive…)
   const places = useBackup((s) => s.places);
   const fallback = backup && !backup.dir ? places?.find((p) => p.kind !== "icloud") : undefined;
-  // proposée tant que l'utilisateur n'a pas choisi (pas en relecture d'une sauvegarde déjà réglée)
-  const offerBackup = !!backup && (!!backup.dir || !!fallback) && !backup.decided;
+  // the folder backup is no longer offered: an account keeps learning safe (components/BackupCard.tsx)
+  const offerBackup: boolean = false;
   // « iCloud Drive », « Dropbox »… ; vide pour un dossier ordinaire
   const cloudName = backup?.dir ? (backup.icloud ? "iCloud Drive" : isCloud(backup.place) ? backup.place.name : "") : (fallback?.name ?? "");
   // là où l'on cherche une sauvegarde à restaurer : seulement l'emplacement retenu
@@ -171,12 +171,6 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
     }
   };
 
-  const openRestore = () => {
-    useBackup.setState({ restoreError: "" });
-    setPanel("restore");
-    setN(5);
-    if (isTauri) void search();
-  };
   const openAuth = (mode: "signin" | "signup") => {
     setAuthMode(mode);
     setPanel("auth");
@@ -377,22 +371,12 @@ export function Onboarding({ nameOnly = false }: { nameOnly?: boolean }) {
                         ? t("Continuer en invité : votre apprentissage reste sur cet ordinateur", "Continue as a guest: your learning stays on this computer")
                         : t("Continuer en invité : votre apprentissage reste dans ce navigateur", "Continue as a guest: your learning stays in this browser")}
                     </button>
-                    {isTauri && (
-                      <button className="ob-restore-link" onClick={openRestore}>
-                        <Icon name="cloud" size={15} /> {t("Retrouver ma progression depuis une sauvegarde", "Restore my progress from a backup")}
-                      </button>
-                    )}
                   </>
                 ) : (
                   <>
                     <button className="ob-cta" onClick={() => setN(named ? 1 : 2)}>
                       {t("Commencer", "Get started")} <Icon name="forward" size={16} stroke={2} />
                     </button>
-                    {isTauri && !replay && (
-                      <button className="ob-restore-link" onClick={openRestore}>
-                        <Icon name="cloud" size={15} /> {t("J'ai déjà utilisé Wikang Tagalog : retrouver ma progression", "I've used Wikang Tagalog before: get my progress back")}
-                      </button>
-                    )}
                   </>
                 )}
               </motion.div>
