@@ -2,7 +2,8 @@ import type { Api } from '../api';
 import type { ChatMessage, ChatSummary, Lesson, Term, LangCode } from '../types';
 import pkg from '../../../package.json';
 import { createLocalApi } from './local';
-import { initAccount, cloudRequest } from './cloud';
+import { initAccount, cloudRequest, cloud } from './cloud';
+import { remoteMedia } from '../remote-media';
 import { openDb, persistence } from './storage';
 import { dictionary, lookup } from './dictionary';
 import { listPublished, withCatalogue } from './catalogue';
@@ -14,6 +15,8 @@ export async function createBrowserApi():Promise<Api> {
   const {snapshot,key}=await openDb();const db=snapshot.data;
   const {commit}=persistence(key,snapshot);const local=createLocalApi(db,commit);
   const stops=new Map<number,AbortController>();
+  const privateFiles=(ids:number[])=>db.lessons.filter(l=>ids.includes(l.id)).map(l=>remoteMedia(l)).flatMap(m=>m?.kind==='private'?[m.path]:[]);
+  const forget=(paths:string[])=>{if(cloud&&paths.length)void cloud.storage.from('learner-media').remove(paths).catch(()=>{});};
   const unavailable=async () => {throw new Error('Use the desktop app to import, transcribe, and prepare media.');};
   const online=async (task:string,input:Record<string,unknown>,signal?:AbortSignal) => cloudRequest<{text:string}>('ai',{task,input,ui:db.settings.ui_lang || 'en'},signal);
   const chatSummary=(c:NonNullable<typeof db.chats>[number]):ChatSummary => {
@@ -25,6 +28,9 @@ export async function createBrowserApi():Promise<Api> {
   };
   const supported: Partial<Api> = {
     ...local,
+    // a lesson's own recording (from the learner's computer) leaves their private storage with it
+    async lessonDelete(id) {const files=privateFiles([id]);await local.lessonDelete(id);forget(files);},
+    async lessonsDelete(ids) {const files=privateFiles(ids);await local.lessonsDelete(ids);forget(files);},
     async appInfo() {return {version:pkg.version,data_dir:'This browser',platform:'web',ytdlp:false,transcriber:false,dict_langs:['tl']};},
     async appRelaunch() {location.reload();},
     async modelsList() {return [];},

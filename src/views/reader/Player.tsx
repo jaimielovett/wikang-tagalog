@@ -180,7 +180,26 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
   const mediaUrl = (lesson as Lesson & { media_url?: string | null }).media_url;
   const remote = useMemo(() => remoteMedia({ media_path: lesson.media_path, source: lesson.source, media_url: mediaUrl }), [lesson.media_path, lesson.source, mediaUrl]);
   const youtube = remote?.kind === "youtube" ? remote.id : null;
-  const audioSrc = lesson.media_path ? api().mediaUrl(lesson.media_path) : remote?.kind === "audio" ? remote.url : null;
+  // a recording from the learner's computer: a short-lived address to their private copy
+  const privatePath = remote?.kind === "private" ? remote.path : null;
+  const [privateSrc, setPrivateSrc] = useState<string | null>(null);
+  useEffect(() => {
+    setPrivateSrc(null);
+    if (!privatePath || !cloud) return;
+    let alive = true;
+    void cloud.storage
+      .from("learner-media")
+      .createSignedUrl(privatePath, 6 * 3600)
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (data?.signedUrl) setPrivateSrc(data.signedUrl);
+        else useApp.getState().toast(error?.message ? `This recording couldn't be loaded: ${error.message}` : "This recording couldn't be loaded", "error");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [privatePath]);
+  const audioSrc = lesson.media_path ? api().mediaUrl(lesson.media_path) : remote?.kind === "audio" ? remote.url : privateSrc;
   const hasMedia = !!lesson.media_path || !!remote;
   const videoPath = youtube ? null : lesson.video_path;
   // une seule source (vidéo locale avec son) ou deux (image + son téléchargés séparément)

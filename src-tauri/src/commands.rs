@@ -181,16 +181,10 @@ pub async fn lesson_update(state: State<'_, AppState>, id: i64, patch: LessonPat
     db::lesson_update(&state.db.lock(), id, &patch).map_err(err)
 }
 
-/// Everything that syncs with the learner's account, in the web's record shapes (src/lib/desktop-sync.ts).
+/// Lessons waiting on this computer to reach the learner's account (src-tauri/src/outbox.rs).
 #[tauri::command]
-pub async fn sync_export(state: State<'_, AppState>) -> R<serde_json::Value> {
-    crate::sync::export(&state.db.lock()).map_err(err)
-}
-
-/// Applies the account's changes; returns the ids given to lessons, playlists and chats new to this computer.
-#[tauri::command]
-pub async fn sync_apply(state: State<'_, AppState>, changes: Vec<crate::sync::Change>) -> R<Vec<crate::sync::Created>> {
-    crate::sync::apply(&mut state.db.lock(), &changes).map_err(err)
+pub async fn outbox_lessons(state: State<'_, AppState>) -> R<Vec<serde_json::Value>> {
+    crate::outbox::lessons(&state.db.lock()).map_err(err)
 }
 
 #[tauri::command]

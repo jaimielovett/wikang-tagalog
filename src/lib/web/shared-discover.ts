@@ -1,4 +1,4 @@
-// Discover from the shared catalogue, for the web and the desktop alike: the published lessons, the
+// Discover from the shared catalogue: the published lessons, the
 // admins' sources read by the server, and the learner's own sources. Settings say what is off, hidden
 // and already a lesson, so they follow the learner between devices.
 import type { Api } from '../api';
@@ -67,10 +67,4 @@ export function sharedDiscover(settings: () => Promise<Record<string, string>>, 
       };
     },
   };
-}
-
-/** The desktop with the shared Discover in place of its own sources; everything else is unchanged. */
-export function withSharedDiscover(base: Api): Api {
-  const shared = sharedDiscover(() => base.settingsGet(), (k, v) => base.settingsSet(k, v));
-  return new Proxy(base, { get: (target, key) => Reflect.get(shared, key) ?? Reflect.get(target, key) });
 }

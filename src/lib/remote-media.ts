@@ -3,7 +3,10 @@
 // so the lantern follows the voice as it does with files on this device.
 import type { Lesson } from "./types";
 
-export type RemoteMedia = { kind: "youtube"; id: string } | { kind: "audio"; url: string };
+export type RemoteMedia = { kind: "youtube"; id: string } | { kind: "audio"; url: string } | { kind: "private"; path: string };
+
+/** A learner's own recording, kept in their private storage (supabase learner-media): `learner-media:<user id>/<file>`. */
+export const PRIVATE_MEDIA = "learner-media:";
 
 /** The video's id in a YouTube address (watch, youtu.be, shorts, embed, live), or null. */
 export function youtubeId(url: string | null | undefined): string | null {
@@ -26,6 +29,7 @@ export function youtubeId(url: string | null | undefined): string | null {
 export function remoteMedia(lesson: Pick<Lesson, "media_path" | "source"> & { media_url?: string | null }): RemoteMedia | null {
   if (lesson.media_path) return null;
   const url = lesson.media_url || lesson.source;
+  if (lesson.media_url?.startsWith(PRIVATE_MEDIA)) return { kind: "private", path: lesson.media_url.slice(PRIVATE_MEDIA.length) };
   const id = youtubeId(url);
   if (id) return { kind: "youtube", id };
   if (url && /^https:\/\/[^?#]+\.(mp3|m4a|aac|ogg|oga|opus|wav)([?#]|$)/i.test(url)) return { kind: "audio", url };

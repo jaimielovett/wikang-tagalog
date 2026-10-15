@@ -26,6 +26,7 @@ import { Account } from "./views/Account";
 import { WebSettings } from "./views/WebSettings";
 import { Library } from "./views/Library";
 import { Onboarding } from "./views/Onboarding";
+import { Companion } from "./views/Companion";
 import { PhoneNav } from "./components/PhoneNav";
 import { Playlists } from "./views/Playlists";
 import { Progress } from "./views/Progress";
@@ -109,7 +110,8 @@ export function App() {
   // sous Windows, ses raccourcis (Ctrl) sans barre des menus
   useAppMenu();
   useWindowsKeys();
-  const dropping = useFileDrop(ready && !!onboarded);
+  // the companion takes dropped files once signed in; the web app once its welcome is done
+  const dropping = useFileDrop(ready && (isTauri ? signedIn : !!onboarded));
   // après une mise à jour : ce qui a changé
   useNewsOnUpdate();
 
@@ -163,6 +165,28 @@ export function App() {
       </>
     );
   }
+
+  // the desktop app is a companion to the website: sign in, then import (views/Companion.tsx)
+  if (isTauri)
+    return (
+      <>
+        <Companion />
+        <Toasts />
+        <WindowControls />
+        <AnimatePresence>
+          {dropping && (
+            <motion.div className="dropzone-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div className="dropzone-card" initial={{ scale: 0.94 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
+                <Orb size={44} />
+                <h3>{t("Déposez pour importer", "Drop to import")}</h3>
+                <p className="muted">{t("Audio, vidéo, livres, PDF et sous-titres", "Audio, video, books, PDFs and subtitles")}</p>
+                <Icon name="import" size={22} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    );
 
   // signed in on the web without a name: the guest skipped that step, so ask it now, once
   if (onboarded && !replay && askName)

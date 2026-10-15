@@ -310,7 +310,7 @@ export function VideoStage({ lesson, tokens, terms, cursor, playing, onHost, onW
             ) : broken ? (
               <strong>{!isTauri ? "This video could not be played in your browser" : t("Cette vidéo ne se lit pas sur ce Mac", "This video doesn't play on this Mac")}</strong>
             ) : !isTauri && !lesson.media_path ? (
-              <strong>Made from a file on your computer: watch it in the desktop app</strong>
+              <strong>This video stayed on the computer it was imported on</strong>
             ) : (
               <strong>{t("Leçon audio", "Audio lesson")}</strong>
             )}

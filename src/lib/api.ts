@@ -1,9 +1,6 @@
 import { initAccount } from "./web/cloud";
-import { withCatalogue } from "./web/catalogue";
-import { cloud } from "./web/cloud";
-import { withSharedDiscover } from "./web/shared-discover";
 import { createBrowserApi } from "./web/api";
-import { startDesktopSync, syncAfterWrites } from "./desktop-sync";
+import { sendingToAccount } from "./companion";
 import type { AppInfo, BackupInfo, BackupPlace, BackupRestored, BackupStatus, ChatEvent, ChatOptions, ChatPatch, ChatReply, ChatSummary, ChatThread, DictResult, DictStatus, DiscoverFeed, DiscoverReport, DownloadEvent, GeminiModels, GoalReached, GpuInfo, ImportEvent, LangCode, LessonSummary, LevelEstimate, LightenProgress, LightenReport, LinkInfo, LinkMedia, LingqEvent, LingqLang, LingqPlan, LingqReport, Lyrics, MediaStream, MediaUsage, ModelRow, NewLesson, OnlineCheck, OpenedLesson, Playlist, PlaylistPatch, PodcastRequest, Resynced, SearchPage, SearchPlatform, SongItem, Stats, Term, TermQuery, TextStats, WordAnswer, VoicedLesson } from "./types";
 
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -267,12 +264,8 @@ export async function initApi(): Promise<Api> {
   if (instance) return instance;
   if (isTauri) {
     await initAccount();
-    // Discover shows the shared catalogue (admins' sources, published lessons, the learner's own sources)
-    const desktop = syncAfterWrites(await createTauriApi());
-    instance = withCatalogue(cloud ? withSharedDiscover(desktop) : desktop);
-    // signed in: this computer's learning syncs with the account, as the web's does. The first
-    // round is awaited a little, so a computer joining an account opens on its learning, not the welcome.
-    await Promise.race([startDesktopSync(), new Promise((r) => setTimeout(r, 6000))]);
+    // the desktop companion: what it imports goes to the learner's account (lib/companion.ts)
+    instance = sendingToAccount(await createTauriApi());
   } else {
     instance = await createBrowserApi();
   }

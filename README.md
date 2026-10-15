@@ -1,6 +1,6 @@
 # Wikang Tagalog
 
-A Tagalog-only web and desktop learning app, forked from [Lumen by Ulysse Rives](https://github.com/LivingTwice/lumen). The reader, vocabulary, playlists, progress, theme, keyboard controls and desktop import/transcription engine are shared. The studied language is fixed to `tl`.
+A Tagalog-only learning website with a desktop companion, forked from [Lumen by Ulysse Rives](https://github.com/LivingTwice/lumen). Reading, vocabulary, playlists and progress happen on the website. The desktop app is only a companion for importing: you sign in (accounts are made on the website), paste a YouTube or podcast link or choose an audio or video file, and it transcribes the lesson word by word on your computer and sends it to your library on the website. The studied language is fixed to `tl`.
 
 This is an independent repository. The original Lumen checkout and its data are unchanged. Desktop data uses `app.wikangtagalog.reader`; Lumen's release feed and signing keys are not used.
 
@@ -22,7 +22,7 @@ The website starts without external credentials: guest reading, the bundled Taga
 ## Connect Supabase
 
 1. Create a new project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync, and [supabase/migrations/202610140003_app_requirements.sql](supabase/migrations/202610140003_app_requirements.sql) for the oldest app versions allowed to sync, then [supabase/migrations/202610140004_discover_refresh_where.sql](supabase/migrations/202610140004_discover_refresh_where.sql). Run every migration in date order.
+2. Run [supabase/migrations/202610120001_wikang_tagalog.sql](supabase/migrations/202610120001_wikang_tagalog.sql) in its SQL editor. This creates private learner data, the shared catalogue, protected admin roles, the private media bucket, publication checks and online-service quotas. Then run [supabase/migrations/202610140001_discover_sources.sql](supabase/migrations/202610140001_discover_sources.sql) for Discover's sources and their shared cache (see [Discover sources](#discover-sources)), [supabase/migrations/202610140002_learner_records.sql](supabase/migrations/202610140002_learner_records.sql) for item-by-item sync, and [supabase/migrations/202610140003_app_requirements.sql](supabase/migrations/202610140003_app_requirements.sql) for the oldest app versions allowed to sync, then [supabase/migrations/202610140004_discover_refresh_where.sql](supabase/migrations/202610140004_discover_refresh_where.sql), and [supabase/migrations/202610150001_learner_media.sql](supabase/migrations/202610150001_learner_media.sql) for the private storage of learners' own recordings. Run every migration in date order.
 3. Copy `.env.example` to `.env`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the project URL and public publishable/anon key. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the same values for server functions.
 4. Under Authentication → URL Configuration, set the Site URL to the address the app is served from (here `https://www.wikangtagalog.com`): confirmation emails link there. Add redirect URLs for every address the app runs at, e.g. `https://www.wikangtagalog.com/**`, `https://wikangtagalog.com/**`, `https://wikang-tagalog.vercel.app/**` and, for local development, `http://localhost:1430/**`. Password sign-in and email-confirmed sign-up are implemented.
 5. Create your account in the app. Copy its UUID from Authentication → Users and grant admin membership in the trusted SQL editor:
@@ -33,7 +33,9 @@ The website starts without external credentials: guest reading, the bundled Taga
 
 6. Restart both apps after changing their build-time connection values. A distributed desktop build embeds only public Supabase configuration; every admin signs in with their own account. No service-role key is required by either app.
 
-Supabase row-level security isolates each account's learning data. Signed-in learning syncs item by item: each setting, lesson, word, playlist and chat is its own record, and the newest change to a record wins, so two browsers can be used side by side and offline changes keep the time they were made. Each device's daily activity is its own record and the totals add up. Browsers sync on every change, every minute while open, and when they come back into view. Accounts saved the earlier way (one document) become records the first time they sign in, and older copies of the app can no longer overwrite them. Learning done as a guest joins the account automatically the first time you sign in on that browser. Restoring a backup while signed in replaces your learning on all your devices. Desktop learning remains local; desktop accounts currently provide catalogue access and admin publication, while web learning syncs across web devices.
+Supabase row-level security isolates each account's learning data. Signed-in learning syncs item by item: each setting, lesson, word, playlist and chat is its own record, and the newest change to a record wins, so two browsers can be used side by side and offline changes keep the time they were made. Each device's daily activity is its own record and the totals add up. Browsers sync on every change, every minute while open, and when they come back into view. Accounts saved the earlier way (one document) become records the first time they sign in, and older copies of the app can no longer overwrite them. Learning done as a guest joins the account automatically the first time you sign in on that browser. Restoring a backup while signed in replaces your learning on all your devices.
+
+The desktop companion keeps no learning of its own. Each lesson it imports goes to the account as soon as it is transcribed, then leaves the computer with its files; one it can't send yet (offline) waits and is sent later. A YouTube or podcast lesson plays from its source on the website and uploads nothing. A recording from the learner's own computer keeps its compressed sound in the private `learner-media` storage bucket, in a folder only that learner can read (150 MB a file, 2 GB each); deleting the lesson on the website deletes the recording.
 
 ## Branded account email
 
@@ -67,6 +69,8 @@ To enable refreshing:
 The cache refreshes every three hours (a Vercel cron job; Vercel Pro or above), and whenever someone opens Discover after it is three hours old; it never runs twice at once. Admins manage sources under Account → Discover sources: add, edit, switch off for everyone, or retire, and see each source's item count and last error. **Refresh now** reads them immediately. Retired sources are hidden, never deleted, so learners' settings stay valid.
 
 ## Publish a lesson
+
+Publishing is paused: the steps below were done from the desktop app, which is now a companion for learners' own imports. Drafts already prepared can still be reviewed and published on the website.
 
 1. In the desktop app, import a Tagalog video/audio file or supported source link. Lumen's existing downloader and local Whisper pipeline produce the transcript and timings.
 2. Sign in as an admin, open Account → Publishing studio, choose the lesson and select **Prepare for review**.
@@ -127,7 +131,8 @@ Outdated web tabs are asked to reload; an outdated desktop app shows an update c
 - `src/`: shared React screens and reader.
 - `src/lib/web/`: real browser learning backend, IndexedDB, account sync, dictionary, catalogue and publishing.
 - `api/`: authenticated Vercel AI, voice and article-import endpoints.
-- `src-tauri/`: desktop SQLite, local AI, Whisper, downloaders and streamed admin publication.
+- `src/views/Companion.tsx`, `src/lib/companion.ts`: the desktop companion (sign in, import, send to the account).
+- `src-tauri/`: the desktop's downloaders, Whisper transcription and the outbox of lessons waiting to be sent.
 - `supabase/migrations/`: schema, RLS, storage permissions and publication validation.
 - `scripts/export-tagalog-dictionary.py`: reproducible export from the bundled dictionary.
 
@@ -137,4 +142,4 @@ App code is **GPL-3.0-or-later**, inherited from Lumen; see [LICENSE](LICENSE). 
 
 Dictionary entries/forms are Wiktionary-derived data exported via [kaikki.org](https://kaikki.org/dictionary/Tagalog/), under **CC BY-SA 4.0**. Both `src-tauri/resources/dicts/tl.db.gz` and `public/tagalog-dictionary.json.gz` retain that licence. Changes to this export are described in `scripts/export-tagalog-dictionary.py`. Other inherited assets and dependencies retain their own licences.
 
-Live Supabase connection, provider credentials, desktop distribution signing and production deployment must be configured before public launch. Native import, local models, media compression and LingQ migration remain available in the desktop app. Browser imports support text, articles, PDF, EPUB, HTML and subtitle documents; audio/video preparation and alignment belong to desktop.
+Live Supabase connection, provider credentials, desktop distribution signing and production deployment must be configured before public launch. Browser imports support text, articles, PDF, EPUB, HTML and subtitle documents; transcribing audio and video belongs to the desktop companion.
