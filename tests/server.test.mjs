@@ -49,3 +49,20 @@ test('GPT-5 models get the parameters they accept; other models keep theirs',()=
  for(const model of ['gpt-5.4-mini','GPT-5.4','openai/gpt-5.4-nano','o4-mini']){const r=completionRequest(model,m);assert.equal(r.max_tokens,undefined,model);assert.equal(r.temperature,undefined,model);assert.ok(r.max_completion_tokens>=2000,model);}
  for(const model of ['gpt-4.1-mini','llama-3.3-70b','gemini-2.5-flash']){const r=completionRequest(model,m);assert.equal(r.max_tokens,2000,model);assert.equal(r.temperature,0.4,model);assert.equal(r.max_completion_tokens,undefined,model);}
 });
+
+test('the download link sends each computer straight to its installer, from published releases only',async()=>{
+ const {default:download,pickAsset,platformOf}=await import('../api/download.mjs');
+ const assets=[{name:'latest.json',browser_download_url:'https://x/latest.json'},{name:'Wikang.Tagalog_0.1.2_x64-setup.exe',browser_download_url:'https://x/setup.exe'},
+  {name:'Wikang.Tagalog_0.1.2_x64-setup.exe.sig',browser_download_url:'https://x/setup.sig'},{name:'Wikang.Tagalog_0.1.2_aarch64.dmg',browser_download_url:'https://x/app.dmg'},{name:'Wikang.Tagalog_aarch64.app.tar.gz',browser_download_url:'https://x/app.tgz'}];
+ assert.equal(pickAsset(assets,'windows'),'https://x/setup.exe');assert.equal(pickAsset(assets,'mac'),'https://x/app.dmg');assert.equal(pickAsset(assets,null),null);
+ assert.equal(platformOf('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'),'windows');assert.equal(platformOf('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'),'mac');
+ assert.equal(platformOf('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'),null);assert.equal(platformOf('Mozilla/5.0 (X11; Linux x86_64)'),null);
+ const run=async(query,ua,github)=>{const r={headers:{},to:null,code:0,setHeader(k,v){r.headers[k]=v;},status(c){r.code=c;return r;},json(){return r;},redirect(c,u){r.code=c;r.to=u;return r;}};
+  await download({method:'GET',query,headers:{'user-agent':ua}},r,async(url)=>{assert.match(url,/\/releases\/latest$/);return github;});return r;};
+ const ok={ok:true,json:async()=>({assets})};
+ let r=await run({platform:'mac'},'',ok);assert.equal(r.code,302);assert.equal(r.to,'https://x/app.dmg');assert.match(r.headers['Cache-Control'],/s-maxage/);
+ r=await run({},'Mozilla/5.0 (Windows NT 10.0)',ok);assert.equal(r.to,'https://x/setup.exe');assert.equal(r.headers['Cache-Control'],'no-store');
+ // no published release yet, or no build for this computer: the releases page
+ r=await run({platform:'windows'},'',{ok:false,json:async()=>({})});assert.equal(r.to,'https://github.com/jaimielovett/wikang-tagalog/releases/latest');
+ r=await run({},'Mozilla/5.0 (X11; Linux x86_64)',ok);assert.equal(r.to,'https://github.com/jaimielovett/wikang-tagalog/releases/latest');
+});

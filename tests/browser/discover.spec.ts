@@ -31,7 +31,8 @@ test('Discover shows the sources, plays a video in place, and a learner can swit
  const sheet=page.getByRole('dialog');
  await expect(sheet.locator('iframe[src*="youtube-nocookie.com/embed/abcdefghijk"]')).toBeVisible();
  await expect(sheet.getByText('A lesson, in the desktop app')).toBeVisible();
- await expect(sheet.getByRole('button',{name:'Get the desktop app'})).toBeVisible();
+ // the desktop app's installer for this computer, straight from the site
+ const get=sheet.getByRole('link',{name:/^Download for (Windows|Mac)$/});await expect(get).toBeVisible();await expect(get).toHaveAttribute('href',/^\/api\/download\?platform=(windows|mac)$/);
  await page.keyboard.press('Escape');
  // a guest reading an article is invited to sign in to make it a lesson
  await page.getByRole('button',{name:'Preview Arnold Clavio kinasuhan ng cyber libel'}).click();

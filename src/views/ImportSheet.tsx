@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Icon, type IconName } from "../components/Icon";
 import { Sheet } from "../components/ui";
 import { api, errorText, isTauri } from "../lib/api";
+import { DesktopDownload } from "../components/DesktopDownload";
 import { youtubeId } from "../lib/covers";
 import { pickFiles, pickWebFiles } from "../lib/dialogs";
 import { cleanTitle, useDiscover } from "../lib/discover";
@@ -520,18 +521,8 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
           <Icon name="sparkle" size={15} /> {t("Créer le podcast", "Create the podcast")}
         </button>
       );
-    if (tab === "media" && !isTauri)
-      footer = (
-        <button
-          className="btn primary"
-          onClick={() => {
-            close();
-            go("discover");
-          }}
-        >
-          {t("Ouvrir Découvrir", "Open Discover")}
-        </button>
-      );
+    // the website: the desktop companion transcribes, and its installer is one click away
+    if (tab === "media" && !isTauri) footer = <DesktopDownload />;
     if (tab === "media" && isTauri)
       footer = (
         <button className="btn primary" disabled={!mediaFiles.length || !asrReady} onClick={transcribeAll}>
@@ -760,6 +751,12 @@ export function ImportSheet({ embedded = false }: { embedded?: boolean } = {}) {
                   {t(
                     "Les vidéos et les sons sont transcrits mot à mot dans l'application de bureau, puis rejoignent votre bibliothèque ici.",
                     "Video and audio are transcribed word by word in the desktop app, then join your library here.",
+                  )}
+                </span>
+                <span className="import-hint">
+                  {t(
+                    "Installez-la, connectez-vous avec ce compte, puis collez un lien YouTube ou de podcast, ou choisissez un fichier.",
+                    "Install it, sign in with this account, then paste a YouTube or podcast link, or choose a file.",
                   )}
                 </span>
               </div>

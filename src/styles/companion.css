@@ -126,3 +126,16 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* the website's download button for the desktop companion (components/DesktopDownload.tsx) */
+.desktop-dl {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  font-size: 13px;
+}
+.desktop-dl a.btn {
+  text-decoration: none;
+}

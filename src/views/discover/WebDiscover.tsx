@@ -16,7 +16,7 @@ import type { DiscoverItem, LangCode } from "../../lib/types";
 import { adoptPublished } from "../../lib/web/catalogue";
 import { useAccount } from "../../lib/web/cloud";
 import { PUBLISHED_SOURCE, listSources, type DiscoverSource } from "../../lib/web/discover";
-import { DESKTOP_APP_URL } from "../../lib/updater";
+import { DesktopDownload } from "../../components/DesktopDownload";
 import { MAX_OWN_SOURCES, findSource, mineStatus, mySources, newSource, readCache, readMine, sameSource, settingKey, type MySource } from "../../lib/web/mysources";
 
 
@@ -95,12 +95,7 @@ export function WebItemSheet() {
         {t("Se connecter", "Sign in")}
       </button>
     );
-  else if (!phone)
-    action = (
-      <button className="btn primary" onClick={() => void openSource(DESKTOP_APP_URL)}>
-        <Icon name="download" size={15} /> {t("Télécharger l'application", "Get the desktop app")}
-      </button>
-    );
+  else if (!phone) action = <DesktopDownload />;
 
   return (
     <Sheet
