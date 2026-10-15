@@ -308,11 +308,7 @@ function FindHero({ item, lang }: { item: DiscoverItem; lang: LangCode }) {
               <Icon name="sparkle" size={15} /> {t("En faire une leçon", "Make it a lesson")}
             </button>
           )}
-          {!!(item.page || item.url) && (
-            <button className="btn ghost" onClick={() => void openSource(item.page || item.url)}>
-              <Icon name="external" size={15} /> {sourceLabel(item)}
-            </button>
-          )}
+          {/* the source's own site stays a click away in the preview */}
           <JobBadge jobKey={item.url} />
         </div>
       </div>

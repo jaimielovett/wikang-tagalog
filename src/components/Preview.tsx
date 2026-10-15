@@ -696,7 +696,8 @@ function PreviewPanel({ item, onClose }: { item: Previewable; onClose(): void })
               </button>
               <button role="radio" aria-checked={whole} className={whole ? "on" : ""} onClick={() => setWhole(true)}>
                 <strong>{t("Tout l'article", "The whole article")}</strong>
-                <span className="num">{count(Math.ceil(wordCount(articleText) / 2600), "leçon", "leçons", "lesson", "lessons")}</span>
+                {/* one lesson, however long: its pages turn in the reader */}
+                <span className="num">{count(wordCount(articleText), "mot", "mots", "word", "words")}</span>
               </button>
             </div>
           )}
