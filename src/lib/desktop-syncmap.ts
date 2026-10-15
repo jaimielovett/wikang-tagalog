@@ -45,8 +45,12 @@ export interface DesktopState {
 }
 export const newDesktopState = (device: string): DesktopState => ({ sync: newSyncState(), device, ids: { lesson: {}, playlist: {}, chat: {} }, synced: false });
 
-/** Settings that belong to this computer: its AI, backups, downloads, and where it left off. */
-export const DEVICE_SETTING = /^(ai_gpu|asr_model|llm_model|media_quality|youtube_browser|profile_id|seen_version|last_lesson|last_playlist|lang|langs|backup_.*|online_.*)$/;
+/**
+ * Settings that belong to this computer: its AI, backups, downloads, and where it left off, and
+ * every key or other secret (Google Cloud TTS, Gemini, LingQ, online AI providers): the learner
+ * enters their own on each device (supabase/migrations/202610150002_keys_stay_on_device.sql).
+ */
+export const DEVICE_SETTING = /^(ai_gpu|asr_model|llm_model|media_quality|youtube_browser|profile_id|seen_version|last_lesson|last_playlist|lang|langs|backup_.*|online_.*|.*_key|.*key_.*|.*(token|secret|password).*)$/;
 
 /** Files on this computer mean nothing elsewhere: only addresses every device can open travel. */
 const shared = (path: string | null | undefined) => (path && /^(https?:|data:)/.test(path) ? path : null);
