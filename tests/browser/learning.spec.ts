@@ -142,3 +142,15 @@ test('on a phone, a bar at the foot of the screen leads everywhere, and no view 
  await expect.poll(()=>sheet.evaluate(e=>Math.round(e.getBoundingClientRect().width))).toBe(390);
  expect(errors).toEqual([]);
 });
+test('a long text, however long, becomes one lesson whose pages turn in the reader',async({page})=>{
+ await page.goto('/');await completeWelcome(page);
+ await page.evaluate(()=>{(window as any).__lumen.useApp.getState().openImport();});
+ const para='Ang bahay ay malaki at maganda sa tabi ng dagat kung saan naglalaro ang mga bata tuwing hapon. ';
+ const text=Array.from({length:60},()=>para.repeat(6).trim()).join('\n\n');
+ await page.getByLabel('Title (optional)').fill('Isang mahabang kuwento');await page.getByLabel('Text in Tagalog').fill(text);
+ await page.getByRole('button',{name:'Create the lesson'}).click();
+ await expect(page.locator('.reader')).toBeVisible();
+ const lessons=await page.evaluate(async()=>(await (window as any).__lumen.api().lessonsList('tl')).map((l:any)=>[l.title,l.word_count]));
+ expect(lessons.filter(([t]:[string])=>t.startsWith('Isang mahabang kuwento'))).toEqual([['Isang mahabang kuwento',6480]]);
+ await expect(page.locator('.leaf-progress .num')).toHaveText(/^1 \/ \d+$/);
+});

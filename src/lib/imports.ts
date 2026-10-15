@@ -6,7 +6,7 @@ import { create } from "zustand";
 import { api, errorText } from "./api";
 import { useDiscover } from "./discover";
 import { count, t } from "./i18n";
-import { extractArticle, splitLong, wordCount } from "./importers";
+import { extractArticle, wordCount } from "./importers";
 import { useApp } from "./store";
 import type { ImportEvent, LangCode, LinkMedia, PodcastRequest, SongItem } from "./types";
 
@@ -160,21 +160,8 @@ async function run(job: Job): Promise<number[]> {
   if (article) {
     patch(spec.key, { stage: "lesson" });
     const { title, text, source, collection } = article;
-    const parts = splitLong(text);
-    const ids: number[] = [];
-    for (let i = 0; i < parts.length; i++) {
-      ids.push(
-        await api().lessonCreate({
-          lang: spec.lang,
-          title: parts.length > 1 ? `${title} · ${i + 1}/${parts.length}` : title,
-          text: parts[i],
-          kind: "web",
-          source,
-          collection: collection || (parts.length > 1 ? title : ""),
-        }),
-      );
-    }
-    return ids;
+    // however long, one text is one lesson: its pages turn inside the reader
+    return [await api().lessonCreate({ lang: spec.lang, title, text, kind: "web", source, collection })];
   }
   if (spec.podcast) return [await api().podcastCreate(spec.lang, spec.podcast, onEvent)];
   if (spec.song) return [await api().importSong(spec.lang, spec.song, onEvent)];

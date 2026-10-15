@@ -17,7 +17,6 @@ import {
   extractEpub,
   extractPdf,
   extractSubtitles,
-  splitLong,
   wordCount,
   type Chapter,
 } from "../lib/importers";
@@ -239,19 +238,10 @@ export function ImportSheet() {
 
   const create = async (items: Pending[]) => {
     const ids: number[] = [];
+    // however long, one text is one lesson: its pages turn inside the reader
     for (const it of items) {
-      const parts = splitLong(it.text);
-      for (let i = 0; i < parts.length; i++) {
-        const l: NewLesson = {
-          lang,
-          title: parts.length > 1 ? `${it.title} · ${i + 1}/${parts.length}` : it.title,
-          text: parts[i],
-          kind: it.kind,
-          source: it.source,
-          collection: it.collection ?? (parts.length > 1 ? it.title : ""),
-        };
-        ids.push(await api().lessonCreate(l));
-      }
+      const l: NewLesson = { lang, title: it.title, text: it.text, kind: it.kind, source: it.source, collection: it.collection ?? "" };
+      ids.push(await api().lessonCreate(l));
     }
     return ids;
   };
@@ -393,11 +383,15 @@ export function ImportSheet() {
   };
 
   const createBook = () =>
-    run(t("Création des chapitres", "Creating the chapters"), async () => {
+    run(t("Création du livre", "Creating the book"), async () => {
       if (!book) return;
+      // the chosen chapters, in order, as one book: each opens with its title unless it already does
       const chosen = book.chapters.filter((c) => c.on);
-      const ids = await create(chosen.map((c) => ({ title: c.title, text: c.text, kind: "book", source: "", collection: book.title })));
-      await finish(ids, t(`${chosen.length} chapitre${chosen.length > 1 ? "s" : ""} ajouté${chosen.length > 1 ? "s" : ""}`, `${count(chosen.length, "", "", "chapter", "chapters")} added`));
+      const text = chosen
+        .map((c) => (c.title && !c.text.trimStart().startsWith(c.title.trim()) ? `${c.title.trim()}\n\n${c.text.trim()}` : c.text.trim()))
+        .join("\n\n");
+      const ids = await create([{ title: book.title, text, kind: "book", source: "" }]);
+      await finish(ids, t("Livre ajouté", "Book added"));
     });
 
   // ---------- audio et vidéo ----------
@@ -609,7 +603,6 @@ export function ImportSheet() {
                   <Icon name="text" size={16} />
                   <span className="grow">
                     {count(wordCount(preview.text), "mot", "mots", "word", "words")}
-                    {wordCount(preview.text) > 2600 ? t(` · découpé en ${splitLong(preview.text).length} leçons`, ` · split into ${splitLong(preview.text).length} lessons`) : ""}
                   </span>
                 </div>
                 <div className="textarea" style={{ maxHeight: 260, overflow: "auto", whiteSpace: "pre-wrap", minHeight: 0 }}>
@@ -714,7 +707,7 @@ export function ImportSheet() {
               <button className="file-drop" onClick={chooseDocs}>
                 <Icon name="file" size={28} />
                 <strong style={{ color: "var(--text)" }}>{t("Choisir des fichiers", "Choose files")}</strong>
-                <span>{t("EPUB (un chapitre par leçon), PDF, TXT, Markdown, sous-titres SRT ou VTT, pages HTML", "EPUB (one chapter per lesson), PDF, TXT, Markdown, SRT or VTT subtitles, HTML pages")}</span>
+                <span>{t("EPUB (les chapitres choisis, en un seul livre), PDF, TXT, Markdown, sous-titres SRT ou VTT, pages HTML", "EPUB (the chapters you choose, as one book), PDF, TXT, Markdown, SRT or VTT subtitles, HTML pages")}</span>
                 {isTauri && <span className="import-hint">{t("Vous pouvez aussi les déposer n'importe où dans la fenêtre.", "You can also drop them anywhere in the window.")}</span>}
               </button>
             )}
