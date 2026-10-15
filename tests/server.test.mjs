@@ -57,12 +57,15 @@ test('the download link sends each computer straight to its installer, from publ
  assert.equal(pickAsset(assets,'windows'),'https://x/setup.exe');assert.equal(pickAsset(assets,'mac'),'https://x/app.dmg');assert.equal(pickAsset(assets,null),null);
  assert.equal(platformOf('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'),'windows');assert.equal(platformOf('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'),'mac');
  assert.equal(platformOf('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'),null);assert.equal(platformOf('Mozilla/5.0 (X11; Linux x86_64)'),null);
- const run=async(query,ua,github)=>{const r={headers:{},to:null,code:0,setHeader(k,v){r.headers[k]=v;},status(c){r.code=c;return r;},json(){return r;},redirect(c,u){r.code=c;r.to=u;return r;}};
+ const run=async(query,ua,github)=>{const r={headers:{},to:null,code:0,body:null,setHeader(k,v){r.headers[k]=v;},status(c){r.code=c;return r;},json(b){r.body=b;return r;},redirect(c,u){r.code=c;r.to=u;return r;}};
   await download({method:'GET',query,headers:{'user-agent':ua}},r,async(url)=>{assert.match(url,/\/releases\/latest$/);return github;});return r;};
- const ok={ok:true,json:async()=>({assets})};
+ const ok={ok:true,json:async()=>({tag_name:'v0.1.3',published_at:'2026-10-15T12:00:00Z',assets})};
  let r=await run({platform:'mac'},'',ok);assert.equal(r.code,302);assert.equal(r.to,'https://x/app.dmg');assert.match(r.headers['Cache-Control'],/s-maxage/);
  r=await run({},'Mozilla/5.0 (Windows NT 10.0)',ok);assert.equal(r.to,'https://x/setup.exe');assert.equal(r.headers['Cache-Control'],'no-store');
  // nothing published yet, or no build for this computer: back to the site, which says so
  r=await run({platform:'windows'},'',{ok:false,json:async()=>({})});assert.equal(r.to,'/?unavailable=windows');assert.equal(r.headers['Cache-Control'],'no-store');
  r=await run({},'Mozilla/5.0 (X11; Linux x86_64)',ok);assert.equal(r.to,'/?unavailable=computer');
+ // the buttons ask which version they offer
+ r=await run({latest:''},'',ok);assert.deepEqual(r.body,{version:'0.1.3',published_at:'2026-10-15T12:00:00Z',windows:true,mac:true});
+ r=await run({latest:''},'',{ok:false,json:async()=>({})});assert.deepEqual(r.body,{version:null,published_at:null,windows:false,mac:false});assert.equal(r.headers['Cache-Control'],'no-store');
 });

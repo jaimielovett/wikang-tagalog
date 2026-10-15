@@ -3,9 +3,11 @@ import {test,expect} from '@playwright/test';
 test('wikangtagalog.com is the download page: one click to the installer for this computer, none of the app',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const loaded:string[]=[];page.on('request',r=>loaded.push(r.url()));
+ // the version offered is the latest published one
+ await page.route('**/api/download?latest',r=>r.fulfill({json:{version:'0.1.3',published_at:'2026-10-15T12:00:00Z',windows:true,mac:true}}));
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Wikang Tagalog',level:1})).toBeVisible();
- const get=page.getByRole('link',{name:/^Download for (Windows|Mac)$/});
+ const get=page.getByRole('link',{name:/^Download v0.1.3 for (Windows|Mac)$/});
  await expect(get).toHaveAttribute('href',/^\/api\/download\?platform=(windows|mac)$/);
  await expect(page.getByRole('link',{name:/^(Windows|Mac) instead$/})).toBeVisible();
  // the app (reader, sign-in, guest learning) is not here, and is never loaded
