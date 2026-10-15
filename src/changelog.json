@@ -656,6 +656,31 @@
       ]
     },
     {
+      "version": "0.1.2",
+      "date": "2026-10-15",
+      "title": { "fr": "L'application de bureau devient votre compagnon d'import", "en": "The desktop app becomes your import companion" },
+      "items": [
+        {
+          "icon": "import",
+          "title": { "fr": "Importer depuis le bureau, lire sur le site", "en": "Import on the desktop, read on the website" },
+          "body": {
+            "fr": "Connectez-vous dans l'application de bureau, collez un lien YouTube ou de podcast, ou choisissez un enregistrement : la leçon est transcrite mot à mot, puis rejoint votre bibliothèque ici.",
+            "en": "Sign in to the desktop app, paste a YouTube or podcast link, or choose a recording: the lesson is transcribed word by word, then joins your library here."
+          },
+          "action": "view:library"
+        },
+        {
+          "icon": "book",
+          "title": { "fr": "Un livre reste un livre", "en": "A book stays one book" },
+          "body": {
+            "fr": "Un long texte, un PDF ou un EPUB devient une seule leçon, quelle que soit sa longueur : les pages se tournent dans le lecteur.",
+            "en": "A long text, PDF or EPUB becomes one lesson however long it is: its pages turn in the reader."
+          },
+          "action": "view:library"
+        }
+      ]
+    },
+    {
       "version": "0.1.1",
       "date": "2026-10-14",
       "title": { "fr": "Votre bureau et le web, ensemble", "en": "Your desktop and the web, together" },
