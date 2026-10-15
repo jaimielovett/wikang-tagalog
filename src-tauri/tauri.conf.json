@@ -1,7 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Wikang Tagalog",
-  "version": "0.1.3",
+  "mainBinaryName": "WikangTagalog",
+  "version": "0.1.4",
   "identifier": "app.wikangtagalog.reader",
   "build": {
     "beforeDevCommand": "npm run dev",
