@@ -154,3 +154,40 @@ test('a long text, however long, becomes one lesson whose pages turn in the read
  expect(lessons.filter(([t]:[string])=>t.startsWith('Isang mahabang kuwento'))).toEqual([['Isang mahabang kuwento',6480]]);
  await expect(page.locator('.leaf-progress .num')).toHaveText(/^1 \/ \d+$/);
 });
+const YT_STUB=`
+  window.YT={Player:function(el,o){const f=document.createElement('iframe');el.replaceWith(f);let t=0,at=0,on=false;window.__yt=this;
+   const now=()=>on?t+(performance.now()-at)/1000:t;
+   this.playVideo=()=>{t=now();at=performance.now();on=true;o.events.onStateChange({data:1});};
+   this.pauseVideo=()=>{t=now();on=false;o.events.onStateChange({data:2});};
+   this.seekTo=(s)=>{t=s;at=performance.now();};this.getCurrentTime=now;this.getDuration=()=>60;this.setPlaybackRate=()=>{};this.destroy=()=>f.remove();
+   setTimeout(()=>o.events.onReady(),50);}};
+  setTimeout(()=>window.onYouTubeIframeAPIReady&&window.onYouTubeIframeAPIReady(),0);`;
+test('tapping a new word can leave it new, and finishing the page then leaves it alone',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/?app');await completeWelcome(page);
+ const status=(term:string)=>page.evaluate(async(term)=>(await (window as any).__lumen.api().termsList({lang:'tl',filter:'all',offset:0,limit:500})).items.find((t:any)=>t.term===term)?.status ?? 0,term);
+ // off: the tapped word stays new, and finishing the page doesn't make it known
+ await page.evaluate(()=>(window as any).__lumen.useApp.getState().setSetting('tap_marks_learning','0'));
+ const id=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const id=await api().lessonCreate({lang:'tl',title:'Bahay',text:'Malaki ang bahay namin sa probinsya.',kind:'text'});useApp.getState().openLesson(id);return id;});
+ await page.locator('.leaf-page [data-i]').filter({hasText:/^bahay$/}).click();
+ await expect(page.locator('.word-panel, .wp-float').first()).toBeVisible();
+ expect(await status('bahay')).toBe(0);
+ await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:/Finish the (page|lesson)/}).click();
+ await expect.poll(()=>status('malaki')).toBe(4);
+ expect(await status('bahay')).toBe(0);
+ expect(errors).toEqual([]);void id;
+});
+test('tapping a word pauses a video lesson that is playing',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('https://www.youtube.com/iframe_api',r=>r.fulfill({contentType:'text/javascript',body:YT_STUB}));
+ await page.goto('/?app');await completeWelcome(page);
+ // a lesson playing pauses when a word is tapped, and doesn't turn the page meanwhile
+ await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;
+  const id=await api().lessonCreate({lang:'tl',title:'Video',kind:'video',source:'https://www.youtube.com/watch?v=abcdefghijk',text:'Magandang araw po. Kumusta kayo?',timings:JSON.stringify([[0,8,0,5],[9,13,5,10],[14,16,10,15],[19,26,15,20],[27,32,20,25]])});
+  useApp.getState().openLesson(id);});
+ await page.locator('.play-btn').click();await expect(page.locator('.play-btn.playing')).toBeVisible();
+ await page.locator('.leaf-page [data-i]').filter({hasText:/^Kumusta$/}).click();
+ await expect(page.locator('.play-btn.playing')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

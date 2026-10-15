@@ -38,6 +38,10 @@ export const DEFAULTS: Record<string, string> = {
   // le mot touché ou le passage surligné se fait entendre (seulement leçon en pause)
   auto_pronounce: "1",
   finish_marks_known: "1",
+  // a new (blue) word you tap becomes a word you're learning ("0": it stays new until you choose)
+  tap_marks_learning: "1",
+  // tapping a word pauses the lesson's audio or video, so it doesn't play on (and turn the page) during the look-up
+  tap_pauses: "1",
   // la page tourne quand l'audio ou la voix passe à la suivante ("0" : elle reste où l'on lit)
   auto_turn: "1",
   reader_sidebar: "1",

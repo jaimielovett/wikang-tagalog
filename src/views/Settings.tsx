@@ -768,6 +768,30 @@ export function ReadingPane() {
           </div>
           <div className="set-row">
             <div className="grow">
+              <strong>{t("Toucher un mot nouveau le met en apprentissage", "Tapping a new word marks it as learning")}</strong>
+              <span>
+                {t(
+                  "Désactivé : le mot reste nouveau (bleu) jusqu'à ce que vous choisissiez son statut, et terminer la page ne le marque pas comme connu.",
+                  "Off: the word stays new (blue) until you choose its status, and finishing the page doesn't mark it as known.",
+                )}
+              </span>
+            </div>
+            <Switch on={settings.tap_marks_learning !== "0"} onChange={(v) => setSetting("tap_marks_learning", v ? "1" : "0")} label={t("Mettre en apprentissage", "Mark as learning")} />
+          </div>
+          <div className="set-row">
+            <div className="grow">
+              <strong>{t("Toucher un mot met la lecture en pause", "Tapping a word pauses playback")}</strong>
+              <span>
+                {t(
+                  "L'audio ou la vidéo s'arrête pendant que vous regardez le mot, au lieu de continuer et de tourner la page. Elle reprend quand vous relancez la lecture.",
+                  "The audio or video stops while you look at the word, instead of playing on and turning the page. It carries on when you press play again.",
+                )}
+              </span>
+            </div>
+            <Switch on={settings.tap_pauses !== "0"} onChange={(v) => setSetting("tap_pauses", v ? "1" : "0")} label={t("Mettre en pause", "Pause")} />
+          </div>
+          <div className="set-row">
+            <div className="grow">
               <strong>{t("Traduire automatiquement la phrase", "Translate the sentence automatically")}</strong>
               <span>{t("Après chaque mot touché", "After each word you tap")}</span>
             </div>

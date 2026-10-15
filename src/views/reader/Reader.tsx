@@ -137,6 +137,8 @@ export function Reader() {
   const playerRef = useRef<PlayerHandle>(null);
   const drag = useRef<{ start: number; moved: boolean } | null>(null);
   const session = useRef({ read: 0, known: 0, lingqs: 0 });
+  // words looked up in this lesson: finishing a page never makes them known on their own
+  const looked = useRef(new Set<string>());
   // mots lus pendant cette ouverture : chacun ne compte qu'une fois, même si les pages se recomposent
   const readToks = useRef(new Uint8Array(0));
   // jeton à garder sous les yeux quand les pages se recomposent (fenêtre, police, mise en page)
@@ -203,6 +205,8 @@ export function Reader() {
   }, [lessonId, toast, go]);
 
   const lesson = data?.lesson;
+  // a new lesson: nothing looked up yet
+  useEffect(() => looked.current.clear(), [lesson?.id]);
   const tokens = useMemo(() => data?.tokens ?? [], [data]);
   // texte reponctué (« Ponctuer le texte ») : de nouveaux jetons pour les mêmes mots ;
   // le mot à l'écran et les mots déjà lus se retrouvent par leur rang
@@ -642,10 +646,15 @@ export function Reader() {
       if (!tokens[a]?.w) return;
       setRange({ a, b });
       setAside("word");
-      if (sound !== false) hear(a, b, sound);
+      // looking a word up pauses the lesson (setting tap_pauses): it doesn't play on and turn the page meanwhile.
+      // The word then isn't said aloud: you've just heard it.
+      const wasPlaying = settings.tap_pauses !== "0" && !!playerRef.current?.isPlaying();
+      if (wasPlaying) playerRef.current?.pause();
+      if (sound !== false && !wasPlaying) hear(a, b, sound);
       if (a === b) {
         const k = tokens[a].k;
-        if (statusOf(k) === 0) {
+        looked.current.add(k);
+        if (statusOf(k) === 0 && settings.tap_marks_learning !== "0") {
           session.current.lingqs++;
           const [sa, sb] = sentenceBounds(tokens, a);
           const ctx = lesson ? lesson.text.slice(tokens[sa].s, tokens[sb - 1].e).replace(/\s+/g, " ").trim() : "";
@@ -653,15 +662,17 @@ export function Reader() {
         }
       }
     },
-    [tokens, statusOf, setStatus, lesson, hear],
+    [tokens, statusOf, setStatus, lesson, hear, settings.tap_marks_learning, settings.tap_pauses],
   );
 
   const onTranslation = useCallback(
     (key: string, translation: string, note: string, sentence: string) => {
       const cur = statusOf(key);
+      // a new word stays new when tapping doesn't mark words: its status is the learner's to choose
+      if (cur === 0 && settings.tap_marks_learning === "0") return;
       setStatus(key, cur === 0 ? 1 : cur, { translation, note, context: sentence });
     },
-    [statusOf, setStatus],
+    [statusOf, setStatus, settings.tap_marks_learning],
   );
 
   // ---------- souris : clic et glisser pour les expressions ----------
@@ -811,7 +822,7 @@ export function Reader() {
     if (!lesson || illum) return;
     const marks = settings.finish_marks_known !== "0";
     const keys: string[] = [];
-    for (let i = pr.start; i < pr.end; i++) if (tokens[i].w && statusOf(tokens[i].k) === 0) keys.push(tokens[i].k);
+    for (let i = pr.start; i < pr.end; i++) if (tokens[i].w && statusOf(tokens[i].k) === 0 && !looked.current.has(tokens[i].k)) keys.push(tokens[i].k);
     let added = 0;
     // une page déjà comptée (lue par l'audio, relue) ne compte pas deux fois
     const words = creditPage(page, true);
@@ -1232,7 +1243,7 @@ export function Reader() {
     const t = tokens[i];
     if (t.w && !seen.has(t.k)) {
       seen.add(t.k);
-      if (statusOf(t.k) === 0) newOnPage++;
+      if (statusOf(t.k) === 0 && !looked.current.has(t.k)) newOnPage++;
     }
   }
 
