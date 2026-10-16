@@ -295,6 +295,15 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
   const follow = settings.auto_turn !== "0";
   const followRef = useRef(follow);
   followRef.current = follow;
+  // page stays put and playback pauses when it reaches the end of the page you're reading (setting page_end_pauses)
+  const stopAtEnd = !follow && settings.page_end_pauses === "1";
+  const stopAtEndRef = useRef(stopAtEnd);
+  stopAtEndRef.current = stopAtEnd;
+  // end of the page where playback last paused on its own: pressing play again without turning plays on
+  const stoppedAt = useRef<number | null>(null);
+  useEffect(() => {
+    stoppedAt.current = null;
+  }, [page]);
   // début de la page affichée quand la lecture s'est arrêtée : la page n'a pas
   // bougé depuis, la lecture reprend là où elle en était, même sur une autre page
   const pausedOn = useRef<number | null>(null);
@@ -421,7 +430,16 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
           if (k >= 0) {
             const [, , , t1] = timing.raw[k];
             const nextStart = timing.raw[k + 1]?.[2] ?? Infinity;
-            if (t <= t1 + 0.5 || t < nextStart) setCursor(timing.tokIdx[k]);
+            const i = timing.tokIdx[k];
+            const r = pagesRef.current[pageRef.current];
+            const prev = cursorRef.current;
+            if (stopAtEndRef.current && r && prev >= r.start && prev < r.end && i >= r.end && stoppedAt.current !== r.end) {
+              stoppedAt.current = r.end;
+              markPause();
+              pauseMedia();
+              return;
+            }
+            if (t <= t1 + 0.5 || t < nextStart) setCursor(i);
           }
         }
         // l'image suit le son : petite correction de vitesse, ou saut si l'écart est grand
@@ -509,7 +527,10 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
           // la suite : le premier mot après la page lue, dans les pages du moment
           // (la page affichée ne la suit que si elle tourne avec la lecture)
           const next = range.end;
-          if (completed && next < tokens.length) {
+          if (completed && next < tokens.length && stopAtEndRef.current) {
+            setPlaying(false);
+            setCursor(-1);
+          } else if (completed && next < tokens.length) {
             window.setTimeout(() => {
               if (followRef.current) onPage(pageOf(next));
               if (speakFromRef.current(next)) return;
@@ -846,7 +867,9 @@ export const Player = forwardRef<PlayerHandle, Props>(function Player({ lesson, 
               .getState()
               .toast(
                 follow
-                  ? t("La page reste où vous lisez : la lecture continue sans la tourner", "The page stays where you're reading: playback goes on without turning it")
+                  ? settings.page_end_pauses === "1"
+                    ? t("La page reste où vous lisez : la lecture s'arrête en fin de page", "The page stays where you're reading: playback pauses at the end of the page")
+                    : t("La page reste où vous lisez : la lecture continue sans la tourner", "The page stays where you're reading: playback goes on without turning it")
                   : t("Les pages tournent avec la lecture", "Pages turn with playback"),
                 "light",
               );

@@ -816,6 +816,20 @@ export function ReadingPane() {
             </div>
             <Switch on={settings.auto_turn !== "0"} onChange={(v) => setSetting("auto_turn", v ? "1" : "0")} label={t("Tourner les pages avec la lecture", "Turn pages with playback")} />
           </div>
+          {settings.auto_turn === "0" && (
+            <div className="set-row">
+              <div className="grow">
+                <strong>{t("Mettre en pause en fin de page", "Pause at the end of the page")}</strong>
+                <span>
+                  {t(
+                    "Quand la page ne tourne pas, l'audio ou la vidéo s'arrête à la fin de la page que vous lisez. Tournez la page et relancez la lecture pour continuer.",
+                    "When the page doesn't turn, the audio or video stops at the end of the page you're reading. Turn the page and press play to carry on.",
+                  )}
+                </span>
+              </div>
+              <Switch on={settings.page_end_pauses === "1"} onChange={(v) => setSetting("page_end_pauses", v ? "1" : "0")} label={t("Mettre en pause en fin de page", "Pause at the end of the page")} />
+            </div>
+          )}
         </div>
       </Section>
     </>

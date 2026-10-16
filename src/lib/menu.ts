@@ -236,7 +236,7 @@ function sub(text: string, items: Item[], enabled = true): SubmenuOptions {
   return { text, items, enabled };
 }
 
-const LOOK_KEYS = ["read_font", "read_paper", "font_size", "line_height", "read_width", "reader_layout", "word_style", "word_panel", "theme", "reader_sidebar", "auto_turn", "media_rate", "tts_rate"] as const;
+const LOOK_KEYS = ["read_font", "read_paper", "font_size", "line_height", "read_width", "reader_layout", "word_style", "word_panel", "theme", "reader_sidebar", "auto_turn", "page_end_pauses", "media_rate", "tts_rate"] as const;
 
 /** Ce dont le menu dépend : il n'est refait que si cela change. */
 function snapshot() {
@@ -454,6 +454,7 @@ function lessonMenu(s: Snap): SubmenuOptions {
       on,
     ),
     pick(t("Tourner les pages avec la lecture", "Turn Pages with Playback"), s.look.auto_turn !== "0", () => app().setSetting("auto_turn", s.look.auto_turn === "0" ? "1" : "0"), { on }),
+    pick(t("Mettre en pause en fin de page", "Pause at the End of the Page"), s.look.page_end_pauses === "1", () => app().setSetting("page_end_pauses", s.look.page_end_pauses === "1" ? "0" : "1"), { on: on && s.look.auto_turn === "0" }),
     sep,
     act(t("Page précédente", "Previous Page"), onLesson((a) => a.prev()), { on }),
     act(t("Page suivante", "Next Page"), onLesson((a) => a.next()), { on }),

@@ -44,6 +44,8 @@ export const DEFAULTS: Record<string, string> = {
   tap_pauses: "1",
   // la page tourne quand l'audio ou la voix passe à la suivante ("0" : elle reste où l'on lit)
   auto_turn: "1",
+  // with auto_turn off: "1" pauses the audio or video at the end of the page you're reading, instead of playing on
+  page_end_pauses: "0",
   reader_sidebar: "1",
   tts_voice: "0",
   tts_rate: "0.95",
