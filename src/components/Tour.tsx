@@ -182,7 +182,7 @@ function TourLayer({ step }: { step: number }) {
       // le panneau doit montrer le mot de la visite : le lecteur le sélectionne s'il n'a rien de sélectionné
       if (s.word && wordRef.current !== null && now - asked > 600 && !document.querySelector('[data-tour="status"]')) {
         asked = now;
-        window.dispatchEvent(new CustomEvent("lumen:tour-word", { detail: Number(wordRef.current) }));
+        window.dispatchEvent(new CustomEvent("wikang:tour-word", { detail: Number(wordRef.current) }));
       }
       const el = find();
       elRef.current = el;
@@ -227,7 +227,7 @@ function TourLayer({ step }: { step: number }) {
   const go = useCallback(
     (n: number) => {
       // la lecture à voix haute lancée pendant la visite s'arrête à l'étape suivante
-      if (s.id === "player") window.dispatchEvent(new Event("lumen:pause"));
+      if (s.id === "player") window.dispatchEvent(new Event("wikang:pause"));
       if (n >= STEPS.length) {
         show("reader");
         endTour();
@@ -241,7 +241,7 @@ function TourLayer({ step }: { step: number }) {
   );
   // la visite finit toujours dans la leçon où elle a commencé
   const quit = useCallback(() => {
-    window.dispatchEvent(new Event("lumen:pause"));
+    window.dispatchEvent(new Event("wikang:pause"));
     show("reader");
     endTour();
   }, [endTour]);

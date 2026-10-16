@@ -33,7 +33,7 @@ const ENGINE_FILES: &[&str] = if cfg!(windows) {
     &["bin/sherpa-onnx-offline-tts", "lib/libonnxruntime.dylib"]
 };
 
-/// Les langues de Lumen portent le même code chez Supertonic.
+/// Les langues de Wikang Tagalog portent le même code chez Supertonic.
 use crate::text::TTS_LANGS;
 
 const GOOGLE_TTS_URL: &str = "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -393,7 +393,7 @@ fn chunks_of(text: &str, lang: &str) -> Vec<Chunk> {
 
 pub struct LessonAudio {
     pub path: PathBuf,
-    /// horodatages par mot, au format de Lumen
+    /// horodatages par mot, au format de Wikang Tagalog
     pub timings: Vec<[f64; 4]>,
     pub duration: f64,
 }
@@ -448,7 +448,7 @@ pub async fn lesson_audio(
 
 /// Assemble les morceaux produits par n'importe quel moteur de voix. Le
 /// découpage, les pauses, les timings de la lanterne, le volume et la
-/// compression appartiennent à Lumen, pas au fournisseur de synthèse.
+/// compression appartiennent à Wikang Tagalog, pas au fournisseur de synthèse.
 async fn assemble_lesson_audio<S>(
     data_dir: &Path,
     lang: &str,
@@ -692,7 +692,7 @@ mod tests {
 }
 
 /// Test réel (télécharge le moteur dans un dossier jetable) :
-/// `LUMEN_VOICE_MODEL=/chemin/sherpa-onnx-supertonic-3-tts-int8-2026-05-11 cargo test --lib voice_live -- --ignored --nocapture`
+/// `WIKANG_VOICE_MODEL=/chemin/sherpa-onnx-supertonic-3-tts-int8-2026-05-11 cargo test --lib voice_live -- --ignored --nocapture`
 #[cfg(test)]
 mod live {
     use super::*;
@@ -703,8 +703,8 @@ mod live {
     #[tokio::test]
     #[ignore]
     async fn voice_live() {
-        let model_src = PathBuf::from(std::env::var("LUMEN_VOICE_MODEL").expect("LUMEN_VOICE_MODEL"));
-        let data = std::env::temp_dir().join("lumen-voice-live");
+        let model_src = PathBuf::from(std::env::var("WIKANG_VOICE_MODEL").expect("WIKANG_VOICE_MODEL"));
+        let data = std::env::temp_dir().join("wikang-voice-live");
         let _ = std::fs::remove_dir_all(&data);
         std::fs::create_dir_all(data.join("models")).unwrap();
         let m = models::CATALOG.iter().find(|m| m.kind == "tts").unwrap();
@@ -726,22 +726,22 @@ mod live {
             let secs = (len - 44) as f32 / 2.0 / 44100.0;
             println!("{lang} « {text} » : {first:.2} s, puis {:.0} ms en cache, son de {secs:.2} s", again * 1000.0);
             assert!(secs > 0.2 && secs < 3.0);
-            if let Ok(out) = std::env::var("LUMEN_VOICE_OUT") {
+            if let Ok(out) = std::env::var("WIKANG_VOICE_OUT") {
                 std::fs::copy(&p, PathBuf::from(out).join(format!("{lang}.wav"))).unwrap();
             }
         }
         let _ = std::fs::remove_dir_all(&data);
     }
 
-    /// Audio d'une leçon entière, puis recalage par Whisper si `LUMEN_ASR_MODEL` est donné :
-    /// `LUMEN_VOICE_MODEL=… LUMEN_ASR_MODEL=…/ggml-large-v3-turbo-q5_0.bin cargo test --lib lesson_audio_live -- --ignored --nocapture`
+    /// Audio d'une leçon entière, puis recalage par Whisper si `WIKANG_ASR_MODEL` est donné :
+    /// `WIKANG_VOICE_MODEL=… WIKANG_ASR_MODEL=…/ggml-large-v3-turbo-q5_0.bin cargo test --lib lesson_audio_live -- --ignored --nocapture`
     // liens symboliques du Mac : essai réservé au Mac
     #[cfg(unix)]
     #[tokio::test]
     #[ignore]
     async fn lesson_audio_live() {
-        let model_src = PathBuf::from(std::env::var("LUMEN_VOICE_MODEL").expect("LUMEN_VOICE_MODEL"));
-        let data = std::env::temp_dir().join("lumen-voice-lesson");
+        let model_src = PathBuf::from(std::env::var("WIKANG_VOICE_MODEL").expect("WIKANG_VOICE_MODEL"));
+        let data = std::env::temp_dir().join("wikang-voice-lesson");
         let _ = std::fs::remove_dir_all(&data);
         std::fs::create_dir_all(data.join("models")).unwrap();
         let m = models::CATALOG.iter().find(|m| m.kind == "tts").unwrap();
@@ -756,7 +756,7 @@ mod live {
         assert_eq!(a.timings.len(), words);
         assert!(a.timings.windows(2).all(|w| w[1][2] >= w[0][2]), "horodatages dans l'ordre");
         assert!(a.path.extension().unwrap() == "m4a");
-        if let Ok(asr) = std::env::var("LUMEN_ASR_MODEL") {
+        if let Ok(asr) = std::env::var("WIKANG_ASR_MODEL") {
             let heard = crate::media::transcribe(Path::new(&asr), &a.path, "it", None, |_| {}).await.unwrap();
             let (aligned, found) = crate::media::align_timings(text, "it", &heard);
             println!("Whisper retrouve {:.0} % des mots", found * 100.0);
@@ -773,7 +773,7 @@ mod live {
     #[tokio::test]
     #[ignore]
     async fn voice_download_live() {
-        let data = std::env::temp_dir().join("lumen-voice-download");
+        let data = std::env::temp_dir().join("wikang-voice-download");
         let _ = std::fs::remove_dir_all(&data);
         let m = models::CATALOG.iter().find(|m| m.kind == "tts").unwrap();
         let t = Instant::now();

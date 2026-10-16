@@ -2,7 +2,7 @@
 //! Définitions en français de l'anglais, de l'italien, de l'allemand, du portugais, du russe
 //! et de l'espagnol : livrées compressées avec l'application, décompressées au premier usage.
 //! Tous les autres (définitions en anglais, et en français pour les 24 autres langues) :
-//! téléchargés à la demande depuis les versions publiées de Lumen, pour ne pas alourdir
+//! téléchargés à la demande depuis les versions publiées de Wikang Tagalog, pour ne pas alourdir
 //! l'application. Le format 2 (tools/build_dicts.py --v2) a une clé de recherche propre à
 //! chaque langue et range à part les descriptions des formes fléchies.
 
@@ -25,7 +25,7 @@ const DICT_VERSION: &str = "1";
 /// Définitions en français livrées avec l'application.
 const BUNDLED_FR: &[&str] = &["en", "es", "it", "de", "pt", "ru"];
 const BUNDLED_EN: &[&str] = &["tl"];
-/// Les autres langues de Lumen : dictionnaires du format 2, en français et en anglais.
+/// Les autres langues de Wikang Tagalog : dictionnaires du format 2, en français et en anglais.
 pub const V2_LANGS: &[&str] = &[
     "nl", "sv", "da", "fi", "et", "lv", "lt", "pl", "cs", "sk", "sl", "hr", "hu", "ro", "bg", "uk", "el", "tr", "ar", "hi", "id", "vi", "ko", "ja", "tl",
 ];
@@ -1085,7 +1085,7 @@ mod tests {
     #[test]
     fn lookup_real_dictionaries() {
         let res = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/dicts");
-        let tmp = std::env::temp_dir().join(format!("lumen-dict-test-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("wikang-dict-test-{}", std::process::id()));
         let d = Dicts::new(res, tmp.clone());
         let r = d.lookup_in("fr", "en", "chose").unwrap();
         assert_eq!(r.lemma.as_deref(), Some("choose"));
@@ -1104,7 +1104,7 @@ mod tests {
 
     #[test]
     fn catalogue() {
-        // toutes les langues de Lumen ont un dictionnaire dans les deux langues de l'interface
+        // toutes les langues de Wikang Tagalog ont un dictionnaire dans les deux langues de l'interface
         for lang in crate::text::LANGS {
             let fr = BUNDLED_FR.contains(lang) || BUNDLED_EN.contains(lang) || remote("fr", lang).is_some();
             let en = BUNDLED_EN.contains(lang) || remote("en", lang).is_some();
@@ -1173,11 +1173,11 @@ mod tests {
     }
 
     /// Les clés de tools/build_dicts.py (`--keys`) et celles de l'app doivent être identiques :
-    /// LUMEN_KEYS=/chemin/cles.tsv cargo test --lib keys_match_builder -- --ignored --nocapture
+    /// WIKANG_KEYS=/chemin/cles.tsv cargo test --lib keys_match_builder -- --ignored --nocapture
     #[test]
     #[ignore]
     fn keys_match_builder() {
-        let path = std::env::var("LUMEN_KEYS").expect("LUMEN_KEYS");
+        let path = std::env::var("WIKANG_KEYS").expect("WIKANG_KEYS");
         let text = std::fs::read_to_string(path).unwrap();
         let (mut n, mut bad) = (0, Vec::new());
         for line in text.lines() {
@@ -1194,15 +1194,15 @@ mod tests {
 
     /// Téléchargement réel d'un dictionnaire (anglais, portugais : le plus léger), depuis
     /// les versions publiées ou un serveur qui sert les fichiers à sa racine :
-    /// LUMEN_DICT_BASE=http://127.0.0.1:8765 cargo test --lib dict_download_live -- --ignored --nocapture
-    /// (LUMEN_DICT=fr-hu pour un dictionnaire de la version 2)
+    /// WIKANG_DICT_BASE=http://127.0.0.1:8765 cargo test --lib dict_download_live -- --ignored --nocapture
+    /// (WIKANG_DICT=fr-hu pour un dictionnaire de la version 2)
     #[test]
     #[ignore]
     fn dict_download_live() {
-        let base = std::env::var("LUMEN_DICT_BASE").ok();
-        let which = std::env::var("LUMEN_DICT").unwrap_or_else(|_| "en-pt".into());
+        let base = std::env::var("WIKANG_DICT_BASE").ok();
+        let which = std::env::var("WIKANG_DICT").unwrap_or_else(|_| "en-pt".into());
         let (native, lang) = which.split_once('-').unwrap();
-        let tmp = std::env::temp_dir().join(format!("lumen-dict-dl-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("wikang-dict-dl-{}", std::process::id()));
         let d = Dicts::new(PathBuf::from("/nonexistent"), tmp.clone());
         let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
         let t = std::time::Instant::now();
@@ -1224,7 +1224,7 @@ mod tests {
     /// Dictionnaires construits sur ce Mac (tools/build_dicts.py), s'ils sont là : décompressés
     /// dans un dossier jetable sous le nom qu'ils ont une fois téléchargés.
     fn built(tag: &str, names: &[(&str, &str)]) -> Option<(Dicts, PathBuf)> {
-        let tmp = std::env::temp_dir().join(format!("lumen-dict-{tag}-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("wikang-dict-{tag}-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         for (native, lang) in names {
             let r = remote(native, lang).unwrap();

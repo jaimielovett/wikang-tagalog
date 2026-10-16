@@ -14,7 +14,7 @@ const NAME_MAX: usize = 32;
 const WHY_MAX: usize = 140;
 const INTEREST_MAX: usize = 30;
 const INTERESTS_MAX: usize = 8;
-/// Une photo plus lourde n'a pas été préparée par Lumen : elle reste hors du manifeste.
+/// Une photo plus lourde n'a pas été préparée par Wikang Tagalog : elle reste hors du manifeste.
 const PHOTO_MAX: usize = 200_000;
 
 /// Centres d'intérêt proposés (miroir de `interestSuggestions` dans lib/user.ts).

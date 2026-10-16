@@ -23,7 +23,7 @@ use crate::media;
 use crate::text;
 
 const API: &str = "https://www.lingq.com/api";
-/// Langues que Lumen sait étudier.
+/// Langues que Wikang Tagalog sait étudier.
 const LANGS: &[&str] = crate::text::LANGS;
 
 /// Clé refusée : arrête tout l'import (les autres erreurs ne touchent
@@ -200,7 +200,7 @@ impl Client {
         Ok(out)
     }
 
-    /// Télécharge l'audio d'une leçon dans la médiathèque de Lumen.
+    /// Télécharge l'audio d'une leçon dans la médiathèque de Wikang Tagalog.
     async fn download_audio(&self, url: &str, data_dir: &Path) -> Result<PathBuf> {
         let url = if url.starts_with('/') { format!("https://www.lingq.com{url}") } else { url.to_string() };
         let ext = url
@@ -328,7 +328,7 @@ pub struct Report {
     /// termes ajoutés ou complétés
     pub words: i64,
     pub lessons: i64,
-    /// leçons déjà présentes dans Lumen
+    /// leçons déjà présentes dans Wikang Tagalog
     pub skipped: i64,
     /// leçons inaccessibles (réservées, vides…)
     pub failed: i64,
@@ -337,7 +337,7 @@ pub struct Report {
 }
 
 /// LingQ : 0, 1, 2 = niveaux 1 à 3 ; 3 = niveau 4 (appris) ou ✓ (connu,
-/// `extended_status` 3). Lumen n'a que trois niveaux d'apprentissage : le
+/// `extended_status` 3). Wikang Tagalog n'a que trois niveaux d'apprentissage : le
 /// niveau 4 de LingQ devient « connu ».
 fn card_status(status: i64) -> i64 {
     match status {
@@ -413,7 +413,7 @@ fn simplified(s: &str) -> String {
 }
 
 /// Texte de la leçon (paragraphes séparés par une ligne vide) et
-/// horodatages par mot au format de Lumen, à partir de `tokenizedText`.
+/// horodatages par mot au format de Wikang Tagalog, à partir de `tokenizedText`.
 fn lesson_text(lesson: &Value, lang: &str) -> (String, Option<String>) {
     let title = simplified(&str_field(lesson, &["title"]).unwrap_or_default());
     let mut text = String::new();
@@ -701,11 +701,11 @@ mod live {
     use super::*;
 
     /// Essai réel sur un compte (ignoré par défaut), sans toucher à la
-    /// base de Lumen : LUMEN_LINGQ_KEY=… cargo test --lib lingq_live -- --ignored --nocapture
+    /// base de Wikang Tagalog : WIKANG_LINGQ_KEY=… cargo test --lib lingq_live -- --ignored --nocapture
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn lingq_live() {
-        let Ok(key) = std::env::var("LUMEN_LINGQ_KEY") else { return };
+        let Ok(key) = std::env::var("WIKANG_LINGQ_KEY") else { return };
         let account = scan(&key).await.unwrap();
         for a in &account {
             println!("[{}] {} mots connus, {} LingQ, {} cours, {} leçons", a.lang, a.known_words, a.lingqs, a.courses.len(), a.lessons);
@@ -729,9 +729,9 @@ mod live {
         .await
         .unwrap();
         let Some(id) = first else { return };
-        let dir = std::env::temp_dir().join(format!("lumen-lingq-live-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("wikang-lingq-live-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        let db = Mutex::new(db::open(&dir.join("lumen.db")).unwrap());
+        let db = Mutex::new(db::open(&dir.join("wikang.db")).unwrap());
         let (title, audio_ok) = import_lesson(&c, &db, &dir, &course.0, id, &course.1.title, "lingq:test", true).await.unwrap();
         let lesson = db::lesson_get(&db.lock(), db::lesson_by_ext(&db.lock(), "lingq:test").unwrap().unwrap()).unwrap();
         println!(

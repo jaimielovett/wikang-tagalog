@@ -45,6 +45,7 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
+            db::adopt_legacy_name(&data_dir)?;
             let conn = db::open(&db::path(&data_dir))?;
             // langue de l'interface, des messages et des traductions
             i18n::set(&db::setting(&conn, "ui_lang").unwrap_or_default());

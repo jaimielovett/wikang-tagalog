@@ -1,11 +1,11 @@
-//! Import universel d'un lien. Lumen regarde ce qu'il y a derrière une adresse
+//! Import universel d'un lien. Wikang Tagalog regarde ce qu'il y a derrière une adresse
 //! et propose ce qu'il peut en tirer :
 //! - le texte d'un article (extrait ensuite par l'interface, avec Readability) ;
 //! - le son ou la vidéo : par yt-dlp (YouTube et plus de mille sites), ou le
 //!   fichier repéré dans la page (balises audio et vidéo, Open Graph, JSON-LD,
 //!   lecteurs intégrés), là où yt-dlp ne sait pas faire (RFI…) ;
 //! - les épisodes d'un podcast : flux RSS ou Atom, Apple Podcasts ;
-//! - Spotify, dont les fichiers sont protégés contre la copie : Lumen retrouve
+//! - Spotify, dont les fichiers sont protégés contre la copie : Wikang Tagalog retrouve
 //!   le même épisode dans le flux public du podcast (annuaire d'Apple), et le
 //!   même morceau sur YouTube.
 
@@ -49,7 +49,7 @@ const AUDIO_SITES: &[&str] = &[
     "raiplaysound.it",
 ];
 
-/// Ce que Lumen a trouvé derrière un lien.
+/// Ce que Wikang Tagalog a trouvé derrière un lien.
 #[derive(Serialize, Clone, Debug, Default)]
 pub struct LinkInfo {
     /// adresse finale (après redirections)
@@ -1463,7 +1463,7 @@ fn ext_for(u: &Url, ctype: &str, video: bool) -> String {
     by_type.iter().find(|(m, _)| ctype.starts_with(m)).map(|(_, e)| e.to_string()).unwrap_or_else(|| if video { "mp4" } else { "mp3" }.into())
 }
 
-/// Télécharge un fichier son ou vidéo dans la bibliothèque de Lumen.
+/// Télécharge un fichier son ou vidéo dans la bibliothèque de Wikang Tagalog.
 pub async fn download(data_dir: &Path, url: &str, stem: &str, video: bool, on_progress: &mut (dyn FnMut(f64) + Send)) -> Result<PathBuf> {
     let c = reqwest::Client::builder().user_agent(UA).connect_timeout(Duration::from_secs(20)).read_timeout(Duration::from_secs(60)).build()?;
     let resp = c.get(url).send().await.map_err(|e| anyhow!(crate::tr!("Fichier inaccessible : {e}", "File unreachable: {e}")))?;
@@ -1678,7 +1678,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn link_download_live() {
-        let dir = std::env::temp_dir().join("lumen-link-download");
+        let dir = std::env::temp_dir().join("wikang-link-download");
         let _ = std::fs::remove_dir_all(&dir);
         let feed = "https://www.rfi.fr/fr/podcasts/journal-fran%C3%A7ais-facile/podcast";
         let xml = get_text(&client().unwrap(), feed).await.unwrap();
@@ -1695,12 +1695,12 @@ mod tests {
         assert!(String::from_utf8_lossy(&info.stdout).contains("pixelWidth: 1280"));
     }
 
-    /// Essai réel (ignoré par défaut) : LUMEN_TEST_URL="lien1 lien2" cargo test --lib link_live -- --ignored --nocapture
+    /// Essai réel (ignoré par défaut) : WIKANG_TEST_URL="lien1 lien2" cargo test --lib link_live -- --ignored --nocapture
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn link_live() {
-        let Ok(urls) = std::env::var("LUMEN_TEST_URL") else { return };
-        let dir = std::env::temp_dir().join("lumen-link-live");
+        let Ok(urls) = std::env::var("WIKANG_TEST_URL") else { return };
+        let dir = std::env::temp_dir().join("wikang-link-live");
         std::fs::create_dir_all(&dir).unwrap();
         for u in urls.split_whitespace() {
             let mut quiet = |_e: ImportEvent| {};

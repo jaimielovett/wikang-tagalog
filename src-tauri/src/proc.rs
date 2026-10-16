@@ -1,4 +1,4 @@
-//! Programmes lancés par Lumen (Whisper, yt-dlp, la voix…). Sous Windows, une
+//! Programmes lancés par Wikang Tagalog (Whisper, yt-dlp, la voix…). Sous Windows, une
 //! app sans console qui lance un programme en ligne de commande ferait surgir
 //! une fenêtre noire à chaque fois : on le lance sans fenêtre.
 
@@ -44,9 +44,9 @@ fn app_bundle() -> Option<std::path::PathBuf> {
     ok.then(|| bundle.to_path_buf())
 }
 
-/// Relance Lumen (« Redémarrer » après une mise à jour). Sur Mac, Tauri relancerait
+/// Relance Wikang Tagalog (« Redémarrer » après une mise à jour). Sur Mac, Tauri relancerait
 /// l'exécutable lui-même : macOS (depuis la version 14) ne laisse pas une app lancée
-/// ainsi passer au premier plan, et Lumen s'ouvrait derrière les autres fenêtres.
+/// ainsi passer au premier plan, et Wikang Tagalog s'ouvrait derrière les autres fenêtres.
 /// On quitte normalement (dernière sauvegarde comprise) et `relaunch_on_exit` rouvre
 /// le paquet par le Finder (LaunchServices), comme un double-clic.
 pub fn relaunch(app: &tauri::AppHandle) {
@@ -59,13 +59,13 @@ pub fn relaunch(app: &tauri::AppHandle) {
     app.request_restart();
 }
 
-/// À la sortie, après la dernière sauvegarde : rouvre Lumen si une relance est demandée.
+/// À la sortie, après la dernière sauvegarde : rouvre Wikang Tagalog si une relance est demandée.
 pub fn relaunch_on_exit() {
     #[cfg(target_os = "macos")]
     if let Some(bundle) = RELAUNCH.get() {
         use std::time::{Duration, Instant};
         // -n : une nouvelle instance, celle-ci n'est pas encore partie. On attend que
-        // `open` ait lancé Lumen : c'est parce que Lumen est encore l'app active que
+        // `open` ait lancé Wikang Tagalog : c'est parce que Wikang Tagalog est encore l'app active que
         // macOS met la nouvelle au premier plan.
         let opened = command("/usr/bin/open").arg("-n").arg(bundle).spawn().is_ok_and(|mut child| {
             let deadline = Instant::now() + Duration::from_secs(5);
@@ -73,13 +73,13 @@ pub fn relaunch_on_exit() {
                 match child.try_wait() {
                     Ok(Some(status)) => return status.success(),
                     Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(50)),
-                    // toujours en cours : la demande est partie, Lumen va s'ouvrir
+                    // toujours en cours : la demande est partie, Wikang Tagalog va s'ouvrir
                     Ok(None) => return true,
                     Err(_) => return false,
                 }
             }
         });
-        // dernier recours : comme Tauri, l'exécutable lui-même (Lumen s'ouvre, mais derrière)
+        // dernier recours : comme Tauri, l'exécutable lui-même (Wikang Tagalog s'ouvre, mais derrière)
         if !opened {
             if let Ok(exe) = std::env::current_exe() {
                 let _ = command(exe).spawn();

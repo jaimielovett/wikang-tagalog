@@ -70,7 +70,7 @@ pub async fn app_info(state: State<'_, AppState>) -> R<AppInfo> {
     })
 }
 
-/// Relance Lumen après une mise à jour, au premier plan (voir `proc::relaunch`).
+/// Relance Wikang Tagalog après une mise à jour, au premier plan (voir `proc::relaunch`).
 #[tauri::command]
 pub fn app_relaunch(app: tauri::AppHandle) {
     crate::proc::relaunch(&app);

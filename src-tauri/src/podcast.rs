@@ -1,13 +1,13 @@
 //! Podcasts sur mesure. Gemini (l'IA en ligne de Google, avec la clé
 //! personnelle et gratuite de l'apprenant) écrit un podcast dans la langue
 //! étudiée, au niveau, sur le sujet et à la durée choisis, puis le dit à une ou
-//! deux voix. Lumen assemble le son et garde le texte exact pour la leçon : la
+//! deux voix. Wikang Tagalog assemble le son et garde le texte exact pour la leçon : la
 //! lanterne est ensuite calée par Whisper, sur ce Mac.
 //!
 //! Pourquoi l'API Gemini et pas Gemini Notebook (ex-NotebookLM) : Gemini
 //! Notebook n'ouvre aucun accès aux applications des particuliers (seulement
 //! une API d'entreprise, sur Google Cloud). L'API Gemini a les mêmes voix, et
-//! Lumen écrit lui-même la commande : niveau tenu, mots en apprentissage
+//! Wikang Tagalog écrit lui-même la commande : niveau tenu, mots en apprentissage
 //! glissés dans le texte, leçon sans faute de transcription.
 //!
 //! Ce qui part en ligne : le sujet, les précisions et, si l'apprenant le veut,
@@ -718,7 +718,7 @@ const GAP_SECS: f64 = 0.5;
 /// Morceaux enregistrés en même temps.
 const PARALLEL: usize = 2;
 
-/// Gemini dit le podcast, morceau par morceau (deux à la fois) ; Lumen les
+/// Gemini dit le podcast, morceau par morceau (deux à la fois) ; Wikang Tagalog les
 /// assemble, égalise le volume et compresse en AAC dans `media/`. La position
 /// de chaque réplique (pauses entre les voix) donne celle de ses mots.
 pub async fn record(
@@ -981,9 +981,9 @@ mod tests {
 
 /// Test réel (clé Gemini personnelle ; écrit et enregistre un podcast de deux
 /// minutes dans un dossier jetable) :
-/// `LUMEN_GEMINI_KEY=… cargo test --lib podcast_live -- --ignored --nocapture`
-/// (`LUMEN_PODCAST=de:B1:story` pour une autre langue, un autre niveau, un autre format ;
-/// `LUMEN_PODCAST_OUT=dossier` pour garder le son et le texte).
+/// `WIKANG_GEMINI_KEY=… cargo test --lib podcast_live -- --ignored --nocapture`
+/// (`WIKANG_PODCAST=de:B1:story` pour une autre langue, un autre niveau, un autre format ;
+/// `WIKANG_PODCAST_OUT=dossier` pour garder le son et le texte).
 #[cfg(test)]
 mod live {
     use super::*;
@@ -992,8 +992,8 @@ mod live {
     #[tokio::test]
     #[ignore]
     async fn podcast_live() {
-        let key = std::env::var("LUMEN_GEMINI_KEY").expect("LUMEN_GEMINI_KEY");
-        let spec = std::env::var("LUMEN_PODCAST").unwrap_or_else(|_| "it:A2:talk".into());
+        let key = std::env::var("WIKANG_GEMINI_KEY").expect("WIKANG_GEMINI_KEY");
+        let spec = std::env::var("WIKANG_PODCAST").unwrap_or_else(|_| "it:A2:talk".into());
         let mut it = spec.split(':');
         let lang = it.next().unwrap_or("it").to_string();
         let level = it.next().and_then(|l| ["A1", "A2", "B1", "B2", "C1"].iter().position(|x| *x == l)).unwrap_or(1) as u8 + 1;
@@ -1017,7 +1017,7 @@ mod live {
             crate::langid::guess(&text)
         );
         assert!(words > target_units(&lang, level, 2) / 3);
-        let data = std::env::temp_dir().join("lumen-podcast-live");
+        let data = std::env::temp_dir().join("wikang-podcast-live");
         let _ = std::fs::remove_dir_all(&data);
         std::fs::create_dir_all(data.join("media")).unwrap();
         let t = Instant::now();
@@ -1032,7 +1032,7 @@ mod live {
         );
         assert_eq!(rec.timings.len(), words);
         assert!(rec.timings.windows(2).all(|w| w[1][2] >= w[0][2] - 0.01), "horodatages dans l'ordre");
-        if let Ok(out) = std::env::var("LUMEN_PODCAST_OUT") {
+        if let Ok(out) = std::env::var("WIKANG_PODCAST_OUT") {
             let out = PathBuf::from(out);
             std::fs::copy(&rec.path, out.join(rec.path.file_name().unwrap())).unwrap();
             std::fs::write(out.join("podcast.txt"), &rec.text).unwrap();

@@ -2464,61 +2464,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 
 [[package]]
-name = "lumen"
-version = "0.1.5"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "block2",
- "bzip2",
- "chrono",
- "flate2",
- "futures-util",
- "hex",
- "image",
- "llama-cpp-2",
- "objc2",
- "objc2-audio-toolbox",
- "objc2-av-foundation",
- "objc2-core-audio-types",
- "objc2-core-foundation",
- "objc2-core-media",
- "objc2-foundation",
- "parking_lot",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-updater",
- "tiniestsegmenter",
- "tokio",
- "tokio-util",
- "unicode-normalization",
- "unicode-segmentation",
- "windows",
-]
-
-[[package]]
-name = "lumen-whisper"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
- "serde_json",
- "symphonia",
- "whisper-rs",
- "whisper-rs-sys",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "markup5ever"
 version = "0.39.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5691,6 +5636,61 @@ dependencies = [
  "cmake",
  "fs_extra",
  "semver",
+]
+
+[[package]]
+name = "wikang-tagalog"
+version = "0.1.5"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "block2",
+ "bzip2",
+ "chrono",
+ "flate2",
+ "futures-util",
+ "hex",
+ "image",
+ "llama-cpp-2",
+ "objc2",
+ "objc2-audio-toolbox",
+ "objc2-av-foundation",
+ "objc2-core-audio-types",
+ "objc2-core-foundation",
+ "objc2-core-media",
+ "objc2-foundation",
+ "parking_lot",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-updater",
+ "tiniestsegmenter",
+ "tokio",
+ "tokio-util",
+ "unicode-normalization",
+ "unicode-segmentation",
+ "windows",
+]
+
+[[package]]
+name = "wikang-whisper"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "symphonia",
+ "whisper-rs",
+ "whisper-rs-sys",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

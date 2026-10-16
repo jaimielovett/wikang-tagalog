@@ -91,7 +91,7 @@ pub fn guess(text: &str) -> Option<&'static str> {
         return None;
     }
     let share = |n: usize| n as f64 / total as f64;
-    // écritures propres à une seule langue de Lumen
+    // écritures propres à une seule langue de Wikang Tagalog
     if share(kana) > 0.1 || (share(han) > 0.3 && kana > 0) {
         return Some("ja");
     }
@@ -108,7 +108,7 @@ pub fn guess(text: &str) -> Option<&'static str> {
         return Some("hi");
     }
     if share(han) > 0.3 {
-        // chinois : aucune langue de Lumen
+        // chinois : aucune langue de Wikang Tagalog
         return None;
     }
     let cyrillic = share(cyr) > 0.4;

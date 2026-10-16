@@ -46,7 +46,7 @@ test('Discover shows the sources, plays a video in place, and a learner can swit
  await page.keyboard.press('Escape');
  await expect(page.getByRole('heading',{name:'Arnold Clavio kinasuhan ng cyber libel'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Tagalog for Beginners: Greetings'})).toBeVisible();
- expect(await page.evaluate(()=>(window as any).__lumen.useApp.getState().settings['source_off_tl-bandera'])).toBe('1');
+ expect(await page.evaluate(()=>(window as any).__wikang.useApp.getState().settings['source_off_tl-bandera'])).toBe('1');
 });
 
 test('admins see every source with its health, and add sources from the Account page',async({page})=>{
@@ -62,11 +62,11 @@ test('admins see every source with its health, and add sources from the Account 
   return route.fallback();
  });
  await page.goto('/?app');await completeWelcome(page);
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().go('account');});
  await page.getByLabel('Email').fill('admin@example.org');await page.getByLabel('Password').fill('correct horse');
  await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);
  await page.getByRole('button',{name:'Later',exact:true}).click();
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().go('account');});
  await expect(page.getByRole('heading',{name:'Discover sources'})).toBeVisible();
  await expect(page.getByText('The feed answered 503.')).toBeVisible();
  await page.getByRole('button',{name:'Add a source'}).click();
@@ -97,7 +97,7 @@ test('signed-in learners add their own sources; a default source is recognised, 
   return route.fulfill({json:{results:body.sources.map((s:any)=>({id:s.id,items:[{id:'c'.repeat(32),kind:'video',title:'Adobong manok ni Ninong',url:'https://www.youtube.com/watch?v=ninongry001',page:'https://www.youtube.com/watch?v=ninongry001',image:'',summary:'',duration:0,published:Math.floor(Date.now()/1000),lo:1,hi:3}]}))}});
  });
  await page.goto('/?app');await completeWelcome(page);
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('account');});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().go('account');});
  await page.getByLabel('Email').fill('learner@example.org');await page.getByLabel('Password').fill('correct horse');
  await Promise.all([page.waitForEvent('load'),page.locator('.auth-submit').click()]);
  await page.getByRole('button',{name:'Later',exact:true}).click();

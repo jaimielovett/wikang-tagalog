@@ -19,7 +19,24 @@ pub const TIMING_LINES: i64 = 1;
 
 /// Fichier de la base dans le dossier de données.
 pub fn path(data_dir: &Path) -> PathBuf {
-    data_dir.join("lumen.db")
+    data_dir.join("wikang.db")
+}
+
+/// Up to 0.1.5 the database was `lumen.db` (Lumen's name): it takes the new name,
+/// with its WAL journal, before it is first opened.
+pub fn adopt_legacy_name(data_dir: &Path) -> std::io::Result<()> {
+    let new = path(data_dir);
+    let old = data_dir.join("lumen.db");
+    if new.exists() || !old.exists() {
+        return Ok(());
+    }
+    for suffix in ["-wal", "-shm"] {
+        let side = data_dir.join(format!("lumen.db{suffix}"));
+        if side.exists() {
+            std::fs::rename(&side, data_dir.join(format!("wikang.db{suffix}")))?;
+        }
+    }
+    std::fs::rename(old, new)
 }
 
 pub fn open(path: &Path) -> Result<Connection> {
@@ -1429,7 +1446,7 @@ mod tests {
     use super::*;
     #[test]
     fn lesson_and_terms_flow() {
-        let path = std::env::temp_dir().join(format!("lumen-db-test-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-test-{}.db", std::process::id()));
         let mut c = open(&path).unwrap();
         let id = lesson_create(&c, &NewLesson {
             lang: "en".into(), title: "T".into(), collection: String::new(), kind: "text".into(),
@@ -1465,7 +1482,7 @@ mod tests {
 
     #[test]
     fn progress_periods_and_streak() {
-        let path = std::env::temp_dir().join(format!("lumen-db-progress-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-progress-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let c = open(&path).unwrap();
         // mercredi 14 octobre 2026
@@ -1515,7 +1532,7 @@ mod tests {
 
     #[test]
     fn goal_reached_once() {
-        let path = std::env::temp_dir().join(format!("lumen-db-goal-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-goal-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let c = open(&path).unwrap();
         setting_set(&c, "daily_goal", "1").unwrap();
@@ -1533,7 +1550,7 @@ mod tests {
 
     #[test]
     fn legacy_activity_keeps_its_streak() {
-        let path = std::env::temp_dir().join(format!("lumen-db-legacy-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-legacy-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         // base d'avant le temps actif : un jour de lecture, un jour sans rien de notable
         {
@@ -1562,7 +1579,7 @@ mod tests {
 
     #[test]
     fn resume_position_and_cover() {
-        let path = std::env::temp_dir().join(format!("lumen-db-resume-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-resume-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         // base d'une ancienne version : ni position, ni couverture
         {
@@ -1594,7 +1611,7 @@ mod tests {
 
     #[test]
     fn lessons_deleted_together_keep_shared_files() {
-        let path = std::env::temp_dir().join(format!("lumen-db-bulk-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-bulk-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let mut c = open(&path).unwrap();
         let mk = |c: &Connection, title: &str, media: &str| {
@@ -1618,7 +1635,7 @@ mod tests {
 
     #[test]
     fn playlists_keep_order_and_follow_lessons() {
-        let path = std::env::temp_dir().join(format!("lumen-db-playlists-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-playlists-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let mut c = open(&path).unwrap();
         let mk = |c: &Connection, lang: &str, title: &str| {
@@ -1652,7 +1669,7 @@ mod tests {
 
     #[test]
     fn chats_keep_messages_and_follow_lessons() {
-        let path = std::env::temp_dir().join(format!("lumen-db-chats-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-chats-{}.db", std::process::id()));
         let _ = std::fs::remove_file(&path);
         let mut c = open(&path).unwrap();
         let mk = |c: &Connection, lang: &str, title: &str| {
@@ -1701,7 +1718,7 @@ mod tests {
 
     #[test]
     fn import_never_goes_backwards() {
-        let path = std::env::temp_dir().join(format!("lumen-db-import-{}.db", std::process::id()));
+        let path = std::env::temp_dir().join(format!("wikang-db-import-{}.db", std::process::id()));
         let mut c = open(&path).unwrap();
         let it = |term: &str, status: i64, tr: &str| ImportedTerm {
             term: term.into(), status, translation: tr.into(), note: String::new(), context: String::new(),

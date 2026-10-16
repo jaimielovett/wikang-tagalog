@@ -5,16 +5,16 @@ test('Tagalog onboarding, dictionary, vocabulary, playlists, imports and persist
  await page.goto('/?app');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
  await completeWelcome(page,20);
  await expect(page.locator('.reader')).toBeVisible();
- const state=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const opened=await api().lessonOpen(useApp.getState().lessonId);return {goal:useApp.getState().settings.daily_goal,lang:useApp.getState().lang(),langs:useApp.getState().langs(),text:opened.lesson.text};});
+ const state=await page.evaluate(async()=>{const {api,useApp}=(window as any).__wikang;const opened=await api().lessonOpen(useApp.getState().lessonId);return {goal:useApp.getState().settings.daily_goal,lang:useApp.getState().lang(),langs:useApp.getState().langs(),text:opened.lesson.text};});
  expect(state.goal).toBe('20');expect(state.lang).toBe('tl');expect(state.langs).toEqual(['tl']);expect(state.text.length).toBeGreaterThan(100);
- const result=await page.evaluate(async()=>{const a=(window as any).__lumen.api();const definition=await a.dictLookup('tl','bahay');await a.termSet({lang:'tl',term:'bahay',status:4,translation:'house'});const id=await a.playlistCreate('tl','My practice',[]);return {definition,terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20}),playlist:await a.playlistsList('tl'),id};});
+ const result=await page.evaluate(async()=>{const a=(window as any).__wikang.api();const definition=await a.dictLookup('tl','bahay');await a.termSet({lang:'tl',term:'bahay',status:4,translation:'house'});const id=await a.playlistCreate('tl','My practice',[]);return {definition,terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20}),playlist:await a.playlistsList('tl'),id};});
  expect(result.definition.entries.length).toBeGreaterThan(0);expect(result.terms.items[0].term).toBe('bahay');expect(result.playlist[0].name).toBe('My practice');
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('library');});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().go('library');});
  await page.getByRole('button',{name:'Import',exact:true}).first().click();await expect(page.getByRole('dialog')).toBeVisible();
  await page.getByLabel('Title (optional)').fill('A new Tagalog story');await page.getByLabel('Text in Tagalog').fill('May isang maliit na bahay. Maganda ang araw.');await page.getByRole('button',{name:'Create the lesson'}).click();
  await expect(page.locator('.reader')).toBeVisible();await expect(page.getByText('A new Tagalog story',{exact:true}).first()).toBeVisible();
  await page.reload();await expect(page.getByRole('button',{name:'Now reading',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Now reading',exact:true}).click();await expect(page.locator('.reader')).toBeVisible();
- const saved=await page.evaluate(async()=>{const a=(window as any).__lumen.api();return {lessons:await a.lessonsList('tl'),terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20})};});
+ const saved=await page.evaluate(async()=>{const a=(window as any).__wikang.api();return {lessons:await a.lessonsList('tl'),terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20})};});
  expect(saved.lessons.some((l:any)=>l.title==='A new Tagalog story')).toBeTruthy();expect(saved.terms.items.some((t:any)=>t.term==='bahay')).toBeTruthy();
  await page.getByRole('button',{name:'Discover',exact:true}).click();await expect(page.getByRole('heading',{name:'Discover',exact:true})).toBeVisible();await expect(page.locator('.disc-empty')).toBeVisible();
  await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('button',{name:'Backup',exact:true}).click();await expect(page.getByRole('button',{name:'Export backup'})).toBeVisible();
@@ -23,7 +23,7 @@ test('Tagalog onboarding, dictionary, vocabulary, playlists, imports and persist
 test('mobile onboarding and navigation do not overflow',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/?app');await expect(page.getByRole('heading',{name:'Wikang Tagalog',exact:true})).toBeVisible();
  await page.screenshot({path:'outputs/web-mobile-welcome.png',fullPage:true});await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'outputs/web-mobile-reader.png',fullPage:true});
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().go('discover');});await expect(page.getByRole('heading',{name:'Discover',exact:true})).toBeVisible();
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().go('discover');});await expect(page.getByRole('heading',{name:'Discover',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'outputs/web-mobile.png',fullPage:true});
 });
 
@@ -53,15 +53,15 @@ test('web guidance explains online services without desktop privacy or installat
  await expect(page.getByText(/has no account|Not in iCloud|On this Mac/)).toHaveCount(0);
  await page.getByRole('button', {name:'Chat',exact:true}).first().click();
  await expect(page.getByText('Your Tagalog tutor, online',{exact:true})).toBeVisible();
- await page.evaluate(async()=>{await (window as any).__lumen.useApp.getState().startTour()});
+ await page.evaluate(async()=>{await (window as any).__wikang.useApp.getState().startTour()});
  await expect(page.getByRole('dialog',{name:'Guided tour'})).toBeVisible({timeout:10000});
  for (const step of [4,5,10,11,12]) {
-  await page.evaluate((step)=>{(window as any).__lumen.useApp.getState().setTourStep(step)},step);
+  await page.evaluate((step)=>{(window as any).__wikang.useApp.getState().setTourStep(step)},step);
   const tour=page.getByRole('dialog',{name:'Guided tour'});
   await expect(tour).toBeVisible({timeout:10000});
   await expect(tour.getByText(/never leaves your Mac|Download Qwen|Local AI|offline|With a Gemini key/)).toHaveCount(0);
  }
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().endTour()});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().endTour()});
 });
 
 test('welcome offers Supabase recovery and can be replayed without losing learning', async ({page}) => {
@@ -78,12 +78,12 @@ test('welcome offers Supabase recovery and can be replayed without losing learni
  await expect(page.getByRole('radio',{name:'Create an account',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Back',exact:true}).click();
  await completeWelcome(page);
- await page.evaluate(async()=>{await (window as any).__lumen.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
+ await page.evaluate(async()=>{await (window as any).__wikang.api().termSet({lang:'tl',term:'bahay',status:4,translation:'house'})});
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  await page.getByRole('button',{name:'About',exact:true}).click();
  await page.getByRole('button',{name:'Replay the welcome',exact:true}).click();
  await completeWelcome(page);
- const saved=await page.evaluate(async()=>{const a=(window as any).__lumen.api();return {lessons:await a.lessonsList('tl'),terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20})};});
+ const saved=await page.evaluate(async()=>{const a=(window as any).__wikang.api();return {lessons:await a.lessonsList('tl'),terms:await a.termsList({lang:'tl',filter:'known',offset:0,limit:20})};});
  expect(saved.lessons).toHaveLength(1);
  expect(saved.terms.items.some((t:any)=>t.term==='bahay')).toBeTruthy();
 });
@@ -99,7 +99,7 @@ test('a lesson made from YouTube on the desktop plays on the web through YouTube
    setTimeout(()=>o.events.onReady(),50);}};
   setTimeout(()=>window.onYouTubeIframeAPIReady&&window.onYouTubeIframeAPIReady(),0);`}));
  await page.goto('/?app');await completeWelcome(page);await expect(page.locator('.reader')).toBeVisible();
- await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;
+ await page.evaluate(async()=>{const {api,useApp}=(window as any).__wikang;
   const id=await api().lessonCreate({lang:'tl',title:'Adobong manok',kind:'video',source:'https://www.youtube.com/watch?v=ninongry001',text:'Magandang araw po. Luto tayo.',timings:JSON.stringify([[0,8,0,0.6],[9,13,0.6,1.2],[14,17,1.2,1.5],[19,23,1.6,2],[24,29,2,2.6]])});
   useApp.getState().openLesson(id);});
  await expect(page.locator('.video-stage iframe[data-video="ninongry001"]')).toBeAttached();
@@ -144,13 +144,13 @@ test('on a phone, a bar at the foot of the screen leads everywhere, and no view 
 });
 test('a long text, however long, becomes one lesson whose pages turn in the reader',async({page})=>{
  await page.goto('/?app');await completeWelcome(page);
- await page.evaluate(()=>{(window as any).__lumen.useApp.getState().openImport();});
+ await page.evaluate(()=>{(window as any).__wikang.useApp.getState().openImport();});
  const para='Ang bahay ay malaki at maganda sa tabi ng dagat kung saan naglalaro ang mga bata tuwing hapon. ';
  const text=Array.from({length:60},()=>para.repeat(6).trim()).join('\n\n');
  await page.getByLabel('Title (optional)').fill('Isang mahabang kuwento');await page.getByLabel('Text in Tagalog').fill(text);
  await page.getByRole('button',{name:'Create the lesson'}).click();
  await expect(page.locator('.reader')).toBeVisible();
- const lessons=await page.evaluate(async()=>(await (window as any).__lumen.api().lessonsList('tl')).map((l:any)=>[l.title,l.word_count]));
+ const lessons=await page.evaluate(async()=>(await (window as any).__wikang.api().lessonsList('tl')).map((l:any)=>[l.title,l.word_count]));
  expect(lessons.filter(([t]:[string])=>t.startsWith('Isang mahabang kuwento'))).toEqual([['Isang mahabang kuwento',6480]]);
  await expect(page.locator('.leaf-progress .num')).toHaveText(/^1 \/ \d+$/);
 });
@@ -165,10 +165,10 @@ const YT_STUB=`
 test('tapping a new word can leave it new, and finishing the page then leaves it alone',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/?app');await completeWelcome(page);
- const status=(term:string)=>page.evaluate(async(term)=>(await (window as any).__lumen.api().termsList({lang:'tl',filter:'all',offset:0,limit:500})).items.find((t:any)=>t.term===term)?.status ?? 0,term);
+ const status=(term:string)=>page.evaluate(async(term)=>(await (window as any).__wikang.api().termsList({lang:'tl',filter:'all',offset:0,limit:500})).items.find((t:any)=>t.term===term)?.status ?? 0,term);
  // off: the tapped word stays new, and finishing the page doesn't make it known
- await page.evaluate(()=>(window as any).__lumen.useApp.getState().setSetting('tap_marks_learning','0'));
- const id=await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;const id=await api().lessonCreate({lang:'tl',title:'Bahay',text:'Malaki ang bahay namin sa probinsya.',kind:'text'});useApp.getState().openLesson(id);return id;});
+ await page.evaluate(()=>(window as any).__wikang.useApp.getState().setSetting('tap_marks_learning','0'));
+ const id=await page.evaluate(async()=>{const {api,useApp}=(window as any).__wikang;const id=await api().lessonCreate({lang:'tl',title:'Bahay',text:'Malaki ang bahay namin sa probinsya.',kind:'text'});useApp.getState().openLesson(id);return id;});
  await page.locator('.leaf-page [data-i]').filter({hasText:/^bahay$/}).click();
  await expect(page.locator('.word-panel, .wp-float').first()).toBeVisible();
  expect(await status('bahay')).toBe(0);
@@ -183,7 +183,7 @@ test('tapping a word pauses a video lesson that is playing',async({page})=>{
  await page.route('https://www.youtube.com/iframe_api',r=>r.fulfill({contentType:'text/javascript',body:YT_STUB}));
  await page.goto('/?app');await completeWelcome(page);
  // a lesson playing pauses when a word is tapped, and doesn't turn the page meanwhile
- await page.evaluate(async()=>{const {api,useApp}=(window as any).__lumen;
+ await page.evaluate(async()=>{const {api,useApp}=(window as any).__wikang;
   const id=await api().lessonCreate({lang:'tl',title:'Video',kind:'video',source:'https://www.youtube.com/watch?v=abcdefghijk',text:'Magandang araw po. Kumusta kayo?',timings:JSON.stringify([[0,8,0,5],[9,13,5,10],[14,16,10,15],[19,26,15,20],[27,32,20,25]])});
   useApp.getState().openLesson(id);});
  await page.locator('.play-btn').click();await expect(page.locator('.play-btn.playing')).toBeVisible();

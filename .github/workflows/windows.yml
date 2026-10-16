@@ -1,4 +1,4 @@
-# Lumen sur un vrai Windows (à la demande, onglet « Actions » du dépôt) : les tests,
+# Wikang Tagalog sur un vrai Windows (à la demande, onglet « Actions » du dépôt) : les tests,
 # dont ceux propres à Windows (Media Foundation, manifeste de la voix, registre, nuages),
 # puis l'installateur compilé par les outils de Microsoft, sans signature de mise à jour
 # (la clé ne quitte jamais le Mac). La version publiée, elle, est compilée sur le Mac
@@ -46,7 +46,7 @@ jobs:
 
       # Vulkan (l'IA sur la carte graphique) : en-têtes, glslc et SPIR-V du SDK officiel.
       # Sa bibliothèque vulkan-1.lib est remplacée par une bibliothèque sans import :
-      # Lumen fournit lui-même les fonctions de Vulkan qu'il
+      # Wikang Tagalog fournit lui-même les fonctions de Vulkan qu'il
       # appelle et n'ouvre vulkan-1.dll que si elle est là (src-tauri/src/vulkan.rs).
       - name: Vulkan
         env:
@@ -57,8 +57,8 @@ jobs:
           $sdk = "C:\VulkanSDK\${env:VULKAN_VERSION}"
           # link.exe refuse l'archive GNU vide acceptée par le compilateur croisé.
           # Un objet COFF sans fonction Vulkan donne une bibliothèque MSVC valide.
-          $stub = Join-Path $env:RUNNER_TEMP 'lumen-vulkan-stub'
-          'void lumen_vulkan_link_placeholder(void) {}' | Set-Content -Encoding ascii "$stub.c"
+          $stub = Join-Path $env:RUNNER_TEMP 'wikang-vulkan-stub'
+          'void wikang_vulkan_link_placeholder(void) {}' | Set-Content -Encoding ascii "$stub.c"
           cl.exe /nologo /c /Zl "/Fo$stub.obj" "$stub.c"
           if ($LASTEXITCODE -ne 0) { throw 'Vulkan stub compilation failed.' }
           lib.exe /nologo "/OUT:$sdk\Lib\vulkan-1.lib" "$stub.obj"
@@ -90,7 +90,7 @@ jobs:
 
       - name: Dépendances DLL
         run: |
-          foreach ($exe in 'C:/t/release/lumen.exe', 'C:/t/release/lumen-whisper.exe') {
+          foreach ($exe in 'C:/t/release/wikang-tagalog.exe', 'C:/t/release/wikang-whisper.exe') {
             $imports = dumpbin.exe /DEPENDENTS $exe
             if ($LASTEXITCODE -ne 0) { throw "Cannot inspect $exe" }
             $imports
@@ -103,7 +103,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: lumen-windows
+          name: wikang-windows
           path: C:/t/release/bundle/nsis/*.exe
 
       - uses: actions/cache/save@v4

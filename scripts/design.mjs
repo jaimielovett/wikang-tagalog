@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const design = join(root, "design");
 const icons = join(root, "src-tauri", "icons");
-const tmp = mkdtempSync(join(tmpdir(), "lumen-design-"));
+const tmp = mkdtempSync(join(tmpdir(), "wikang-design-"));
 
 function chromium() {
   const pw = join(homedir(), "Library/Caches/ms-playwright");
@@ -130,7 +130,7 @@ for (const f of readdirSync(icons)) {
 }
 
 // icns refait à la main : la version simplifiée pour 16 et 32 px, plus lisible que la réduction de la grande
-const set = join(tmp, "Lumen.iconset");
+const set = join(tmp, "WikangTagalog.iconset");
 mkdirSync(set);
 for (const s of [16, 32, 128, 256, 512]) {
   for (const k of [1, 2]) {

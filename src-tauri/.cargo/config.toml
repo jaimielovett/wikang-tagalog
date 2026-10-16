@@ -8,7 +8,7 @@
 #   sur les puces Apple (options propres aux processeurs x86).
 # - Windows encore : le runtime de Visual C++ intégré à l'app, sinon un PC sans « Visual
 #   C++ Redistributable » ne la lancerait pas. Tauri le fait pour l'app (staticVCRuntime,
-#   par défaut : runtime intégré, bibliothèque C de Windows partagée), lumen-whisper/build.rs
+#   par défaut : runtime intégré, bibliothèque C de Windows partagée), wikang-whisper/build.rs
 #   de même ; llama.cpp et whisper.cpp sont compilés pour (/MT : LLAMA_STATIC_CRT et
 #   CMAKE_MSVC_RUNTIME_LIBRARY, que whisper.cpp, plus ancien, n'écoute qu'avec la règle
 #   CMP0091). Pas de `crt-static` : il contredirait Tauri. Sans effet sur Mac.

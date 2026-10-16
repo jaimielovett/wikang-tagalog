@@ -5,7 +5,7 @@
  *
  * Dans le navigateur (`npm run dev`), on peut essayer l'allure de Windows :
  * http://localhost:1420/?platform=windows, ou
- *   localStorage.setItem("lumen-platform", "windows") puis recharger.
+ *   localStorage.setItem("wikang-platform", "windows") puis recharger.
  */
 
 const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -14,7 +14,7 @@ function detect(): boolean {
   if (typeof navigator === "undefined") return false;
   if (!inTauri) {
     try {
-      const forced = new URLSearchParams(location.search).get("platform") ?? localStorage.getItem("lumen-platform");
+      const forced = new URLSearchParams(location.search).get("platform") ?? localStorage.getItem("wikang-platform");
       if (forced) return forced === "windows";
     } catch {
       // stockage indisponible : on suit le navigateur

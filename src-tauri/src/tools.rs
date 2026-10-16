@@ -1,6 +1,6 @@
-//! Outils externes gérés par Lumen : yt-dlp (téléchargement YouTube) et un
+//! Outils externes gérés par Wikang Tagalog : yt-dlp (téléchargement YouTube) et un
 //! petit moteur JavaScript (QuickJS) dont yt-dlp a besoin pour YouTube.
-//! On utilise ceux du système s'ils existent, sinon Lumen les télécharge
+//! On utilise ceux du système s'ils existent, sinon Wikang Tagalog les télécharge
 //! une fois dans son dossier de données et les tient à jour.
 
 use std::path::{Path, PathBuf};
@@ -90,7 +90,7 @@ fn managed_qjs(data_dir: &Path) -> PathBuf {
     tools_dir(data_dir).join(if cfg!(windows) { "qjs.exe" } else { "qjs" })
 }
 
-/// yt-dlp disponible (système ou géré par Lumen).
+/// yt-dlp disponible (système ou géré par Wikang Tagalog).
 pub fn find_ytdlp(data_dir: &Path) -> Option<PathBuf> {
     let m = managed_ytdlp(data_dir);
     if m.exists() {

@@ -834,13 +834,13 @@ mod tests {
     }
 
     /// Recherches réelles sur chaque plateforme (titres et nombres seulement) :
-    /// `LUMEN_SEARCH="it:cucina" cargo test --lib search_live -- --ignored --nocapture`.
+    /// `WIKANG_SEARCH="it:cucina" cargo test --lib search_live -- --ignored --nocapture`.
     #[tokio::test]
     #[ignore]
     async fn search_live() {
-        let spec = std::env::var("LUMEN_SEARCH").unwrap_or_else(|_| "it:cucina italiana".into());
+        let spec = std::env::var("WIKANG_SEARCH").unwrap_or_else(|_| "it:cucina italiana".into());
         let (lang, q) = spec.split_once(':').unwrap();
-        let dir = std::env::temp_dir().join("lumen-search-live");
+        let dir = std::env::temp_dir().join("wikang-search-live");
         std::fs::create_dir_all(&dir).unwrap();
         for p in ["youtube", "dailymotion", "podcast", "music", "wiki"] {
             let started = Instant::now();

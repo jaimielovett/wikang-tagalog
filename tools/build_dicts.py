@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Construit les dictionnaires compacts de Lumen à partir des extractions
+"""Construit les dictionnaires compacts de Wikang Tagalog à partir des extractions
 du Wiktionnaire publiées par kaikki.org (wiktextract).
 
 Définitions en français (interface en français), Wiktionnaire français :
@@ -12,7 +12,7 @@ Définitions en anglais (interface en anglais), Wiktionnaire anglais :
 Chaque fichier produit <code>.db.gz (SQLite compressé), même schéma dans les deux cas.
 Licence des données : CC BY-SA (Wiktionnaire), attribution affichée dans l'app.
 
-Version 2 : les 24 autres langues de Lumen, définitions en français et en anglais
+Version 2 : les 24 autres langues de Wikang Tagalog, définitions en français et en anglais
 (version `dictionaries-2` du dépôt lumen, fichiers fr-<code>.db.gz et en-<code>.db.gz).
 Sources, dans un dossier hors iCloud (≈ 4 Go, puis ≈ 13 Go une fois découpées) :
   curl -LO https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz      -> en-raw.jsonl.gz
@@ -1183,7 +1183,7 @@ if __name__ == "__main__":
         sys.exit()
     if args[:1] == ["--keys"]:
         # clés calculées ici, pour vérifier que dict.rs calcule les mêmes :
-        # LUMEN_KEYS=<fichier> cargo test --lib keys_match_builder -- --ignored
+        # WIKANG_KEYS=<fichier> cargo test --lib keys_match_builder -- --ignored
         src = Sources(args[1])
         with open(args[2], "w", encoding="utf-8") as out:
             for lang in V2_LANGS:

@@ -1,4 +1,4 @@
-//! Découvrir : des leçons venues d'ailleurs. Tout au long de la journée, Lumen
+//! Découvrir : des leçons venues d'ailleurs. Tout au long de la journée, Wikang Tagalog
 //! lit les sources choisies pour chaque langue (chaînes YouTube pour apprenants,
 //! podcasts, actualités faciles ou ordinaires, vulgarisation, classements des
 //! chansons) et range leurs nouveautés par niveau, de A1 à C1. Chaque source a son
@@ -1078,7 +1078,7 @@ async fn fetch(data_dir: &Path, ytdlp: Option<&Path>, client: &reqwest::Client, 
             let mut found = youtube_all(&channel(data_dir, ytdlp, &url, max, (!english).then_some(src.lang)).await?);
             // les titres dans la langue de la chaîne n'ont pas de date (et parfois pas de durée lisible) :
             // une seconde liste, en anglais, les complète à la première lecture ou s'il manque des durées ;
-            // ensuite, une vidéo nouvelle date du jour où Lumen la voit
+            // ensuite, une vidéo nouvelle date du jour où Wikang Tagalog la voit
             let unknown = found.iter().filter(|f| !(MIN_SECS..=MAX_SECS).contains(&f.duration)).count();
             if !english && !found.is_empty() && (first || unknown * 3 > found.len()) {
                 if let Ok(v) = channel(data_dir, ytdlp, &url, max, None).await {
@@ -1158,7 +1158,7 @@ pub struct Item {
     pub hi: u8,
     /// la page porte aussi le texte de l'épisode
     pub page_text: bool,
-    /// première apparition dans Lumen
+    /// première apparition dans Wikang Tagalog
     pub fetched_at: i64,
     /// leçon déjà créée à partir de cet élément
     pub lesson_id: Option<i64>,
@@ -1708,7 +1708,7 @@ mod tests {
                 _ => assert!(s.url.starts_with("http"), "flux : {}", s.id),
             }
         }
-        // toutes les langues de Lumen ont de quoi découvrir, dans les deux langues d'interface
+        // toutes les langues de Wikang Tagalog ont de quoi découvrir, dans les deux langues d'interface
         for lang in crate::text::LANGS {
             for ui in ["fr", "en"] {
                 assert!(sources(lang, ui).count() >= 2, "{lang} ({ui}) : trop peu de sources");
@@ -1862,7 +1862,7 @@ mod tests {
     }
 
     fn temp_store(name: &str) -> (Store, std::path::PathBuf) {
-        let dir = std::env::temp_dir().join(format!("lumen-discover-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("wikang-discover-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         (Store::open(&dir), dir)
@@ -1907,7 +1907,7 @@ mod tests {
         let kept = feed.items.iter().find(|i| i.id == a).unwrap();
         assert_eq!((kept.published, kept.fetched_at), (300, 1000));
 
-        // titres sans date (YouTube dans la langue de la chaîne) : une vidéo nouvelle date du jour où Lumen la voit
+        // titres sans date (YouTube dans la langue de la chaîne) : une vidéo nouvelle date du jour où Wikang Tagalog la voit
         let third = [found("ddddddddddd", "Senza data", 0), found("ccccccccccc", "Nuovo video", 400)];
         store.save(easy, &third, 2500).unwrap();
         let fresh = store.list("it", "fr", &[]).unwrap();
@@ -1962,12 +1962,12 @@ mod tests {
     }
 
     /// Un cache d'une version précédente (copie) s'ouvre et se met à niveau :
-    /// `LUMEN_DISCOVER_DB=…/discover.db cargo test --lib old_cache_upgrades -- --ignored --nocapture`.
+    /// `WIKANG_DISCOVER_DB=…/discover.db cargo test --lib old_cache_upgrades -- --ignored --nocapture`.
     #[test]
     #[ignore]
     fn old_cache_upgrades() {
-        let src = std::path::PathBuf::from(std::env::var("LUMEN_DISCOVER_DB").expect("LUMEN_DISCOVER_DB"));
-        let dir = std::env::temp_dir().join(format!("lumen-discover-old-{}", std::process::id()));
+        let src = std::path::PathBuf::from(std::env::var("WIKANG_DISCOVER_DB").expect("WIKANG_DISCOVER_DB"));
+        let dir = std::env::temp_dir().join(format!("wikang-discover-old-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::copy(&src, dir.join("discover.db")).unwrap();
         let store = Store::open(&dir);
@@ -1982,7 +1982,7 @@ mod tests {
 
     #[test]
     fn unreadable_cache_is_rebuilt() {
-        let dir = std::env::temp_dir().join(format!("lumen-discover-broken-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("wikang-discover-broken-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("discover.db"), b"ceci n'est pas une base").unwrap();
@@ -1994,12 +1994,12 @@ mod tests {
 
     /// Lecture complète d'une langue comme dans l'app (cache jetable), puis ce que
     /// Découvrir proposerait à chaque niveau :
-    /// `LUMEN_DISCOVER=it cargo test --lib discover_refresh_live -- --ignored --nocapture`.
+    /// `WIKANG_DISCOVER=it cargo test --lib discover_refresh_live -- --ignored --nocapture`.
     #[tokio::test]
     #[ignore]
     async fn discover_refresh_live() {
-        let lang = std::env::var("LUMEN_DISCOVER").unwrap_or_else(|_| "it".into());
-        let dir = std::env::temp_dir().join(format!("lumen-discover-refresh-{}", std::process::id()));
+        let lang = std::env::var("WIKANG_DISCOVER").unwrap_or_else(|_| "it".into());
+        let dir = std::env::temp_dir().join(format!("wikang-discover-refresh-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let store = Store::open(&dir);
         let mut log = |e: ImportEvent| {
@@ -2027,21 +2027,21 @@ mod tests {
         let _ = std::fs::remove_dir_all(dir);
     }
 
-    /// Relit les sources pour de vrai (toutes, ou `LUMEN_DISCOVER=it,de`) et
+    /// Relit les sources pour de vrai (toutes, ou `WIKANG_DISCOVER=it,de`) et
     /// affiche ce qu'elles proposent : `cargo test --lib discover_live -- --ignored --nocapture`.
     #[tokio::test]
     #[ignore]
     async fn discover_live() {
-        let only = std::env::var("LUMEN_DISCOVER").unwrap_or_default();
+        let only = std::env::var("WIKANG_DISCOVER").unwrap_or_default();
         // quelques sources seulement, par leurs identifiants
-        let ids = std::env::var("LUMEN_DISCOVER_IDS").unwrap_or_default();
+        let ids = std::env::var("WIKANG_DISCOVER_IDS").unwrap_or_default();
         let langs: Vec<&str> = if only.is_empty() { crate::text::LANGS.to_vec() } else { only.split(',').collect() };
-        let dir = std::env::temp_dir().join("lumen-discover-live");
+        let dir = std::env::temp_dir().join("wikang-discover-live");
         std::fs::create_dir_all(&dir).unwrap();
         let ytdlp = crate::tools::find_ytdlp(&dir);
         let client = link::client().unwrap();
         let store = Store::open(&dir);
-        let only_kind = std::env::var("LUMEN_DISCOVER_KIND").unwrap_or_default();
+        let only_kind = std::env::var("WIKANG_DISCOVER_KIND").unwrap_or_default();
         let mut broken = Vec::new();
         for lang in langs {
             for s in SOURCES.iter().filter(|s| s.lang == lang) {

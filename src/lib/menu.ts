@@ -95,7 +95,7 @@ const onLesson = (run: (a: LessonActions) => void) => () => {
 /** Exporte le vocabulaire de la langue en CSV (compatible Anki). */
 export async function exportVocabulary(lang: LangCode) {
   const { toast } = useApp.getState();
-  const path = await pickSavePath(t(`lumen-${lang}-vocabulaire.csv`, `lumen-${lang}-vocabulary.csv`));
+  const path = await pickSavePath(t(`wikang-${lang}-vocabulaire.csv`, `wikang-${lang}-vocabulary.csv`));
   if (!path) return;
   try {
     await api().exportVocab(lang, path);
@@ -165,7 +165,7 @@ async function revealData() {
   const dir = useApp.getState().info?.data_dir;
   if (!dir || !isTauri) return;
   const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
-  await revealItemInDir(joinPath(dir, "lumen.db")).catch(() => {});
+  await revealItemInDir(joinPath(dir, "wikang.db")).catch(() => {});
 }
 
 
@@ -209,7 +209,7 @@ let binding = new Map<string, () => void>();
 let ids = 0;
 
 function bind(run: () => void): string {
-  const id = `lumen-${++ids}`;
+  const id = `wikang-${++ids}`;
   binding.set(id, run);
   return id;
 }
@@ -322,7 +322,7 @@ function editMenu(s: Snap): SubmenuOptions {
     { item: "Copy", text: t("Copier", "Copy") },
     { item: "Paste", text: t("Coller", "Paste") },
     { item: "SelectAll", text: t("Tout sélectionner", "Select All") },
-    act(t("Sélectionner des leçons", "Select Lessons"), () => window.dispatchEvent(new Event("lumen:select-lessons")), { on: !s.calm && s.view === "library" }),
+    act(t("Sélectionner des leçons", "Select Lessons"), () => window.dispatchEvent(new Event("wikang:select-lessons")), { on: !s.calm && s.view === "library" }),
     sep,
     act(t("Rechercher…", "Find…"), focusSearch, { key: "CmdOrCtrl+F", on: !s.calm }),
   ]);

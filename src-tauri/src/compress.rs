@@ -19,7 +19,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-/// Réglage `media_quality` : ce que Lumen fait des vidéos et des sons importés.
+/// Réglage `media_quality` : ce que Wikang Tagalog fait des vidéos et des sons importés.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Level {
     /// rien n'est réencodé
@@ -1379,7 +1379,7 @@ mod tests {
         assert!(audio_worth(128_000.0, audio_bitrate(Level::Balanced, 1)));
         // AAC de YouTube 128 kbit/s en stéréo : 96 kbit/s, 25 % de gagné
         assert!(audio_worth(129_000.0, audio_bitrate(Level::Balanced, 2)));
-        // voix naturelle de Lumen, déjà en AAC 64 kbit/s mono
+        // voix naturelle de Wikang Tagalog, déjà en AAC 64 kbit/s mono
         assert!(!audio_worth(64_000.0, audio_bitrate(Level::Balanced, 1)));
         assert!(kept(100, 80) && !kept(100, 81) && !kept(100, 0));
     }
@@ -1402,7 +1402,7 @@ mod tests {
         file.extend_from_slice(&((8 + moov_body.len()) as u32).to_be_bytes());
         file.extend_from_slice(b"moov");
         file.extend_from_slice(&moov_body);
-        let p = std::env::temp_dir().join(format!("lumen-mp4-head-{}.mp4", std::process::id()));
+        let p = std::env::temp_dir().join(format!("wikang-mp4-head-{}.mp4", std::process::id()));
         std::fs::write(&p, &file).unwrap();
         let (d, frag) = mp4_header(&p).unwrap();
         assert!((d - 117.0169).abs() < 0.01 && frag);
@@ -1423,22 +1423,22 @@ mod tests {
 
     /// Allège toutes les leçons d'une copie des vraies données, comme le bouton
     /// « Alléger » (rien n'est touché dans les données d'origine) :
-    /// `LUMEN_LIGHTEN_DATA="$HOME/Library/Application Support/app.lumen.reader" cargo test --lib lighten_live -- --ignored --nocapture`
+    /// `WIKANG_LIGHTEN_DATA="$HOME/Library/Application Support/app.wikangtagalog.reader" cargo test --lib lighten_live -- --ignored --nocapture`
     /// Vérifie que chaque leçon cite un fichier qui existe, de même durée.
     #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore]
     async fn lighten_live() {
-        let Ok(data) = std::env::var("LUMEN_LIGHTEN_DATA") else { return };
-        let level = Level::parse(std::env::var("LUMEN_TEST_QUALITY").ok().as_deref());
+        let Ok(data) = std::env::var("WIKANG_LIGHTEN_DATA") else { return };
+        let level = Level::parse(std::env::var("WIKANG_TEST_QUALITY").ok().as_deref());
         let data = PathBuf::from(data);
-        let tmp = std::env::temp_dir().join(format!("lumen-lighten-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("wikang-lighten-{}", std::process::id()));
         let media = tmp.join("media");
         std::fs::create_dir_all(&media).unwrap();
         // copie cohérente de la base, chemins ramenés vers la copie des médias
-        let db_copy = tmp.join("lumen.db");
+        let db_copy = tmp.join("wikang.db");
         {
-            let src = rusqlite::Connection::open_with_flags(data.join("lumen.db"), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+            let src = rusqlite::Connection::open_with_flags(data.join("wikang.db"), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
             src.execute("VACUUM INTO ?1", [db_copy.to_string_lossy()]).unwrap();
         }
         let conn = rusqlite::Connection::open(&db_copy).unwrap();
@@ -1508,15 +1508,15 @@ mod tests {
     }
 
     /// Allège de vrais fichiers et vérifie que rien ne bouge dans le temps :
-    /// `LUMEN_TEST_VIDEO=film.mp4 LUMEN_TEST_AUDIO=son.mp3 cargo test --release --lib compress_live -- --ignored --nocapture`
-    /// (`LUMEN_TEST_QUALITY=compact` pour l'autre réglage). Les fichiers allégés
+    /// `WIKANG_TEST_VIDEO=film.mp4 WIKANG_TEST_AUDIO=son.mp3 cargo test --release --lib compress_live -- --ignored --nocapture`
+    /// (`WIKANG_TEST_QUALITY=compact` pour l'autre réglage). Les fichiers allégés
     /// restent dans un dossier jetable, affiché.
     #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore]
     async fn compress_live() {
-        let level = Level::parse(std::env::var("LUMEN_TEST_QUALITY").ok().as_deref());
-        let dir = std::env::temp_dir().join(format!("lumen-compress-{}", std::process::id()));
+        let level = Level::parse(std::env::var("WIKANG_TEST_QUALITY").ok().as_deref());
+        let dir = std::env::temp_dir().join(format!("wikang-compress-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let copy = |var: &str| -> Vec<PathBuf> {
             std::env::var(var)
@@ -1532,10 +1532,10 @@ mod tests {
                 .collect()
         };
         let cancel = AtomicBool::new(false);
-        for v in copy("LUMEN_TEST_VIDEO") {
+        for v in copy("WIKANG_TEST_VIDEO") {
             let p = probe(&v).unwrap();
             let t0 = std::time::Instant::now();
-            let with_sound = p.audio.is_some() && std::env::var("LUMEN_TEST_SPLIT").is_ok();
+            let with_sound = p.audio.is_some() && std::env::var("WIKANG_TEST_SPLIT").is_ok();
             let res = if with_sound { split(&v, level, &cancel, |_| {}).await } else { video(&v, level, &cancel, |_| {}).await };
             let secs = t0.elapsed().as_secs_f64();
             let vi = p.video.as_ref().unwrap();
@@ -1562,7 +1562,7 @@ mod tests {
                 None => println!("{} : rien à gagner ({:.1} s)", v.file_name().unwrap().to_string_lossy(), secs),
             }
         }
-        for a in copy("LUMEN_TEST_AUDIO") {
+        for a in copy("WIKANG_TEST_AUDIO") {
             let p = probe(&a).unwrap();
             let ai = p.audio.as_ref().unwrap();
             let t0 = std::time::Instant::now();

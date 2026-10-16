@@ -2,20 +2,20 @@
 //! graphique, chargé seulement s'il est là.
 //!
 //! Leur moteur Vulkan (ggml) trouve presque toutes ses fonctions à l'exécution,
-//! par `vkGetInstanceProcAddr` ; il n'en appelle que quatre directement. Lumen les
+//! par `vkGetInstanceProcAddr` ; il n'en appelle que quatre directement. Wikang Tagalog les
 //! fournit ici, à la place de la bibliothèque du SDK de Vulkan (une bibliothèque
 //! vide en tient lieu à la compilation, voir scripts/build-windows.mjs) : elles
 //! ouvrent au premier appel vulkan-1.dll, que le pilote de la carte graphique
 //! installe dans le dossier système de Windows. Sans elle (machine virtuelle, PC
 //! sans pilote graphique), Vulkan répond « indisponible », ggml l'écarte et tout
 //! se calcule sur le processeur. Liée directement, une vulkan-1.dll manquante
-//! empêcherait Lumen de démarrer.
+//! empêcherait Wikang Tagalog de démarrer.
 //!
 //! Si une nouvelle version de llama.cpp ou de whisper.cpp appelle directement une
 //! autre fonction de Vulkan, la compilation pour Windows échoue sur son nom : il
 //! suffit de l'ajouter ici sur le même modèle.
 //!
-//! Partagé avec lumen-whisper (`#[path]`) : rien d'autre que la bibliothèque
+//! Partagé avec wikang-whisper (`#[path]`) : rien d'autre que la bibliothèque
 //! standard et kernel32.
 
 #![allow(non_snake_case)]
@@ -62,7 +62,7 @@ unsafe extern "system" fn unavailable() -> i32 {
 }
 
 /// Vulkan est là : vulkan-1.dll s'ouvre (la question se pose une seule fois).
-#[allow(dead_code)] // lumen-whisper n'en a pas besoin
+#[allow(dead_code)] // wikang-whisper n'en a pas besoin
 pub fn present() -> bool {
     !library().is_null()
 }

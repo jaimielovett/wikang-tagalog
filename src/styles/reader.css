@@ -10,7 +10,7 @@
 }
 
 /* ---------- couleur de la page (menu « Aa ») ----------
-   La leçon prend la palette claire ou sombre de Lumen (paper-light, paper-dark,
+   La leçon prend la palette claire ou sombre de Wikang Tagalog (paper-light, paper-dark,
    dans app.css), puis le fond et l'encre de sa couleur. Le reste de l'app ne change pas.
    L'aperçu de Réglages › Lecture (.look-preview) prend les mêmes couleurs. */
 .reader.paper-light,

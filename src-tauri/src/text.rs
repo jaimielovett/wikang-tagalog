@@ -6,7 +6,7 @@ use serde::Serialize;
 use unicode_normalization::UnicodeNormalization;
 use unicode_segmentation::UnicodeSegmentation;
 
-/// Langues proposées par Lumen. Tagalog a un dictionnaire local, mais n'est
+/// Langues proposées par Wikang Tagalog. Tagalog a un dictionnaire local, mais n'est
 /// pas pris en charge par Supertonic 3 pour la voix naturelle.
 pub const LANGS: &[&str] = &[
     "en", "it", "de", "pt", "ru", "es", "fr", "nl", "sv", "da", "fi", "et", "lv", "lt", "pl", "cs", "sk", "sl", "hr", "hu", "ro", "bg", "uk",
@@ -25,7 +25,7 @@ pub fn normalize(s: &str) -> String {
 
 /// Langues où les accents aigu et grave ne distinguent pas les mots (accent
 /// tonique des textes russes, ukrainiens, bulgares…) : on les retire de la clé.
-/// Les six premières langues de Lumen gardent ce comportement pour que leur
+/// Les six premières langues de Wikang Tagalog gardent ce comportement pour que leur
 /// vocabulaire ne change pas. Ailleurs (vietnamien, grec, tchèque, français…),
 /// ces accents font partie du mot : « má », « mà » et « ma » restent distincts.
 pub fn strips_accents(lang: &str) -> bool {
@@ -111,7 +111,7 @@ fn japanese_word_piece(piece: &str) -> bool {
 }
 
 /// TinySegmenter intentionally exposes some inflection boundaries (for
-/// example `見` + `た`). Lumen's learner-facing words should remain useful
+/// example `見` + `た`). Wikang Tagalog's learner-facing words should remain useful
 /// tap targets, so keep common Japanese inflections with their stem.
 fn japanese_inflection(piece: &str) -> bool {
     matches!(

@@ -1,8 +1,8 @@
 [package]
-name = "lumen-whisper"
+name = "wikang-whisper"
 version = "0.1.0"
 edition = "2021"
-description = "Transcription locale pour Lumen (processus séparé pour isoler whisper.cpp)"
+description = "Transcription locale pour Wikang Tagalog (processus séparé pour isoler whisper.cpp)"
 license = "GPL-3.0-or-later"
 
 [dependencies]

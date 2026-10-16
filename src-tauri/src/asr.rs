@@ -1,6 +1,6 @@
 //! Transcription par Qwen3-ASR (llama.cpp, entrée audio « mtmd »), plus juste
-//! que Whisper dans 23 des langues de Lumen. Le texte vient de Qwen3-ASR ; le
-//! minutage des mots reste celui de Whisper (`lumen-whisper`, calé au mot près),
+//! que Whisper dans 23 des langues de Wikang Tagalog. Le texte vient de Qwen3-ASR ; le
+//! minutage des mots reste celui de Whisper (`wikang-whisper`, calé au mot près),
 //! recalé ensuite sur ce texte par `media::align_timings`.
 
 use std::ffi::CString;
@@ -70,7 +70,7 @@ pub fn transcribe(
 ) -> Result<String> {
     let name = language_name(lang).ok_or_else(|| anyhow!(crate::i18n::t("langue non prise en charge par Qwen3-ASR", "language not supported by Qwen3-ASR")))?;
     let be = backend()?;
-    let prof = std::env::var("LUMEN_ASR_PROFILE").is_ok(); // ESSAI
+    let prof = std::env::var("WIKANG_ASR_PROFILE").is_ok(); // ESSAI
     let t_all = std::time::Instant::now();
     // sur la carte graphique, ou sur le processeur (Windows : pas de carte, pas la place, réglage)
     let (model, gpu) = engine
@@ -117,7 +117,7 @@ fn transcribe_piece(model: &LlamaModel, mctx: &MtmdContext, audio: &[f32], name:
     } else {
         audio
     };
-    let prof = std::env::var("LUMEN_ASR_PROFILE").is_ok(); // ESSAI
+    let prof = std::env::var("WIKANG_ASR_PROFILE").is_ok(); // ESSAI
     let t0 = std::time::Instant::now();
     let bitmap = MtmdBitmap::from_audio_data(audio).map_err(|e| anyhow!(crate::tr!("son illisible : {e}", "unreadable sound: {e}")))?;
     // format de Qwen3-ASR ; la langue imposée donne une sortie en texte seul
@@ -325,14 +325,14 @@ mod live {
         panic!("pas de données dans {path}");
     }
 
-    /// Transcription réelle : LUMEN_ASR_DIR=dossier (Qwen3-ASR-1.7B-Q8_0.gguf et son mmproj)
-    /// LUMEN_TEST_AUDIO=a.wav,b.wav LUMEN_TEST_LANG=it [LUMEN_ASR_OUT=dossier]
+    /// Transcription réelle : WIKANG_ASR_DIR=dossier (Qwen3-ASR-1.7B-Q8_0.gguf et son mmproj)
+    /// WIKANG_TEST_AUDIO=a.wav,b.wav WIKANG_TEST_LANG=it [WIKANG_ASR_OUT=dossier]
     /// cargo test --release --lib asr_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn asr_live() {
-        let (Ok(dir), Ok(files)) = (std::env::var("LUMEN_ASR_DIR"), std::env::var("LUMEN_TEST_AUDIO")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "it".into());
+        let (Ok(dir), Ok(files)) = (std::env::var("WIKANG_ASR_DIR"), std::env::var("WIKANG_TEST_AUDIO")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "it".into());
         let dir = Path::new(&dir);
         let model = std::fs::read_dir(dir).unwrap().filter_map(|e| e.ok()).map(|e| e.path()).find(|p| {
             let n = p.file_name().unwrap().to_string_lossy().to_string();
@@ -347,7 +347,7 @@ mod live {
             let text = transcribe(&engine, &model, &mmproj, &pcm, &lang, &AtomicBool::new(false), |_| {}).unwrap();
             let secs = pcm.len() as f64 / RATE as f64;
             println!("\n=== {f} : {secs:.0} s d'audio, transcrit en {:.1} s\n{text}", t.elapsed().as_secs_f64());
-            if let Ok(out) = std::env::var("LUMEN_ASR_OUT") {
+            if let Ok(out) = std::env::var("WIKANG_ASR_OUT") {
                 let name = Path::new(f).file_stem().unwrap().to_string_lossy().to_string();
                 std::fs::write(Path::new(&out).join(format!("{name}.qwen.txt")), &text).unwrap();
             }

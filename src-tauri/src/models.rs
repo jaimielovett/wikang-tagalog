@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn unpacks_tar_bz2_like_tar() {
-        let dir = std::env::temp_dir().join(format!("lumen-untar-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("wikang-untar-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let a = archive(&dir);

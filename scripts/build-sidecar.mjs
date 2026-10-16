@@ -1,5 +1,5 @@
-// Compile le composant de transcription (lumen-whisper) et le place là où
-// Tauri l'attend : src-tauri/binaries/lumen-whisper-<triplet cible>.
+// Compile le composant de transcription (wikang-whisper) et le place là où
+// Tauri l'attend : src-tauri/binaries/wikang-whisper-<triplet cible>.
 import { execSync } from "node:child_process";
 import { copyFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -11,15 +11,15 @@ const triple = execSync("rustc -vV").toString().match(/host: (\S+)/)[1];
 const profile = process.argv.includes("--debug") ? "debug" : "release";
 const ext = process.platform === "win32" ? ".exe" : "";
 
-console.log(`› Compilation de lumen-whisper (${triple}, ${profile})…`);
-execSync(`cargo build -p lumen-whisper ${profile === "release" ? "--release" : ""}`, {
+console.log(`› Compilation de wikang-whisper (${triple}, ${profile})…`);
+execSync(`cargo build -p wikang-whisper ${profile === "release" ? "--release" : ""}`, {
   cwd: tauriDir,
   stdio: "inherit",
 });
 // CARGO_TARGET_DIR moves the build (CI on Windows builds in a short folder: paths stay under 260 characters)
-const built = join(process.env.CARGO_TARGET_DIR || join(tauriDir, "target"), profile, `lumen-whisper${ext}`);
+const built = join(process.env.CARGO_TARGET_DIR || join(tauriDir, "target"), profile, `wikang-whisper${ext}`);
 if (!existsSync(built)) throw new Error(`binaire introuvable : ${built}`);
 mkdirSync(join(tauriDir, "binaries"), { recursive: true });
-const dest = join(tauriDir, "binaries", `lumen-whisper-${triple}${ext}`);
+const dest = join(tauriDir, "binaries", `wikang-whisper-${triple}${ext}`);
 copyFileSync(built, dest);
 console.log(`✓ ${dest}`);

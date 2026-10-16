@@ -6,7 +6,7 @@ src-tauri/gen
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
-Lumen.app
+Wikang Tagalog.app
 Distribution
 compilation*.log
 publication.log

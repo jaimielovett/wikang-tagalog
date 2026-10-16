@@ -349,7 +349,7 @@ impl Engine {
         let vocab = model.vocab();
         let mut tokens = vocab.tokenize(prompt.as_bytes(), false, true);
         // jeton de début : attendu par MiniCPM (« <s> »), absent chez Qwen
-        if vocab.should_add_bos() || std::env::var("LUMEN_FORCE_BOS").is_ok() {
+        if vocab.should_add_bos() || std::env::var("WIKANG_FORCE_BOS").is_ok() {
             tokens.insert(0, vocab.bos());
         }
         let stop_tokens = vocab.tokenize(THINK_STOP.as_bytes(), false, true);
@@ -1352,7 +1352,7 @@ mod tests {
     #[test]
     fn dictionary_hints() {
         let res = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/dicts");
-        let tmp = std::env::temp_dir().join(format!("lumen-hint-test-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("wikang-hint-test-{}", std::process::id()));
         let d = crate::dict::Dicts::new(res, tmp.clone());
         let h = dict_hint(&d, "fr", "it", "andavo").unwrap();
         assert!(h.starts_with("andavo : première personne du singulier") && h.contains("(andare : "), "{h}");
@@ -1389,11 +1389,11 @@ mod tests {
 #[cfg(test)]
 mod live {
     use super::*;
-    /// Test réel (ignoré par défaut) : LUMEN_TEST_MODEL=/chemin/modele.gguf cargo test --lib -- --ignored
+    /// Test réel (ignoré par défaut) : WIKANG_TEST_MODEL=/chemin/modele.gguf cargo test --lib -- --ignored
     #[test]
     #[ignore]
     fn qwen_translates_in_context() {
-        let Ok(path) = std::env::var("LUMEN_TEST_MODEL") else { return };
+        let Ok(path) = std::env::var("WIKANG_TEST_MODEL") else { return };
         let engine = Engine::new();
         let cases = [
             ("en", "chose", "She chose the red dress for the party.", "forme de choose : choisir"),
@@ -1421,13 +1421,13 @@ mod live {
     }
 
     /// Carte graphique ou processeur : ce que voit l'IA, où se charge le modèle, et le temps d'un mot.
-    /// LUMEN_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib gpu_live -- --ignored --nocapture
-    /// (LUMEN_TEST_CPU=1 : le processeur seul, comme le réglage de Windows ; essayable sur Mac)
+    /// WIKANG_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib gpu_live -- --ignored --nocapture
+    /// (WIKANG_TEST_CPU=1 : le processeur seul, comme le réglage de Windows ; essayable sur Mac)
     #[test]
     #[ignore]
     fn gpu_live() {
-        let Ok(path) = std::env::var("LUMEN_TEST_MODEL") else { return };
-        let cpu = std::env::var("LUMEN_TEST_CPU").is_ok();
+        let Ok(path) = std::env::var("WIKANG_TEST_MODEL") else { return };
+        let cpu = std::env::var("WIKANG_TEST_CPU").is_ok();
         if cpu {
             set_gpu(false);
         }
@@ -1456,11 +1456,11 @@ mod live {
     }
 
     /// Test réel en anglais (apprenant anglophone) : sens en contexte, phrase et chat.
-    /// LUMEN_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib english_live -- --ignored --nocapture
+    /// WIKANG_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib english_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn english_live() {
-        let Ok(path) = std::env::var("LUMEN_TEST_MODEL") else { return };
+        let Ok(path) = std::env::var("WIKANG_TEST_MODEL") else { return };
         let engine = Engine::new();
         let cases = [
             ("it", "andavo", "Quando ero piccolo andavo sempre al mare con mio nonno.", "form of andare: to go"),
@@ -1484,7 +1484,7 @@ mod live {
             .unwrap();
         println!("phrase -> {out}");
         // repères du dictionnaire anglais (tools/build_dicts.py --en), comme dans l'application
-        let tmp = std::env::temp_dir().join("lumen-english-live");
+        let tmp = std::env::temp_dir().join("wikang-english-live");
         std::fs::create_dir_all(&tmp).unwrap();
         let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/dicts-en/it.db.gz");
         if src.exists() && !tmp.join("it-en-v1.db").exists() {
@@ -1505,11 +1505,11 @@ mod live {
     }
 
     /// Chat réel, sans puis avec réflexion, et arrêt en cours de route :
-    /// LUMEN_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib chat_live -- --ignored --nocapture
+    /// WIKANG_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib chat_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn chat_live() {
-        let Ok(path) = std::env::var("LUMEN_TEST_MODEL") else { return };
+        let Ok(path) = std::env::var("WIKANG_TEST_MODEL") else { return };
         let engine = Engine::new();
         let lesson = LessonContext {
             title: "Il faro",
@@ -1517,7 +1517,7 @@ mod live {
             partial: false,
         };
         // repères du dictionnaire, comme dans l'application
-        let dicts = crate::dict::Dicts::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/dicts"), std::env::temp_dir().join("lumen-chat-live-dicts"));
+        let dicts = crate::dict::Dicts::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/dicts"), std::env::temp_dir().join("wikang-chat-live-dicts"));
         let hints = |q: &str| -> Vec<String> { quoted_words(q).iter().filter_map(|w| dict_hint(&dicts, "fr", "it", w)).collect() };
         let ask = |q: &str, think: Option<usize>, stop_after: Option<usize>| {
             let flag = Arc::new(AtomicBool::new(false));
@@ -1578,11 +1578,11 @@ mod live {
 
     /// L'apprenant mène la conversation : les réponses s'arrêtent à ce qui est
     /// demandé, sans offre ni question pour relancer (compte et affiche les fins) :
-    /// LUMEN_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib chat_lead_live -- --ignored --nocapture
+    /// WIKANG_TEST_MODEL=/chemin/modele.gguf cargo test --release --lib chat_lead_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn chat_lead_live() {
-        let Ok(path) = std::env::var("LUMEN_TEST_MODEL") else { return };
+        let Ok(path) = std::env::var("WIKANG_TEST_MODEL") else { return };
         let engine = Engine::new();
         let lesson = LessonContext {
             title: "Il faro",
@@ -1634,13 +1634,13 @@ mod live {
     /// Comparaison de modèles sur les mêmes questions, dans les 31 langues : sens en contexte
     /// (interface en français et en anglais), phrases, simplification, chat, et vitesse.
     /// Sert à choisir les modèles proposés (un fichier de résultats par modèle) :
-    /// LUMEN_TEST_MODELS=a.gguf,b.gguf [LUMEN_COMPARE_OUT=dossier] cargo test --release --lib compare_live -- --ignored --nocapture
+    /// WIKANG_TEST_MODELS=a.gguf,b.gguf [WIKANG_COMPARE_OUT=dossier] cargo test --release --lib compare_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn compare_live() {
         use std::fmt::Write as _;
-        let Ok(paths) = std::env::var("LUMEN_TEST_MODELS") else { return };
-        let out_dir = std::env::var("LUMEN_COMPARE_OUT").map(PathBuf::from).unwrap_or_else(|_| std::env::temp_dir().join("lumen-compare"));
+        let Ok(paths) = std::env::var("WIKANG_TEST_MODELS") else { return };
+        let out_dir = std::env::var("WIKANG_COMPARE_OUT").map(PathBuf::from).unwrap_or_else(|_| std::env::temp_dir().join("wikang-compare"));
         std::fs::create_dir_all(&out_dir).unwrap();
         // (langue, mot, phrase, repère du dictionnaire, réponses acceptées : débuts de mots)
         let words_fr: &[(&str, &str, &str, &str, &[&str])] = &[

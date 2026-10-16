@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Lumen : système visuel
+   Wikang Tagalog : système visuel
    ========================================================================== */
 
 :root {
@@ -20,7 +20,7 @@
   --titlebar-h: 52px;
 }
 
-/* clair ; aussi dans une leçon dont la page est claire (Papier, Sépia), même Lumen en sombre */
+/* clair ; aussi dans une leçon dont la page est claire (Papier, Sépia), même Wikang Tagalog en sombre */
 :root,
 .paper-light {
   --bg: #f7f7f4;
@@ -56,7 +56,7 @@
   /* surlignage de plusieurs mots (opaque : pas de rayures aux chevauchements) */
   --w-sel: color-mix(in srgb, var(--accent) 26%, var(--bg));
 
-  /* la lumière de Lumen */
+  /* la lumière de Wikang Tagalog */
   --light: #ffb45e;
   --light-strong: #f59e4c;
   --light-soft: rgba(255, 180, 94, 0.32);
@@ -80,7 +80,7 @@
   color-scheme: light;
 }
 
-/* sombre ; aussi dans une leçon dont la page est sombre (Crépuscule, Nuit, Encre), même Lumen en clair */
+/* sombre ; aussi dans une leçon dont la page est sombre (Crépuscule, Nuit, Encre), même Wikang Tagalog en clair */
 :root[data-theme="dark"],
 .paper-dark {
   --bg: #121316;
@@ -339,7 +339,7 @@ p {
   letter-spacing: 0.01em;
 }
 
-/* l'avatar de l'apprenant, à droite du nom de Lumen : il mène à son profil */
+/* l'avatar de l'apprenant, à droite du nom de Wikang Tagalog : il mène à son profil */
 .brand .side-me {
   margin-left: auto;
   padding: 0;
@@ -1349,7 +1349,7 @@ button.chip.on {
   font-weight: 500;
 }
 
-/* astre de Lumen */
+/* astre de Wikang Tagalog */
 .orb {
   position: relative;
   border-radius: 50%;
@@ -1433,7 +1433,7 @@ button.chip.on {
 
 /* ==========================================================================
    Windows : la fenêtre n'a pas la barre de titre du système (tauri.windows.conf.json) ;
-   ses boutons, en haut à droite, sont dessinés par Lumen (components/WindowControls.tsx)
+   ses boutons, en haut à droite, sont dessinés par Wikang Tagalog (components/WindowControls.tsx)
    ========================================================================== */
 
 .win-controls {

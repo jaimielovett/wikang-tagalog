@@ -248,7 +248,7 @@ mod tests {
         // deux secondes d'un la à 24 kHz (la fréquence des voix de Gemini), converties en 48 kHz
         let rate = 24_000u32;
         let s: Vec<i16> = (0..rate * 2).map(|k| ((k as f64 * 440.0 * std::f64::consts::TAU / rate as f64).sin() * 8000.0) as i16).collect();
-        let out = std::env::temp_dir().join(format!("lumen-aac-{}.m4a", std::process::id()));
+        let out = std::env::temp_dir().join(format!("wikang-aac-{}.m4a", std::process::id()));
         aac_m4a(rate, &s, &out).expect("AAC par Media Foundation");
         let data = std::fs::read(&out).unwrap();
         assert_eq!(&data[4..8], b"ftyp", "conteneur MPEG-4");
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn voice_tool_reads_utf8() {
         // une copie d'un programme (celui des tests) reçoit le manifeste UTF-8
-        let exe = std::env::temp_dir().join(format!("lumen-manifest-{}.exe", std::process::id()));
+        let exe = std::env::temp_dir().join(format!("wikang-manifest-{}.exe", std::process::id()));
         std::fs::copy(std::env::current_exe().unwrap(), &exe).unwrap();
         utf8_manifest(&exe).expect("manifeste remplacé");
         utf8_manifest(&exe).expect("manifeste remplacé une seconde fois");

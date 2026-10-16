@@ -1,11 +1,11 @@
 [workspace]
-members = [".", "lumen-whisper"]
+members = [".", "wikang-whisper"]
 resolver = "2"
 
 [package]
-name = "lumen"
+name = "wikang-tagalog"
 version = "0.1.5"
-description = "Lumen : apprendre les langues en lisant et en écoutant"
+description = "Wikang Tagalog : apprendre les langues en lisant et en écoutant"
 authors = ["Ulysse Rives"]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/jaimielovett/wikang-tagalog"
@@ -13,7 +13,7 @@ edition = "2021"
 rust-version = "1.80"
 
 [lib]
-name = "lumen_lib"
+name = "wikang_tagalog_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

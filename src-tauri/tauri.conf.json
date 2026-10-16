@@ -70,7 +70,7 @@
       "locales/fr.lproj/InfoPlist.strings": "fr.lproj/InfoPlist.strings"
     },
     "externalBin": [
-      "binaries/lumen-whisper"
+      "binaries/wikang-whisper"
     ],
     "macOS": {
       "minimumSystemVersion": "13.0",

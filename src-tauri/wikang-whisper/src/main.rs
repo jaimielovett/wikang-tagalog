@@ -1,12 +1,12 @@
-//! lumen-whisper : transcription locale avec horodatage par mot.
+//! wikang-whisper : transcription locale avec horodatage par mot.
 //!
-//! Lancé par Lumen comme processus séparé (whisper.cpp et llama.cpp embarquent
+//! Lancé par Wikang Tagalog comme processus séparé (whisper.cpp et llama.cpp embarquent
 //! chacun leur propre copie de ggml, qu'on ne peut pas lier dans le même binaire).
 //!
-//! Usage : lumen-whisper <modèle.bin> <fichier audio/vidéo> <code langue> [--pcm <sortie.f32>] [--cpu]
+//! Usage : wikang-whisper <modèle.bin> <fichier audio/vidéo> <code langue> [--pcm <sortie.f32>] [--cpu]
 //! `--pcm` : enregistre aussi le son décodé (mono, 16 kHz, f32 petit-boutiste),
-//! que Lumen confie ensuite à Qwen3-ASR sans avoir à décoder le fichier.
-//! `--cpu` : le processeur seul (choisi dans Lumen, sous Windows) ; sinon la carte
+//! que Wikang Tagalog confie ensuite à Qwen3-ASR sans avoir à décoder le fichier.
+//! `--cpu` : le processeur seul (choisi dans Wikang Tagalog, sous Windows) ; sinon la carte
 //! graphique (Metal sur Mac, Vulkan sous Windows) si elle est là et a la place.
 //! Sortie (stdout, une ligne JSON par événement) :
 //!   {"type":"stage","stage":"decode"}
@@ -372,7 +372,7 @@ fn load(model: &str, gpu: bool) -> Result<(WhisperContext, whisper_rs::WhisperSt
     if gpu {
         cparams.gpu_device(gpu_device());
     }
-    if std::env::var("LUMEN_W_FA").is_ok() { cparams.flash_attn(true); } else // ESSAI
+    if std::env::var("WIKANG_W_FA").is_ok() { cparams.flash_attn(true); } else // ESSAI
     if let Some(model_preset) = dtw_preset(model) {
         // l'alignement DTW exige l'attention classique
         cparams.flash_attn(false);
@@ -386,7 +386,7 @@ fn load(model: &str, gpu: bool) -> Result<(WhisperContext, whisper_rs::WhisperSt
 fn run() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 4 {
-        return Err(anyhow!("usage : lumen-whisper <modèle> <média> <langue>"));
+        return Err(anyhow!("usage : wikang-whisper <modèle> <média> <langue>"));
     }
     let (model, media, lang) = (&args[1], Path::new(&args[2]), args[3].clone());
     let pcm_out = args.iter().position(|a| a == "--pcm").and_then(|i| args.get(i + 1));
@@ -416,7 +416,7 @@ fn run() -> Result<()> {
 
     let threads = threads();
     // ESSAI (provisoire)
-    let strategy = match std::env::var("LUMEN_W_BEAM").ok().and_then(|v| v.parse::<i32>().ok()) {
+    let strategy = match std::env::var("WIKANG_W_BEAM").ok().and_then(|v| v.parse::<i32>().ok()) {
         Some(0) => SamplingStrategy::Greedy { best_of: 1 },
         Some(b) => SamplingStrategy::BeamSearch { beam_size: b, patience: -1.0 },
         None => SamplingStrategy::BeamSearch { beam_size: 3, patience: -1.0 },
@@ -437,7 +437,7 @@ fn run() -> Result<()> {
 
     emit(serde_json::json!({"type":"stage","stage":"transcribe","duration":duration}));
     state.full(params, &audio).map_err(|e| anyhow!("transcription échouée : {e:?}"))?;
-    if std::env::var("LUMEN_W_TIMINGS").is_ok() {
+    if std::env::var("WIKANG_W_TIMINGS").is_ok() {
         ctx.print_timings();
     }
 

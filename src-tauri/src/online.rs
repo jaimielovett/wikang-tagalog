@@ -1217,15 +1217,15 @@ mod tests {
         assert_eq!(hits.load(Ordering::SeqCst), 2, "le rapide : sondé, puis une réponse");
     }
 
-    /// Vrai fournisseur : `LUMEN_ONLINE="deepseek:sk-…"` (ou `gemini:AIza…`, `nvidia:nvapi-…`,
-    /// `custom:http://localhost:11434/v1`, `LUMEN_ONLINE_MODEL` pour un autre modèle).
+    /// Vrai fournisseur : `WIKANG_ONLINE="deepseek:sk-…"` (ou `gemini:AIza…`, `nvidia:nvapi-…`,
+    /// `custom:http://localhost:11434/v1`, `WIKANG_ONLINE_MODEL` pour un autre modèle).
     #[tokio::test]
     #[ignore]
     async fn online_live() {
-        let spec = std::env::var("LUMEN_ONLINE").expect("LUMEN_ONLINE=fournisseur:clé");
+        let spec = std::env::var("WIKANG_ONLINE").expect("WIKANG_ONLINE=fournisseur:clé");
         let (id, secret) = spec.split_once(':').unwrap();
         let (key, url) = if id == "custom" { ("", secret) } else { (secret, "") };
-        let model = std::env::var("LUMEN_ONLINE_MODEL").unwrap_or_default();
+        let model = std::env::var("WIKANG_ONLINE_MODEL").unwrap_or_default();
         let chk = check(id, key, url, &model).await.unwrap();
         println!("{} modèles, retenu : {} ({} ms)\n{}", chk.models.len(), chk.model, chk.ms, chk.models.join(", "));
         let p = find(id).unwrap();

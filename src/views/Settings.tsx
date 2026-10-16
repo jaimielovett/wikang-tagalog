@@ -1493,7 +1493,7 @@ function AboutPane() {
               <span className="set-path">{info?.data_dir ?? ""}</span>
             </div>
             {isTauri && info && (
-              <button className="btn sm soft" onClick={() => import("@tauri-apps/plugin-opener").then((o) => o.revealItemInDir(info.data_dir + "/lumen.db"))}>
+              <button className="btn sm soft" onClick={() => import("@tauri-apps/plugin-opener").then((o) => o.revealItemInDir(info.data_dir + "/wikang.db"))}>
                 {t("Ouvrir le dossier", "Open the folder")}
               </button>
             )}

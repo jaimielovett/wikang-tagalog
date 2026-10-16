@@ -1,9 +1,9 @@
-// Compile Lumen pour Windows depuis ce Mac : l'installateur (NSIS) et, si la clé
+// Compile Wikang Tagalog pour Windows depuis ce Mac : l'installateur (NSIS) et, si la clé
 // des mises à jour est là, sa signature.
 //   node scripts/build-windows.mjs           l'installateur
 //   node scripts/build-windows.mjs --check   vérifie seulement que tout compile pour Windows
 //   node scripts/build-windows.mjs --tests   compile aussi les tests pour Windows (sans les lancer)
-// Résultat : src-tauri/target/windows/x86_64-pc-windows-msvc/release/bundle/nsis/Lumen_<version>_x64-setup.exe
+// Résultat : src-tauri/target/windows/x86_64-pc-windows-msvc/release/bundle/nsis/Wikang Tagalog_<version>_x64-setup.exe
 //
 // Outils, installés au besoin la première fois : rustup et sa cible Windows (le Rust
 // de Homebrew ne compile que pour le Mac), cargo-xwin (il télécharge une fois les
@@ -82,9 +82,9 @@ env.RUSTFLAGS = `-L native=${crossLib} -l advapi32`;
 
 // Vulkan, pour que llama.cpp et whisper.cpp calculent sur la carte graphique : les outils
 // de Homebrew réunis en un SDK minimal (dossier lu par leurs scripts, variable VULKAN_SDK).
-// Sa bibliothèque vulkan-1.lib est vide : Lumen fournit lui-même les quelques fonctions de
+// Sa bibliothèque vulkan-1.lib est vide : Wikang Tagalog fournit lui-même les quelques fonctions de
 // Vulkan appelées directement et n'ouvre vulkan-1.dll que si le pilote graphique l'a
-// installée (src-tauri/src/vulkan.rs), sinon un PC sans elle ne lancerait pas Lumen.
+// installée (src-tauri/src/vulkan.rs), sinon un PC sans elle ne lancerait pas Wikang Tagalog.
 const vk = join(targetDir, "vulkan-sdk");
 for (const dir of ["include", "bin", "lib", "Lib", "share/cmake"]) mkdirSync(join(vk, dir), { recursive: true });
 const link = (target, path) => {
@@ -103,24 +103,24 @@ env.VULKAN_SDK = vk;
 if (process.argv.includes("--check") || process.argv.includes("--tests")) {
   step("Vérification de la compilation pour Windows");
   // Tauri veut le composant de transcription : un fichier vide suffit pour vérifier
-  const placeholder = join(tauriDir, "binaries", `lumen-whisper-${TARGET}.exe`);
+  const placeholder = join(tauriDir, "binaries", `wikang-whisper-${TARGET}.exe`);
   mkdirSync(join(tauriDir, "binaries"), { recursive: true });
   if (!existsSync(placeholder)) writeFileSync(placeholder, "");
   run(`cargo xwin check --workspace --target ${TARGET}`, tauriDir);
-  if (process.argv.includes("--tests")) run(`cargo xwin test --no-run --release --lib --target ${TARGET} -p lumen`, tauriDir);
-  console.log("\n✓ Lumen compile pour Windows");
+  if (process.argv.includes("--tests")) run(`cargo xwin test --no-run --release --lib --target ${TARGET} -p wikang-tagalog`, tauriDir);
+  console.log("\n✓ Wikang Tagalog compile pour Windows");
   process.exit(0);
 }
 
-step("Composant de transcription (lumen-whisper.exe)");
-run(`cargo xwin build -p lumen-whisper --release --target ${TARGET}`, tauriDir);
-const sidecar = join(targetDir, TARGET, "release", "lumen-whisper.exe");
+step("Composant de transcription (wikang-whisper.exe)");
+run(`cargo xwin build -p wikang-whisper --release --target ${TARGET}`, tauriDir);
+const sidecar = join(targetDir, TARGET, "release", "wikang-whisper.exe");
 if (!existsSync(sidecar)) fail(`introuvable : ${sidecar}`);
 mkdirSync(join(tauriDir, "binaries"), { recursive: true });
-copyFileSync(sidecar, join(tauriDir, "binaries", `lumen-whisper-${TARGET}.exe`));
+copyFileSync(sidecar, join(tauriDir, "binaries", `wikang-whisper-${TARGET}.exe`));
 console.log("  ok");
 
-step("Lumen pour Windows (une vingtaine de minutes la première fois)");
+step("Wikang Tagalog pour Windows (une vingtaine de minutes la première fois)");
 // Wikang Tagalog has its own identity; no upstream signing key is used.
 run(`npx tauri build --runner cargo-xwin --target ${TARGET} --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'`);
 

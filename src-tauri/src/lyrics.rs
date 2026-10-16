@@ -235,7 +235,7 @@ mod tests {
     use super::*;
 
     // paroles inventées pour les tests (jamais de vraies paroles ici)
-    const LRC: &str = "[ar:Lumen]\n[00:01.00] La luce del mattino\n[00:04.50] Sopra il mare calmo\n[00:08.00]\n[00:10.00][00:20.00] Canta piano, canta\n[00:14.00] Il giorno nuovo";
+    const LRC: &str = "[ar:Wikang Tagalog]\n[00:01.00] La luce del mattino\n[00:04.50] Sopra il mare calmo\n[00:08.00]\n[00:10.00][00:20.00] Canta piano, canta\n[00:14.00] Il giorno nuovo";
 
     #[test]
     fn lrc_lines() {
@@ -288,13 +288,13 @@ mod tests {
 
     /// Chaîne complète d'une leçon de chanson, comme `import_song` : paroles, version de
     /// l'album sur YouTube, son téléchargé, mise en page, et recalage par Whisper si
-    /// `LUMEN_ASR_MODEL` est donné (copier d'abord le sidecar en `target/debug/deps/lumen-whisper`).
+    /// `WIKANG_ASR_MODEL` est donné (copier d'abord le sidecar en `target/debug/deps/wikang-whisper`).
     /// N'affiche que des nombres : `cargo test --lib song_import_live -- --ignored --nocapture`.
     #[tokio::test]
     #[ignore]
     async fn song_import_live() {
         let (artist, title, lang) = ("Laura Pausini", "La solitudine", "it");
-        let dir = std::env::temp_dir().join(format!("lumen-song-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("wikang-song-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let l = find(&client().unwrap(), artist, title, "", 0.0).await.expect("paroles");
         let (text, lrc) = layout(&l, lang, 240.0);
@@ -305,7 +305,7 @@ mod tests {
         let ytdlp = crate::tools::find_ytdlp(&dir).expect("yt-dlp");
         let (audio, _) = crate::media::yt_audio(&dir, &ytdlp, &url, "song", None, &mut |_| {}).await.unwrap();
         println!("son : {} Ko en {:.1} s", std::fs::metadata(&audio).unwrap().len() / 1024, started.elapsed().as_secs_f64());
-        if let Ok(model) = std::env::var("LUMEN_ASR_MODEL") {
+        if let Ok(model) = std::env::var("WIKANG_ASR_MODEL") {
             let started = std::time::Instant::now();
             let words = crate::media::transcribe(std::path::Path::new(&model), &audio, lang, None, |_| {}).await.unwrap();
             let (_, found) = crate::media::align_timings(&text, lang, &words);

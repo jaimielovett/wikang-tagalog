@@ -23,7 +23,7 @@ function fontsReady(): Promise<unknown> {
 
 Promise.all([initApi(), fontsReady()]).then(() => {
   // accès de test dans l'aperçu navigateur (jamais dans l'application)
-  if (import.meta.env.DEV && !isTauri) (window as unknown as Record<string, unknown>).__lumen = { api, useApp };
+  if (import.meta.env.DEV && !isTauri) (window as unknown as Record<string, unknown>).__wikang = { api, useApp };
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <App />

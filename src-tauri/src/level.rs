@@ -131,12 +131,12 @@ mod tests {
     }
 
     /// Niveau estimé pour chaque langue d'une copie des données (lecture seule) :
-    /// `LUMEN_LEVEL_DATA="$HOME/Library/Application Support/app.lumen.reader" cargo test --lib level_live -- --ignored --nocapture`.
+    /// `WIKANG_LEVEL_DATA="$HOME/Library/Application Support/app.wikangtagalog.reader" cargo test --lib level_live -- --ignored --nocapture`.
     #[test]
     #[ignore]
     fn level_live() {
-        let data = std::path::PathBuf::from(std::env::var("LUMEN_LEVEL_DATA").expect("LUMEN_LEVEL_DATA"));
-        let c = rusqlite::Connection::open_with_flags(data.join("lumen.db"), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+        let data = std::path::PathBuf::from(std::env::var("WIKANG_LEVEL_DATA").expect("WIKANG_LEVEL_DATA"));
+        let c = rusqlite::Connection::open_with_flags(data.join("wikang.db"), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
         let dicts = crate::dict::Dicts::new(std::path::PathBuf::from("resources/dicts"), crate::dict::dict_dir(&data));
         for lang in crate::text::LANGS {
             let known = crate::db::known_terms(&c, lang).unwrap();

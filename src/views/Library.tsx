@@ -344,8 +344,8 @@ export function Library() {
   // menu Édition › Sélectionner des leçons
   useEffect(() => {
     const onMenu = () => startSelect();
-    window.addEventListener("lumen:select-lessons", onMenu);
-    return () => window.removeEventListener("lumen:select-lessons", onMenu);
+    window.addEventListener("wikang:select-lessons", onMenu);
+    return () => window.removeEventListener("wikang:select-lessons", onMenu);
   }, []);
 
   const [adding, setAdding] = useState<LessonSummary | null>(null);

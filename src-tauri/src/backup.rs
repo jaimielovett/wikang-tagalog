@@ -1,11 +1,11 @@
 //! Sauvegarde de la progression dans iCloud Drive, ou dans un autre nuage
 //! installé sur le Mac (Dropbox, Google Drive, OneDrive… : `places`), ou dans
 //! tout dossier choisi par l'utilisateur (clé USB, disque réseau).
-//! Rien ne passe par un serveur de Lumen : macOS envoie lui-même le dossier
+//! Rien ne passe par un serveur de Wikang Tagalog : macOS envoie lui-même le dossier
 //! dans le nuage de l'utilisateur, gratuitement dans la limite de son forfait.
 //!
 //! ```text
-//! Lumen/
+//! Wikang Tagalog/
 //!   <nom du Mac> (<clé>)/     une sauvegarde par Mac et par profil
 //!     Progression.lumen       la base SQLite compressée, sans le cache
 //!     Infos.json              appareil, date, mots et leçons, médias cités
@@ -141,7 +141,7 @@ pub struct Status {
     /// réglage `backup_on` : "1" active, "0" coupée, "" pas encore choisie
     pub enabled: bool,
     pub decided: bool,
-    /// dossier « Lumen » de la sauvegarde (aucun : ni iCloud Drive ni dossier choisi)
+    /// dossier « Wikang Tagalog » de la sauvegarde (aucun : ni iCloud Drive ni dossier choisi)
     pub dir: Option<String>,
     pub icloud: bool,
     pub icloud_available: bool,
@@ -184,7 +184,7 @@ pub struct Info {
     pub counts: Counts,
     /// versions des jours précédents, de la plus récente à la plus ancienne
     pub versions: Vec<Version>,
-    /// faite par une version plus récente de Lumen
+    /// faite par une version plus récente de Wikang Tagalog
     pub newer: bool,
     /// nom et avatar de l'apprenant
     #[serde(flatten)]
@@ -221,7 +221,7 @@ pub fn icloud_drive() -> Option<PathBuf> {
     p.is_dir().then_some(p)
 }
 
-/// Dossier « Lumen » de la sauvegarde : dans le dossier choisi, sinon dans iCloud Drive.
+/// Dossier « Wikang Tagalog » de la sauvegarde : dans le dossier choisi, sinon dans iCloud Drive.
 pub fn root(custom: &str) -> Option<PathBuf> {
     let custom = custom.trim();
     if !custom.is_empty() {
@@ -244,7 +244,7 @@ pub struct Place {
     pub name: String,
     /// compte (adresse, équipe) : il peut y en avoir plusieurs pour un même service
     pub account: Option<String>,
-    /// dossier qui recevra « Lumen » (à passer par `place_dir`) ; vide : iCloud Drive
+    /// dossier qui recevra « Wikang Tagalog » (à passer par `place_dir`) ; vide : iCloud Drive
     pub path: String,
 }
 
@@ -571,7 +571,7 @@ fn hardware_uuid() -> Option<String> {
     line.split('"').nth(3).filter(|s| !s.is_empty()).map(String::from)
 }
 
-/// Identifiant de ce Mac, stable même si les données de Lumen sont effacées
+/// Identifiant de ce Mac, stable même si les données de Wikang Tagalog sont effacées
 /// (tiré du numéro du matériel, jamais envoyé tel quel).
 pub fn device_id(data_dir: &Path) -> String {
     let f = data_dir.join("device-id");
@@ -582,7 +582,7 @@ pub fn device_id(data_dir: &Path) -> String {
         }
     }
     let seed = hardware_uuid().unwrap_or_else(|| format!("{:?}-{}", std::time::SystemTime::now(), std::process::id()));
-    let id = short_hash(&format!("lumen-appareil:{seed}"));
+    let id = short_hash(&format!("wikang-appareil:{seed}"));
     let _ = fs::write(&f, &id);
     id
 }
@@ -610,7 +610,7 @@ fn ensure_profile(c: &Connection, device: &str) -> Result<String> {
     if let Some(p) = db::setting(c, "profile_id").filter(|p| p.len() >= 8) {
         return Ok(p);
     }
-    let p = short_hash(&format!("lumen-profil:{device}:{:?}:{}", std::time::SystemTime::now(), std::process::id()));
+    let p = short_hash(&format!("wikang-profil:{device}:{:?}:{}", std::time::SystemTime::now(), std::process::id()));
     db::setting_set(c, "profile_id", &p)?;
     Ok(p)
 }
@@ -1077,7 +1077,7 @@ pub fn list(data_dir: &Path, root: &Path, profile: Option<&str>) -> Result<Vec<I
 
 /// Remplace la progression de ce Mac par une sauvegarde (la plus récente,
 /// ou celle du jour `day`). La progression d'avant est gardée sur ce Mac
-/// (`lumen.avant-restauration.db`).
+/// (`wikang.avant-restauration.db`).
 pub fn restore(live: &Mutex<Connection>, data_dir: &Path, root: &Path, key: &str, day: Option<&str>, on: impl Fn(ImportEvent)) -> Result<Restored> {
     let stage = |s: &str| on(ImportEvent::Stage { stage: s.into() });
     let folder = find_folder(root, key).ok_or_else(|| anyhow!(crate::i18n::t("Cette sauvegarde est introuvable.", "This backup can't be found.")))?;
@@ -1180,7 +1180,7 @@ fn restore_in(live: &Mutex<Connection>, data_dir: &Path, root: &Path, snap: &Pat
     stage("apply");
     let mut l = live.lock();
     // filet de sécurité : la progression d'avant reste sur ce Mac
-    let safety = data_dir.join("lumen.avant-restauration.db");
+    let safety = data_dir.join("wikang.avant-restauration.db");
     remove_db(&safety);
     l.execute("VACUUM INTO ?1", [safety.to_string_lossy()])?;
     l.flush_prepared_statement_cache();
@@ -1396,7 +1396,7 @@ pub async fn auto_loop(app: tauri::AppHandle) {
     }
 }
 
-/// À la fermeture de Lumen : dernière sauvegarde si quelque chose a changé.
+/// À la fermeture de Wikang Tagalog : dernière sauvegarde si quelque chose a changé.
 pub fn on_exit(state: &AppState) {
     let (on, changes) = {
         let c = state.db.lock();
@@ -1485,13 +1485,13 @@ mod tests {
 
     #[test]
     fn media_names_from_any_computer() {
-        assert_eq!(stored_name("/Users/lea/Library/Application Support/app.lumen.reader/media/20260101.audio.m4a"), "20260101.audio.m4a");
-        assert_eq!(stored_name("C:\\Users\\Léa\\AppData\\Roaming\\app.lumen.reader\\media\\20260101.cover.jpg"), "20260101.cover.jpg");
+        assert_eq!(stored_name("/Users/lea/Library/Application Support/app.wikangtagalog.reader/media/20260101.audio.m4a"), "20260101.audio.m4a");
+        assert_eq!(stored_name("C:\\Users\\Léa\\AppData\\Roaming\\app.wikangtagalog.reader\\media\\20260101.cover.jpg"), "20260101.cover.jpg");
         assert_eq!(stored_name("a.m4a"), "a.m4a");
     }
 
     fn temp(name: &str) -> PathBuf {
-        let p = std::env::temp_dir().join(format!("lumen-backup-{name}-{}", std::process::id()));
+        let p = std::env::temp_dir().join(format!("wikang-backup-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(p.join("media")).unwrap();
         p
@@ -1630,7 +1630,7 @@ mod tests {
         assert_eq!(db::setting(&cb, "backup_on").as_deref(), Some("0"));
         assert_eq!(db::setting(&cb, "profile_id"), Some(m.profile.clone()));
         assert_eq!(db::setting(&cb, "user_name").as_deref(), Some("Léa"));
-        assert!(b.join("lumen.avant-restauration.db").exists());
+        assert!(b.join("wikang.avant-restauration.db").exists());
         drop(cb);
 
         // le second Mac continue le même profil, dans son propre dossier
@@ -1694,13 +1694,13 @@ mod tests {
 
     /// Sauvegarde puis restauration d'une copie de vraies données, dans un dossier
     /// jetable (rien n'est écrit dans le dossier d'origine ni dans iCloud) :
-    /// `LUMEN_BACKUP_DATA="$HOME/Library/Application Support/app.lumen.reader" cargo test --lib backup_live -- --ignored --nocapture`
+    /// `WIKANG_BACKUP_DATA="$HOME/Library/Application Support/app.wikangtagalog.reader" cargo test --lib backup_live -- --ignored --nocapture`
     // liens symboliques du Mac : essai réservé au Mac
     #[cfg(unix)]
     #[test]
     #[ignore]
     fn backup_live() {
-        let src = PathBuf::from(std::env::var("LUMEN_BACKUP_DATA").expect("LUMEN_BACKUP_DATA : dossier de données de Lumen"));
+        let src = PathBuf::from(std::env::var("WIKANG_BACKUP_DATA").expect("WIKANG_BACKUP_DATA : dossier de données de Wikang Tagalog"));
         let a = temp("live-a");
         Connection::open(db::path(&src)).unwrap().execute("VACUUM INTO ?1", [db::path(&a).to_string_lossy()]).unwrap();
         // les médias d'origine, lus à travers un lien, et les chemins de la copie qui y mènent
@@ -1760,11 +1760,11 @@ mod tests {
     #[test]
     fn windows_cloud_places() {
         let home = home().unwrap();
-        let p = place_of(&home.join("OneDrive - Contoso").join("Lumen").display().to_string());
+        let p = place_of(&home.join("OneDrive - Contoso").join("Wikang Tagalog").display().to_string());
         assert_eq!((p.kind.as_str(), p.account.as_deref()), ("onedrive", Some("Contoso")));
         assert_eq!(place_of(&home.join("OneDrive").join("Documents").display().to_string()).kind, "onedrive");
-        assert_eq!(place_of(&home.join("Mon Drive").join("Lumen").display().to_string()).kind, "gdrive");
-        let p = place_of("G:\\Mon Drive\\Lumen");
+        assert_eq!(place_of(&home.join("Mon Drive").join("Wikang Tagalog").display().to_string()).kind, "gdrive");
+        let p = place_of("G:\\Mon Drive\\Wikang Tagalog");
         assert_eq!((p.kind.as_str(), p.path.as_str()), ("gdrive", "G:\\"));
         assert_eq!(place_of("Z:\\Sauvegardes").kind, "drive");
         assert_eq!(place_of(&home.join("Sauvegardes").display().to_string()).kind, "folder");

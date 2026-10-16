@@ -1,5 +1,5 @@
 //! Import audio et vidéo : copie dans la bibliothèque, transcription locale
-//! par le processus `lumen-whisper`, construction du texte et des horodatages.
+//! par le processus `wikang-whisper`, construction du texte et des horodatages.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -32,7 +32,7 @@ pub fn media_dir(data_dir: &Path) -> PathBuf {
 pub fn sidecar_path() -> Result<PathBuf> {
     let exe = std::env::current_exe()?;
     let dir = exe.parent().ok_or_else(|| anyhow!(crate::i18n::t("dossier de l'application introuvable", "application folder not found")))?;
-    let name = if cfg!(windows) { "lumen-whisper.exe" } else { "lumen-whisper" };
+    let name = if cfg!(windows) { "wikang-whisper.exe" } else { "wikang-whisper" };
     let p = dir.join(name);
     if p.exists() {
         return Ok(p);
@@ -46,7 +46,7 @@ pub fn duration_of(path: &Path, last_word_end: Option<f64>) -> Option<f64> {
     crate::compress::duration(path).or(last_word_end).filter(|d| d.is_finite() && *d > 0.0).map(|d| (d * 10.0).round() / 10.0)
 }
 
-/// Copie le fichier dans la bibliothèque de Lumen et renvoie son nouveau chemin.
+/// Copie le fichier dans la bibliothèque de Wikang Tagalog et renvoie son nouveau chemin.
 pub fn store_media(data_dir: &Path, src: &Path) -> Result<PathBuf> {
     let dir = media_dir(data_dir);
     std::fs::create_dir_all(&dir)?;
@@ -57,7 +57,7 @@ pub fn store_media(data_dir: &Path, src: &Path) -> Result<PathBuf> {
     Ok(dst)
 }
 
-/// Transcrit avec Whisper (processus `lumen-whisper`). `pcm_out` : y enregistre
+/// Transcrit avec Whisper (processus `wikang-whisper`). `pcm_out` : y enregistre
 /// aussi le son décodé (mono, 16 kHz, f32), pour Qwen3-ASR.
 pub async fn transcribe(
     model: &Path,
@@ -156,7 +156,7 @@ pub async fn lesson_transcript(
     reference: Option<&str>,
     mut on_event: impl FnMut(ImportEvent),
 ) -> Result<(String, String)> {
-    let pcm = fine.as_ref().map(|_| std::env::temp_dir().join(format!("lumen-{}.pcm", new_stem())));
+    let pcm = fine.as_ref().map(|_| std::env::temp_dir().join(format!("wikang-{}.pcm", new_stem())));
     let heard = transcribe(whisper, media, lang, pcm.as_deref(), |e| {
         // avec Qwen3-ASR, Whisper ne fait plus que repérer les mots dans le temps
         let e = match e {
@@ -218,7 +218,7 @@ pub async fn lesson_transcript(
     Ok(airy(&text, lang, &timings))
 }
 
-/// Son décodé par `lumen-whisper --pcm` (mono, 16 kHz, f32 petit-boutiste).
+/// Son décodé par `wikang-whisper --pcm` (mono, 16 kHz, f32 petit-boutiste).
 pub fn read_pcm(path: &Path) -> Result<Vec<f32>> {
     let bytes = std::fs::read(path)?;
     Ok(bytes.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect())
@@ -590,7 +590,7 @@ fn round2(x: f64) -> f64 {
     (x * 100.0).round() / 100.0
 }
 
-/// Mot entendu, redécoupé comme le texte de Lumen.
+/// Mot entendu, redécoupé comme le texte de Wikang Tagalog.
 struct Heard {
     k: String,
     t0: f64,
@@ -599,7 +599,7 @@ struct Heard {
     punct: String,
 }
 
-/// Mots entendus, redécoupés comme le texte de Lumen (élisions comprises),
+/// Mots entendus, redécoupés comme le texte de Wikang Tagalog (élisions comprises),
 /// la durée d'un mot coupé étant répartie au prorata de la longueur.
 fn heard_keys(words: &[WWord], lang: &str) -> Vec<Heard> {
     let mut out = Vec::new();
@@ -758,7 +758,7 @@ pub fn align_timings(text_in: &str, lang: &str, words: &[WWord]) -> (String, f64
 }
 
 /// Lance yt-dlp et renvoie les lignes de sortie utiles. La progression
-/// (« LUMEN 42.0% ») est transmise au fur et à mesure.
+/// (« WIKANG 42.0% ») est transmise au fur et à mesure.
 async fn run_ytdlp(
     data_dir: &Path,
     ytdlp: &Path,
@@ -768,7 +768,7 @@ async fn run_ytdlp(
 ) -> Result<Vec<String>> {
     let mut cmd = crate::proc::tokio_command(ytdlp);
     cmd.args(["--no-playlist", "--newline", "--progress", "--no-colors"]);
-    cmd.args(["--progress-template", "download:LUMEN %(progress._percent_str)s"]);
+    cmd.args(["--progress-template", "download:WIKANG %(progress._percent_str)s"]);
     if let Some(js) = crate::tools::js_runtime_arg(data_dir) {
         cmd.args(["--js-runtimes", &js]);
     }
@@ -794,7 +794,7 @@ async fn run_ytdlp(
     let mut out = Vec::new();
     let mut lines = BufReader::new(stdout).lines();
     while let Some(line) = lines.next_line().await? {
-        if let Some(rest) = line.trim().strip_prefix("LUMEN") {
+        if let Some(rest) = line.trim().strip_prefix("WIKANG") {
             if let Ok(v) = rest.trim().trim_end_matches('%').trim().parse::<f64>() {
                 on_progress(v);
             }
@@ -883,7 +883,7 @@ pub async fn yt_flat(data_dir: &Path, ytdlp: &Path, url: &str, from: usize, to: 
     Ok(serde_json::from_str(json)?)
 }
 
-/// YouTube calls the Filipino locale `fil`, while Lumen uses the ISO 639-1
+/// YouTube calls the Filipino locale `fil`, while Wikang Tagalog uses the ISO 639-1
 /// code `tl` for Tagalog throughout its language and dictionary data.
 fn youtube_lang(lang: &str) -> &str {
     match lang {
@@ -1071,13 +1071,13 @@ mod tests {
         assert!(p.windows(2).all(|w| w[1].0 > w[0].0 && w[1].1 > w[0].1));
     }
 
-    /// Essai réel (ignoré par défaut) : LUMEN_TEST_TEXT=texte.txt LUMEN_TEST_WORDS=mots.json
-    /// LUMEN_TEST_LANG=it cargo test --lib realign_live -- --ignored --nocapture
+    /// Essai réel (ignoré par défaut) : WIKANG_TEST_TEXT=texte.txt WIKANG_TEST_WORDS=mots.json
+    /// WIKANG_TEST_LANG=it cargo test --lib realign_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn realign_live() {
-        let (Ok(t), Ok(w)) = (std::env::var("LUMEN_TEST_TEXT"), std::env::var("LUMEN_TEST_WORDS")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "en".into());
+        let (Ok(t), Ok(w)) = (std::env::var("WIKANG_TEST_TEXT"), std::env::var("WIKANG_TEST_WORDS")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "en".into());
         let text = std::fs::read_to_string(t).unwrap();
         let words: Vec<WWord> = serde_json::from_str(&std::fs::read_to_string(w).unwrap()).unwrap();
         let (json, found) = align_timings(&text, &lang, &words);
@@ -1219,14 +1219,14 @@ mod tests {
         assert_eq!(kept.iter().map(|w| w.w.as_str()).collect::<String>(), " Grazie. Grazie. oh");
     }
 
-    /// Ponctuation reprise sur une vraie transcription : LUMEN_TEST_TEXT=texte.txt
-    /// LUMEN_TEST_WORDS=mots.json (sortie `done` de lumen-whisper) LUMEN_TEST_LANG=it
+    /// Ponctuation reprise sur une vraie transcription : WIKANG_TEST_TEXT=texte.txt
+    /// WIKANG_TEST_WORDS=mots.json (sortie `done` de wikang-whisper) WIKANG_TEST_LANG=it
     /// cargo test --lib punctuation_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn punctuation_live() {
-        let (Ok(t), Ok(w)) = (std::env::var("LUMEN_TEST_TEXT"), std::env::var("LUMEN_TEST_WORDS")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "en".into());
+        let (Ok(t), Ok(w)) = (std::env::var("WIKANG_TEST_TEXT"), std::env::var("WIKANG_TEST_WORDS")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "en".into());
         let text = std::fs::read_to_string(t).unwrap();
         let words: Vec<WWord> = serde_json::from_str(&std::fs::read_to_string(w).unwrap()).unwrap();
         // comme « Recaler la lanterne » sur une leçon déjà importée
@@ -1247,18 +1247,18 @@ mod tests {
             sizes.iter().sum::<usize>() as f64 / sizes.len() as f64
         );
         println!("{}", out.split("\n\n").take(30).collect::<Vec<_>>().join("\n\n"));
-        if let Ok(path) = std::env::var("LUMEN_AIRY_OUT") {
+        if let Ok(path) = std::env::var("WIKANG_AIRY_OUT") {
             std::fs::write(path, &out).unwrap();
         }
     }
 
-    /// Mise en page réelle : LUMEN_TEST_TEXT=texte.txt LUMEN_TEST_WORDS=mots.json LUMEN_TEST_LANG=it
+    /// Mise en page réelle : WIKANG_TEST_TEXT=texte.txt WIKANG_TEST_WORDS=mots.json WIKANG_TEST_LANG=it
     /// cargo test --lib airy_live -- --ignored --nocapture
     #[test]
     #[ignore]
     fn airy_live() {
-        let (Ok(t), Ok(w)) = (std::env::var("LUMEN_TEST_TEXT"), std::env::var("LUMEN_TEST_WORDS")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "en".into());
+        let (Ok(t), Ok(w)) = (std::env::var("WIKANG_TEST_TEXT"), std::env::var("WIKANG_TEST_WORDS")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "en".into());
         let text = std::fs::read_to_string(t).unwrap();
         let words: Vec<WWord> = serde_json::from_str(&std::fs::read_to_string(w).unwrap()).unwrap();
         let (tm, found) = align_timings(&text, &lang, &words);
@@ -1267,21 +1267,21 @@ mod tests {
         let sizes: Vec<usize> = out.split("\n\n").map(|p| p.split_whitespace().count()).collect();
         println!("{:.0} % retrouvés · {} paragraphes · {} à {} mots, {:.1} en moyenne", found * 100.0, sizes.len(), sizes.iter().min().unwrap(), sizes.iter().max().unwrap(), sizes.iter().sum::<usize>() as f64 / sizes.len() as f64);
         println!("{}", out.split("\n\n").take(40).collect::<Vec<_>>().join("\n\n"));
-        if let Ok(path) = std::env::var("LUMEN_AIRY_OUT") {
+        if let Ok(path) = std::env::var("WIKANG_AIRY_OUT") {
             std::fs::write(path, &out).unwrap();
         }
     }
 
     /// Texte d'une page gardé si le son le suit, transcription sinon (Whisper seul) :
-    /// LUMEN_ASR_MODEL=ggml-….bin LUMEN_TEST_AUDIO=son.mp3 LUMEN_TEST_LANG=fr cargo test --lib reference_live -- --ignored --nocapture
-    /// (copier d'abord binaries/lumen-whisper-aarch64-apple-darwin en target/debug/deps/lumen-whisper)
+    /// WIKANG_ASR_MODEL=ggml-….bin WIKANG_TEST_AUDIO=son.mp3 WIKANG_TEST_LANG=fr cargo test --lib reference_live -- --ignored --nocapture
+    /// (copier d'abord binaries/wikang-whisper-aarch64-apple-darwin en target/debug/deps/wikang-whisper)
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn reference_live() {
-        let (Ok(whisper), Ok(audio)) = (std::env::var("LUMEN_ASR_MODEL"), std::env::var("LUMEN_TEST_AUDIO")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "fr".into());
+        let (Ok(whisper), Ok(audio)) = (std::env::var("WIKANG_ASR_MODEL"), std::env::var("WIKANG_TEST_AUDIO")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "fr".into());
         let engine = crate::ai::Engine::new();
-        // un texte sans rapport avec le son : Lumen transcrit
+        // un texte sans rapport avec le son : Wikang Tagalog transcrit
         let other = "Ogni mattina, Marta saliva le scale strette del vecchio faro. Dall'alto, il mare sembrava infinito e calmo.";
         let (heard, _) = lesson_transcript(&engine, Path::new(&whisper), None, Path::new(&audio), &lang, Some(other), |_| {}).await.unwrap();
         assert_ne!(heard, other);
@@ -1297,15 +1297,15 @@ mod tests {
     }
 
     /// Import réel de bout en bout (Whisper puis Qwen3-ASR, recalage, mise en page) :
-    /// LUMEN_ASR_MODEL=ggml-….bin LUMEN_ASR_DIR=dossier de Qwen3-ASR LUMEN_TEST_AUDIO=son.mp3
-    /// LUMEN_TEST_LANG=it [LUMEN_AIRY_OUT=texte.txt] cargo test --release --lib transcript_live -- --ignored --nocapture
-    /// (copier d'abord binaries/lumen-whisper-aarch64-apple-darwin en target/release/deps/lumen-whisper)
+    /// WIKANG_ASR_MODEL=ggml-….bin WIKANG_ASR_DIR=dossier de Qwen3-ASR WIKANG_TEST_AUDIO=son.mp3
+    /// WIKANG_TEST_LANG=it [WIKANG_AIRY_OUT=texte.txt] cargo test --release --lib transcript_live -- --ignored --nocapture
+    /// (copier d'abord binaries/wikang-whisper-aarch64-apple-darwin en target/release/deps/wikang-whisper)
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn transcript_live() {
-        let (Ok(whisper), Ok(audio)) = (std::env::var("LUMEN_ASR_MODEL"), std::env::var("LUMEN_TEST_AUDIO")) else { return };
-        let lang = std::env::var("LUMEN_TEST_LANG").unwrap_or_else(|_| "it".into());
-        let fine = std::env::var("LUMEN_ASR_DIR").ok().map(|d| {
+        let (Ok(whisper), Ok(audio)) = (std::env::var("WIKANG_ASR_MODEL"), std::env::var("WIKANG_TEST_AUDIO")) else { return };
+        let lang = std::env::var("WIKANG_TEST_LANG").unwrap_or_else(|_| "it".into());
+        let fine = std::env::var("WIKANG_ASR_DIR").ok().map(|d| {
             let files: Vec<PathBuf> = std::fs::read_dir(d).unwrap().filter_map(|e| e.ok()).map(|e| e.path()).collect();
             let pick = |mm: bool| files.iter().find(|p| {
                 let n = p.file_name().unwrap().to_string_lossy();
@@ -1326,7 +1326,7 @@ mod tests {
         let tm: Vec<[f64; 4]> = serde_json::from_str(&timings).unwrap();
         let paras = text.split("\n\n").count();
         println!("{:.0} s · étapes {stages:?} · {} mots minutés · {paras} paragraphes\n{}", t.elapsed().as_secs_f64(), tm.len(), text.split("\n\n").take(12).collect::<Vec<_>>().join("\n\n"));
-        if let Ok(out) = std::env::var("LUMEN_AIRY_OUT") {
+        if let Ok(out) = std::env::var("WIKANG_AIRY_OUT") {
             std::fs::write(out, &text).unwrap();
         }
         assert!(paras > 3 && !tm.is_empty());
