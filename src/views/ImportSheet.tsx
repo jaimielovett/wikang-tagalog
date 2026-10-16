@@ -139,6 +139,8 @@ export function ImportSheet() {
   const [book, setBook] = useState<{ title: string; chapters: (Chapter & { on: boolean })[] } | null>(null);
   const [mediaFiles, setMediaFiles] = useState<string[]>([]);
   const [found, setFound] = useState<Found | null>(null);
+  // videos of a list still failing after their second try, shown with a "Try again"
+  const [failures, setFailures] = useState<{ media: LinkMedia; error: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [targetPlaylist, setTargetPlaylist] = useState<Playlist | null>(null);
   const podcast = usePodcastForm(lang, playlistId ?? undefined);
@@ -156,6 +158,7 @@ export function ImportSheet() {
     setBook(null);
     setMediaFiles([]);
     setFound(null);
+    setFailures(null);
     setError(null);
     podcast.reset();
   };
@@ -209,7 +212,8 @@ export function ImportSheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, files, item, linkToOpen, tabToOpen]);
 
-  const finish = async (ids: number[], label: string) => {
+  /** `stay`: the sheet stays open (some videos of the list failed and are listed there). */
+  const finish = async (ids: number[], label: string, stay = false) => {
     // la carte de Découvrir mène désormais à la leçon
     if (item && ids.length) void useDiscover.getState().mark(lang, item.id, ids[0]);
     if (playlistId && ids.length) {
@@ -225,12 +229,14 @@ export function ImportSheet() {
           : t(`Leçon ajoutée à « ${destination.name} »`, `Lesson added to “${destination.name}”`),
         "light",
       );
+      if (stay) return;
       close();
       useApp.getState().openPlaylist(destination.id);
       return;
     }
     bump();
     toast(label, "light");
+    if (stay) return;
     close();
     if (ids.length === 1) openLesson(ids[0]);
     else go("library");
@@ -305,38 +311,47 @@ export function ImportSheet() {
       return;
     }
     const items: LinkMedia[] = info.list ? found.picked.map((i) => info.media[i]) : info.media.slice(0, 1);
-    const text = choice === "both" && article ? article.text : null;
+    importMedia(items, choice === "both" && article ? article.text : null);
+  };
+
+  /**
+   * Imports the videos or sounds one after the other. In a list, one that fails doesn't
+   * stop the others: each gets a second try at the end, and those still failing are listed.
+   */
+  const importMedia = (items: LinkMedia[], text: string | null) =>
     void run(t("Préparation", "Preparing"), async () => {
+      setFailures(null);
       const ids: number[] = [];
-      let failed = 0;
-      let firstError: unknown = null;
+      const attempt = async (m: LinkMedia, prefix: string): Promise<string | null> => {
+        try {
+          ids.push(await api().importLink(lang, m, text, onImportEvent(prefix)));
+          return null;
+        } catch (e) {
+          if (items.length === 1) throw e;
+          return errorText(e);
+        }
+      };
+      const failed: LinkMedia[] = [];
       for (let i = 0; i < items.length; i++) {
         const prefix = items.length > 1 ? `${i + 1}/${items.length} · ` : "";
-        try {
-          ids.push(await api().importLink(lang, items[i], text, onImportEvent(prefix)));
-        } catch (e) {
-          // un élément d'une liste qui échoue n'arrête pas les suivants
-          if (items.length === 1) throw e;
-          failed++;
-          firstError ??= e;
-        }
+        if ((await attempt(items[i], prefix)) !== null) failed.push(items[i]);
       }
-      if (!ids.length) throw firstError;
-      await finish(
-        ids,
+      const left: { media: LinkMedia; error: string }[] = [];
+      for (let i = 0; i < failed.length; i++) {
+        const err = await attempt(failed[i], t(`Nouvel essai ${i + 1}/${failed.length} · `, `Retrying ${i + 1}/${failed.length} · `));
+        if (err !== null) left.push({ media: failed[i], error: err });
+      }
+      const label =
         ids.length > 1
           ? t(`${ids.length} leçons créées`, `${ids.length} lessons created`)
           : items[0].video
             ? t("Vidéo transcrite", "Video transcribed")
-            : t("Transcription prête", "Transcript ready"),
-      );
-      if (failed)
-        toast(
-          `${pick(failed, `${failed} import n'a pas abouti`, `${failed} imports n'ont pas abouti`, `${failed} import failed`, `${failed} imports failed`)}${t(" : ", ": ")}${errorText(firstError)}`,
-          "error",
-        );
+            : t("Transcription prête", "Transcript ready");
+      if (!left.length) return finish(ids, label);
+      if (ids.length) await finish(ids, label, true);
+      setFound(null);
+      setFailures(left);
     });
-  };
 
   // ---------- fichiers ----------
   async function loadDocs(sources: DocSource[]) {
@@ -450,7 +465,18 @@ export function ImportSheet() {
           {t("Créer la leçon", "Create the lesson")}
         </button>
       );
-    if (tab === "link" && !preview && !found)
+    if (tab === "link" && failures)
+      footer = (
+        <>
+          <button className="btn ghost" onClick={close}>
+            {t("Fermer", "Close")}
+          </button>
+          <button className="btn primary" disabled={!asrReady} onClick={() => importMedia(failures.map((f) => f.media), null)}>
+            {t("Réessayer", "Try again")}
+          </button>
+        </>
+      );
+    else if (tab === "link" && !preview && !found)
       footer = (
         <button className="btn primary" disabled={url.trim().length < 4} onClick={() => probeLink()}>
           {t("Ouvrir le lien", "Open the link")}
@@ -650,7 +676,34 @@ export function ImportSheet() {
               </>
             )}
 
-            {!preview && tab === "link" && !found && (
+            {tab === "link" && failures && !busy && (
+              <div className="import-failures">
+                <p>
+                  <strong>
+                    {pick(
+                      failures.length,
+                      `${failures.length} vidéo n'a pas pu être importée`,
+                      `${failures.length} vidéos n'ont pas pu être importées`,
+                      `${failures.length} video couldn't be imported`,
+                      `${failures.length} videos couldn't be imported`,
+                    )}
+                  </strong>
+                  <span className="muted">{t(" — chacune a été réessayée une fois. Les autres sont dans votre bibliothèque.", " — each was tried twice. The others are in your library.")}</span>
+                </p>
+                <ul className="chapter-list link-list">
+                  {failures.map((f, i) => (
+                    <li key={`${i}-${f.media.url}`} className="chapter-item import-failure">
+                      <Icon name="ban" size={15} />
+                      <span className="grow">
+                        <span className="link-item-title">{f.media.title || f.media.url}</span>
+                        <span className="muted import-failure-why">{f.error}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {!preview && tab === "link" && !found && !failures && (
               <>
                 <div className="field">
                   <label htmlFor="imp-url">{t("Adresse", "Address")}</label>

@@ -27,7 +27,7 @@ use crate::media::{self, ImportEvent};
 
 const UA: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
-/// Éléments au plus dans une liste (podcast, playlist, chaîne).
+/// Éléments au plus dans un flux de podcast ou une liste Spotify (les listes de yt-dlp n'ont pas de limite).
 const MAX_ITEMS: usize = 300;
 /// Taille au plus d'une page ou d'un flux lu en entier.
 const PAGE_MAX: usize = 15_000_000;
@@ -512,7 +512,8 @@ fn from_ytdlp(v: &Value, url: &str, video_site: bool) -> LinkInfo {
             }
             return info;
         }
-        let media = entries.iter().filter_map(|e| ytdlp_entry(e, &title, video_site)).take(MAX_ITEMS).collect();
+        // a channel or playlist keeps all its videos: the learner picks how many to import
+        let media = entries.iter().filter_map(|e| ytdlp_entry(e, &title, video_site)).collect();
         return LinkInfo { url: url.into(), title, site, image, media, list: true, ..Default::default() };
     }
     let page = ["webpage_url", "original_url"].iter().map(|k| str_of(v, k)).find(|s| s.starts_with("http")).unwrap_or_else(|| url.to_string());

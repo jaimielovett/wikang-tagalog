@@ -1411,6 +1411,29 @@
   font-size: 26px;
   font-weight: 500;
 }
+.import-failures {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.import-failures ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.import-failure {
+  align-items: flex-start;
+}
+.import-failure .grow {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.import-failure-why {
+  font-size: 12px;
+  white-space: normal;
+}
 .working .bar {
   width: 360px;
   height: 6px;

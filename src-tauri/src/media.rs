@@ -839,7 +839,7 @@ async fn run_with_fallback(
 /// Ce que yt-dlp sait d'une adresse, sans rien télécharger. Une liste
 /// (playlist, chaîne, podcast) n'est pas dépliée : ses éléments sont seulement nommés.
 pub async fn yt_info(data_dir: &Path, ytdlp: &Path, url: &str, browser: Option<&str>) -> Result<serde_json::Value> {
-    let args: Vec<String> = vec!["-J".into(), "--flat-playlist".into(), "--playlist-items".into(), "1:300".into(), url.into()];
+    let args: Vec<String> = vec!["-J".into(), "--flat-playlist".into(), url.into()];
     let mut quiet = |_p: f64| {};
     let out = run_with_fallback(data_dir, ytdlp, &args, browser, &mut quiet).await?;
     let json = out
