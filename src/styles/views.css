@@ -221,9 +221,23 @@
 
 .lib-toolbar {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+.lib-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.lib-controls .select {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 9px;
 }
 
 /* « Voir plus » sous la grille d'une grande bibliothèque */
@@ -1397,20 +1411,6 @@
   flex: none;
   font-size: 12px;
 }
-
-.working {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: 34px 20px 20px;
-  text-align: center;
-}
-.working h3 {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 500;
-}
 .import-failures {
   display: flex;
   flex-direction: column;
@@ -1433,6 +1433,20 @@
 .import-failure-why {
   font-size: 12px;
   white-space: normal;
+}
+
+.working {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 34px 20px 20px;
+  text-align: center;
+}
+.working h3 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
 }
 .working .bar {
   width: 360px;

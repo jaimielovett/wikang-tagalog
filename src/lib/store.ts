@@ -47,6 +47,8 @@ export const DEFAULTS: Record<string, string> = {
   // with auto_turn off: "1" pauses the audio or video at the end of the page you're reading, instead of playing on
   page_end_pauses: "0",
   reader_sidebar: "1",
+  // library order: recent, newest, title, shortest, longest, easiest, least, most (progress)
+  library_sort: "recent",
   tts_voice: "0",
   tts_rate: "0.95",
   llm_model: "qwen3.5-2b",

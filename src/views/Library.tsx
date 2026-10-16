@@ -13,7 +13,52 @@ import { isWindows } from "../lib/platform";
 import type { LessonSummary } from "../lib/types";
 import { useUserName } from "../lib/user";
 
-type Filter = "all" | "text" | "audio" | "book" | "done";
+type Filter = "all" | "text" | "audio" | "book";
+/** Where the learner is in a lesson: never opened, under way, or finished. */
+type Status = "any" | "unread" | "reading" | "read";
+type Sort = "recent" | "newest" | "title" | "shortest" | "longest" | "easiest" | "least" | "most";
+
+const SORTS: Sort[] = ["recent", "newest", "title", "shortest", "longest", "easiest", "least", "most"];
+function sortLabel(s: Sort): string {
+  return {
+    recent: t("Ouvertes récemment", "Recently opened"),
+    newest: t("Importées récemment", "Newest imported"),
+    title: t("Titre (A–Z)", "Title (A–Z)"),
+    shortest: t("Les plus courtes", "Shortest first"),
+    longest: t("Les plus longues", "Longest first"),
+    easiest: t("Les plus faciles", "Easiest first"),
+    least: t("Les moins avancées", "Least progress"),
+    most: t("Les plus avancées", "Most progress"),
+  }[s];
+}
+
+function statusOf(l: LessonSummary): Exclude<Status, "any"> {
+  if (l.completed) return "read";
+  return l.opened_at || progressOf(l) > 0 ? "reading" : "unread";
+}
+
+/** The lessons in the chosen order; ties keep the library's own (recently opened first). */
+function sorted(list: LessonSummary[], sort: Sort): LessonSummary[] {
+  const by = (f: (a: LessonSummary, b: LessonSummary) => number) => [...list].sort(f);
+  switch (sort) {
+    case "newest":
+      return by((a, b) => b.created_at - a.created_at);
+    case "title":
+      return by((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" }));
+    case "shortest":
+      return by((a, b) => a.word_count - b.word_count);
+    case "longest":
+      return by((a, b) => b.word_count - a.word_count);
+    case "easiest":
+      return by((a, b) => a.new_pct - b.new_pct);
+    case "least":
+      return by((a, b) => progressOf(a) - progressOf(b));
+    case "most":
+      return by((a, b) => progressOf(b) - progressOf(a));
+    default:
+      return list;
+  }
+}
 
 function greeting() {
   const h = new Date().getHours();
@@ -184,7 +229,12 @@ export function Library() {
   const name = useUserName();
   const [lessons, setLessons] = useState<LessonSummary[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [status, setStatus] = useState<Status>("any");
   const [query, setQuery] = useState("");
+  // the chosen order is kept from one visit to the next
+  const sortSetting = useApp((s) => s.settings.library_sort);
+  const setSetting = useApp((s) => s.setSetting);
+  const sort: Sort = SORTS.includes(sortSetting as Sort) ? (sortSetting as Sort) : "recent";
   const hero = useGlow<HTMLDivElement>();
   const scroller = useRef<HTMLDivElement>(null);
   // l'entrée en cascade ne vaut que pour la première apparition des leçons ;
@@ -209,7 +259,7 @@ export function Library() {
   useEffect(() => {
     setLimit(BATCH);
     setRisen(null);
-  }, [lang, filter, query]);
+  }, [lang, filter, status, sort, query]);
   useEffect(() => {
     if (risen === null) return;
     const timer = window.setTimeout(() => setRisen(null), 900);
@@ -225,15 +275,16 @@ export function Library() {
   const shown = useMemo(() => {
     if (!lessons) return [];
     const q = query.trim().toLowerCase();
-    return lessons.filter((l) => {
+    const kept = lessons.filter((l) => {
       if (q && !(l.title.toLowerCase().includes(q) || l.collection.toLowerCase().includes(q))) return false;
+      if (status !== "any" && statusOf(l) !== status) return false;
       if (filter === "text") return ["text", "web", "pdf", "subtitles", "simplified"].includes(l.kind);
       if (filter === "audio") return l.has_media;
       if (filter === "book") return l.kind === "book";
-      if (filter === "done") return l.completed;
       return true;
     });
-  }, [lessons, filter, query]);
+    return sorted(kept, sort);
+  }, [lessons, filter, status, sort, query]);
 
   const addStarter = async () => {
     const s = STARTERS[lang];
@@ -436,12 +487,26 @@ export function Library() {
                   { value: "text", label: t("Textes", "Texts") },
                   { value: "audio", label: t("Audio et vidéo", "Audio and video") },
                   { value: "book", label: t("Livres", "Books") },
-                  { value: "done", label: t("Terminées", "Finished") },
                 ]}
               />
+              <div className="lib-controls">
+                <select className="select" value={status} onChange={(e) => setStatus(e.target.value as Status)} aria-label={t("Lecture", "Reading status")}>
+                  <option value="any">{t("Toutes", "Any status")}</option>
+                  <option value="unread">{t("Pas commencées", "Not started")}</option>
+                  <option value="reading">{t("En cours", "In progress")}</option>
+                  <option value="read">{t("Terminées", "Finished")}</option>
+                </select>
+                <select className="select" value={sort} onChange={(e) => void setSetting("library_sort", e.target.value)} aria-label={t("Trier", "Sort")}>
+                  {SORTS.map((o) => (
+                    <option key={o} value={o}>
+                      {sortLabel(o)}
+                    </option>
+                  ))}
+                </select>
               <button className={`btn sm ${selecting ? "soft" : "ghost"} lib-select`} onClick={() => (selecting ? stopSelect() : startSelect())} aria-pressed={selecting}>
                 <Icon name="check" size={15} stroke={2.4} /> {selecting ? t("Terminé", "Done") : t("Sélectionner", "Select")}
               </button>
+              </div>
             </div>
           )}
 
