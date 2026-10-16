@@ -4,7 +4,7 @@ resolver = "2"
 
 [package]
 name = "wikang-tagalog"
-version = "0.1.5"
+version = "0.1.6"
 description = "Wikang Tagalog : apprendre les langues en lisant et en écoutant"
 authors = ["Ulysse Rives"]
 license = "GPL-3.0-or-later"

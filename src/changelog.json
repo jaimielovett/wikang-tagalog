@@ -656,6 +656,39 @@
       ]
     },
     {
+      "version": "0.1.6",
+      "date": "2026-10-16",
+      "title": { "fr": "Une bibliothèque à votre ordre", "en": "A library in your order" },
+      "items": [
+        {
+          "icon": "layers",
+          "title": { "fr": "Trier et filtrer la bibliothèque", "en": "Sort and filter your library" },
+          "body": {
+            "fr": "Rangez vos leçons par date, titre, longueur, facilité ou avancement, et n'affichez que celles pas commencées, en cours ou terminées. L'ordre choisi reste d'une visite à l'autre.",
+            "en": "Order your lessons by date, title, length, ease or progress, and show only those not started, in progress or finished. The order you choose stays from one visit to the next."
+          },
+          "action": "view:library"
+        },
+        {
+          "icon": "pagestay",
+          "title": { "fr": "Pause en fin de page", "en": "Pause at the end of the page" },
+          "body": {
+            "fr": "Quand la page ne tourne pas avec la lecture, l'audio ou la vidéo peut s'arrêter à la fin de la page que vous lisez, au lieu de continuer sans vous.",
+            "en": "When pages don't turn with playback, the audio or video can stop at the end of the page you're reading instead of carrying on without you."
+          },
+          "action": "settings:reading"
+        },
+        {
+          "icon": "youtube",
+          "title": { "fr": "Des chaînes entières", "en": "Whole channels" },
+          "body": {
+            "fr": "Une chaîne YouTube ou une playlist s'importe en entier, sans limite de 300 vidéos. Une vidéo qui échoue n'arrête plus les autres : elle est réessayée à la fin, et celles qui résistent sont listées avec « Réessayer ».",
+            "en": "A YouTube channel or playlist imports in full, with no 300-video limit. A video that fails no longer stops the others: it's tried again at the end, and any still failing are listed with Try again."
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.5",
       "date": "2026-10-15",
       "title": { "fr": "Regarder un mot sans perdre le fil", "en": "Look up a word without losing your place" },
